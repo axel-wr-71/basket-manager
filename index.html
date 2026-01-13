@@ -47,10 +47,20 @@
         </div>
         
         <div class="header-right">
-            <div id="user-display" style="font-weight: bold; font-size: 14px;"></div>
-            <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
+    <div id="user-info-display" class="user-info"></div>
+    
+    <div class="lang-dropdown-header">
+        <button class="dropbtn-header" id="current-lang-header">
+            🇵🇱 PL <i class="arrow down"></i>
+        </button>
+        <div class="dropdown-content">
+            <a href="#" onclick="setLanguage('pl')">🇵🇱 Polski</a>
+            <a href="#" onclick="setLanguage('en')">🇺🇸 English</a>
         </div>
-    </header>
+    </div>
+
+    <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
+</div>
     
     <div id="admin-panel" style="display:none;">
         <div class="admin-section" style="padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
