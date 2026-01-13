@@ -44,27 +44,49 @@ async function checkUser() {
     const landing = document.getElementById('landing-page');
     const app = document.getElementById('game-app');
     const admin = document.getElementById('admin-panel');
-    const userDisplay = document.getElementById('user-display'); // to musi istnieć w HTML
+    const userDisplay = document.getElementById('user-display');
 
     if(user) {
-        // 1. Przełączanie widoków
         landing.style.display = 'none';
         app.style.display = 'block';
         
-        // 2. Pobieranie nazwy drużyny z tabeli 'teams'
-        // Zakładamy, że w tabeli 'teams' masz kolumnę 'manager_id' (UUID) oraz 'team_name'
-        const { data: teamData, error: teamError } = await _supabase
+        // --- AUTOMATYCZNE GENEROWANIE DRUŻYNY ---
+        
+        // 1. Sprawdź, czy drużyna już istnieje
+        let { data: teamData } = await _supabase
             .from('teams')
-            .select('team_name')
+            .select('*')
             .eq('manager_id', user.id)
             .maybeSingle();
 
-        // 3. Wyświetlanie: Email / Drużyna
-        if (teamData && teamData.team_name) {
-            userDisplay.innerText = `${user.email} / ${teamData.team_name}`;
-        } else {
-            userDisplay.innerText = user.email;
+        // 2. Jeśli nie istnieje, stwórz ją automatycznie
+        if (!teamData) {
+            console.log("Tworzenie automatycznej drużyny dla:", user.email);
+            const defaultName = `Team ${user.email.split('@')[0]}`;
+            
+            const { data: newTeam, error: createError } = await _supabase
+                .from('teams')
+                .insert([
+                    { 
+                        manager_id: user.id, 
+                        team_name: defaultName,
+                        balance: 500000,
+                        country: "Poland"
+                    }
+                ])
+                .select()
+                .single();
+
+            if (!createError) {
+                teamData = newTeam;
+            } else {
+                console.error("Błąd tworzenia drużyny:", createError);
+            }
         }
+
+        // 3. Wyświetlanie: Email / Nazwa Drużyny
+        const teamName = teamData ? teamData.team_name : "...";
+        userDisplay.innerText = `${user.email} / ${teamName}`;
         
         // 4. Panel Administratora
         if(user.email === 'strubbe23@gmail.com') {
@@ -80,9 +102,7 @@ async function checkUser() {
 
 async function logout() { 
     await _supabase.auth.signOut(); 
-    // Po wylogowaniu czyścimy wszystko i przeładowujemy stronę
     location.reload(); 
 }
 
-// Uruchomienie sprawdzenia przy starcie
 checkUser();
