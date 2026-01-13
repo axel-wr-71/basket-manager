@@ -49,3 +49,17 @@ function applyTranslations() {
 
 // Inicjalizacja po załadowaniu strony
 document.addEventListener('DOMContentLoaded', applyTranslations);
+
+function updateFlagUI(lang) {
+    const plFlag = document.getElementById('lang-pl');
+    const enFlag = document.getElementById('lang-en');
+    
+    if(lang === 'pl') {
+        plFlag.classList.add('active'); plFlag.classList.remove('inactive');
+        enFlag.classList.add('inactive'); enFlag.classList.remove('active');
+    } else {
+        enFlag.classList.add('active'); enFlag.classList.remove('inactive');
+        plFlag.classList.add('inactive'); plFlag.classList.remove('active');
+    }
+}
+// Wywołaj updateFlagUI(lang) wewnątrz swojej istniejącej funkcji setLanguage(lang)
