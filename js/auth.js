@@ -67,16 +67,14 @@ async function checkUser() {
             if(admin) admin.style.display = 'none';
         }
 
-        // 3. Obsługa danych drużyny (Wyświetlanie w nagłówku)
+        // 3. Obsługa danych drużyny
         try {
-            // Próbujemy pobrać drużynę przypisaną do tego managera
             let { data: teamData, error: fetchError } = await _supabase
                 .from('teams')
                 .select('*')
                 .eq('manager_id', user.id)
                 .maybeSingle();
 
-            // Jeśli użytkownik nie ma jeszcze drużyny - tworzymy domyślną
             if (!teamData && !fetchError) {
                 const defaultName = `Team ${user.email.split('@')[0]}`;
                 const { data: newTeam, error: insertError } = await _supabase
@@ -93,19 +91,14 @@ async function checkUser() {
                 if(!insertError) teamData = newTeam;
             }
 
-    
-            // Aktualizacja tekstu w headerze: "email / Nazwa Drużyny lub Admin"
-if(userDisplay) {
-    let statusText = "";
-    
-    if(user.email === 'strubbe23@gmail.com') {
-        statusText = "Admin";
-    } else {
-        statusText = teamData ? teamData.team_name : "New Manager";
-    }
-    
-    userDisplay.innerText = `${user.email} / ${statusText}`;
-}
+            if(userDisplay) {
+                let statusText = (user.email === 'strubbe23@gmail.com') ? "Admin" : (teamData ? teamData.team_name : "New Manager");
+                userDisplay.innerText = `${user.email} / ${statusText}`;
+            }
+        } catch (err) {
+            console.error("Błąd pobierania danych:", err);
+            if(userDisplay) userDisplay.innerText = user.email;
+        }
 
     } else {
         // Użytkownik niezalogowany
@@ -122,5 +115,5 @@ async function logout() {
     location.reload(); 
 }
 
-// Inicjalizacja przy starcie strony
+// Start sprawdzania użytkownika
 checkUser();
