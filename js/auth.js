@@ -44,21 +44,35 @@ async function checkUser() {
     const landing = document.getElementById('landing-page');
     const app = document.getElementById('game-app');
     const admin = document.getElementById('admin-panel');
+    const userDisplay = document.getElementById('user-display'); // to musi istnieć w HTML
 
     if(user) {
-        // Logika dla zalogowanego użytkownika
+        // 1. Przełączanie widoków
         landing.style.display = 'none';
         app.style.display = 'block';
-        document.getElementById('user-display').innerText = user.email;
         
-        // Pokazuje panel admina tylko dla konkretnego adresu
+        // 2. Pobieranie nazwy drużyny z tabeli 'teams'
+        // Zakładamy, że w tabeli 'teams' masz kolumnę 'manager_id' (UUID) oraz 'team_name'
+        const { data: teamData, error: teamError } = await _supabase
+            .from('teams')
+            .select('team_name')
+            .eq('manager_id', user.id)
+            .maybeSingle();
+
+        // 3. Wyświetlanie: Email / Drużyna
+        if (teamData && teamData.team_name) {
+            userDisplay.innerText = `${user.email} / ${teamData.team_name}`;
+        } else {
+            userDisplay.innerText = user.email;
+        }
+        
+        // 4. Panel Administratora
         if(user.email === 'strubbe23@gmail.com') {
             admin.style.display = 'block';
         } else {
             admin.style.display = 'none';
         }
     } else {
-        // Logika dla niezalogowanego (ekran startowy)
         landing.style.display = 'block';
         app.style.display = 'none';
     }
