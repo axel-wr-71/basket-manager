@@ -195,3 +195,29 @@ input {
     .header-right { gap: 10px; }
     .user-info { font-size: 12px; }
 }
+
+/* Zapewnienie, że logo i tekst w header-left są w jednej linii */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Naprawa odstępów w header-right */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Stylizacja tekstu użytkownika */
+.user-info {
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+}
+
+/* Upewnienie się, że dropdown nie rozpycha headera */
+.lang-dropdown-header {
+    margin: 0 5px;
+}
