@@ -32,13 +32,13 @@ header {
 .header-left { 
     display: flex; 
     align-items: center; 
-    gap: 20px; 
+    gap: 15px; /* Spójny odstęp logo od tekstu */
 }
 
 .header-right { 
     display: flex; 
     align-items: center; 
-    gap: 15px; 
+    gap: 20px; /* Spójny odstęp między User Info, Flagami i Logout */
 }
 
 /* LOGO */
@@ -58,74 +58,45 @@ header {
 .user-info {
     font-size: 14px;
     font-weight: 600;
-    color: var(--text-dark);
+    color: #444;
     white-space: nowrap;
 }
 
-/* DROPDOWN JĘZYKOWY (Uniwersalny dla Landing Page i App) */
-.lang-dropdown, .lang-dropdown-header {
-    position: relative;
-    display: inline-block;
-}
-
-/* Specyficzne dla Landing Page (jeśli chcesz go mieć w rogu poza headerem) */
-.lang-dropdown {
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    z-index: 2000;
-}
-
-.dropbtn, .dropbtn-header {
-    background-color: var(--white);
-    color: #333;
-    padding: 8px 15px;
-    font-size: 14px;
-    font-weight: bold;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    cursor: pointer;
+/* PRZEŁĄCZNIK JĘZYKÓW (FLAGI) */
+.lang-switcher {
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: background 0.2s;
+    gap: 10px;
 }
 
-.dropbtn-header {
-    padding: 5px 12px;
-    font-size: 13px;
-    background: none;
+.lang-flag {
+    width: 28px; /* Nieco większe dla lepszej widoczności */
+    height: auto;
+    cursor: pointer;
+    transition: filter 0.3s, transform 0.2s;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.dropbtn:hover, .dropbtn-header:hover {
-    background-color: #f9f9f9;
+.lang-flag:hover {
+    transform: scale(1.1);
 }
 
-.dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    background-color: var(--white);
-    min-width: 130px;
-    box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-top: 5px;
-    z-index: 3000;
+/* Efekt dla aktywnego/nieaktywnego języka */
+.lang-flag.inactive {
+    filter: grayscale(100%);
+    opacity: 0.4;
 }
 
-.dropdown-content a {
-    color: #333;
-    padding: 10px 16px;
-    text-decoration: none;
-    display: block;
-    font-size: 14px;
+.lang-flag.active {
+    filter: grayscale(0%);
+    opacity: 1;
+    border: 2px solid var(--nba-orange); /* Podświetlenie wybranego języka */
 }
 
-.dropdown-content a:hover { background-color: #f1f1f1; }
-.lang-dropdown:hover .dropdown-content, 
-.lang-dropdown-header:hover .dropdown-content { 
-    display: block; 
+.lang-divider {
+    color: #ddd;
+    font-weight: 200;
 }
 
 /* PRZYCISKI */
@@ -141,6 +112,8 @@ header {
     transition: transform 0.1s, background 0.2s;
 }
 
+.btn:hover { background: #e67616; }
+
 .btn-logout {
     background: var(--danger);
     color: white;
@@ -151,7 +124,10 @@ header {
     cursor: pointer;
     font-size: 13px;
     white-space: nowrap;
+    transition: opacity 0.2s;
 }
+
+.btn-logout:hover { opacity: 0.9; }
 
 /* HERO & AUTH CARD */
 .hero-container { 
@@ -189,35 +165,14 @@ input {
     box-sizing: border-box; 
 }
 
+/* PANEL ADMINA */
+.admin-section {
+    border: 1px solid #ddd;
+}
+
 /* RWD */
 @media (max-width: 768px) {
-    header { padding: 10px 15px; }
-    .header-right { gap: 10px; }
+    header { padding: 10px 15px; flex-direction: column; gap: 15px; }
+    .header-right { gap: 10px; width: 100%; justify-content: center; }
     .user-info { font-size: 12px; }
-}
-
-/* Zapewnienie, że logo i tekst w header-left są w jednej linii */
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-/* Naprawa odstępów w header-right */
-.header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-/* Stylizacja tekstu użytkownika */
-.user-info {
-    font-size: 14px;
-    font-weight: 500;
-    color: #444;
-}
-
-/* Upewnienie się, że dropdown nie rozpycha headera */
-.lang-dropdown-header {
-    margin: 0 5px;
 }
