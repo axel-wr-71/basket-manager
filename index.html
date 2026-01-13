@@ -5,6 +5,22 @@
     <title>Elite Buzzer League</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Styl dla zakładek Admina */
+        .admin-nav { display: flex; gap: 5px; padding: 0 20px; margin-top: 15px; }
+        .btn-tab { 
+            padding: 10px 20px; border: none; background: #ddd; cursor: pointer; 
+            border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s;
+        }
+        .btn-tab.active { background: #e65100; color: white; }
+        .admin-tab-content { display: none; margin: 0 20px 20px 20px; border-radius: 0 10px 10px 10px; }
+        .admin-tab-content.active { display: block; }
+        
+        /* Tabela zawodników */
+        .admin-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
+        .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
+        .admin-table th { background: #f2f2f2; }
+    </style>
 </head>
 <body>
 
@@ -56,19 +72,64 @@
     </header>
 
     <div id="admin-panel" style="display:none;">
-        <div class="admin-section" style="padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
-            <h3 data-i18n="admin_panel" style="margin-top:0; color:#e65100;">Panel Administratora</h3>
+        <div class="admin-nav">
+            <button class="btn-tab active" onclick="showAdminTab('gen')">Generowanie</button>
+            <button class="btn-tab" onclick="showAdminTab('config')">Potencjały i Skille</button>
+            <button class="btn-tab" onclick="showAdminTab('media')">Media</button>
+            <button class="btn-tab" onclick="showAdminTab('players')">Baza Zawodników</button>
+        </div>
+
+        <div id="admin-tab-gen" class="admin-tab-content active" style="padding:20px; background:#fff3e0; border: 1px solid #ffe0b2;">
+            <h3 data-i18n="admin_panel" style="margin-top:0; color:#e65100;">Generator Świata</h3>
             <p style="font-size: 14px;" data-i18n="admin_desc">Witaj, Szefie. Wygeneruj zawodników do Draftu.</p>
             <button class="btn" onclick="initWorld()" style="max-width:300px;" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
         </div>
 
-        <div class="admin-section photo-manager" style="padding:20px; background:#f5f5f5; margin:20px; border-radius:10px; border: 1px solid #ddd;">
+        <div id="admin-tab-config" class="admin-tab-content" style="padding:20px; background:#e3f2fd; border: 1px solid #bbdefb;">
+            <h3 style="margin-top:0;">Edytor Nazewnictwa</h3>
+            <div style="display:flex; gap:20px; flex-wrap: wrap;">
+                <div style="flex:1; min-width:300px;">
+                    <label>Wybierz element do edycji:</label>
+                    <select id="config-type-select" class="btn" style="background:white; color:black; margin-top:5px;" onchange="loadConfigList()">
+                        <option value="">-- Wybierz kategorię --</option>
+                        <option value="potential">Potencjały (BuzzerBeater)</option>
+                        <option value="skill">Umiejętności (Skille)</option>
+                    </select>
+                    <div id="config-list-container" style="margin-top:15px; display:none;">
+                        <select id="config-item-select" class="btn" style="background:white; color:black;" onchange="showConfigEditor()"></select>
+                    </div>
+                </div>
+                <div id="config-editor-fields" style="flex:1; min-width:300px; display:none; background:white; padding:15px; border-radius:8px;">
+                    <h4 id="edit-item-title" style="margin-top:0;">Edytuj</h4>
+                    <label>Nazwa PL:</label><br>
+                    <input type="text" id="edit-name-pl" style="width:100%; margin-bottom:10px;"><br>
+                    <label>Nazwa EN:</label><br>
+                    <input type="text" id="edit-name-en" style="width:100%; margin-bottom:10px;">
+                    <button class="btn" onclick="saveGameConfig()">ZAPISZ ZMIANY</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-tab-media" class="admin-tab-content" style="padding:20px; background:#f5f5f5; border: 1px solid #ddd;">
             <h4 style="margin-top:0;">Zarządzanie wizualne (Logo & Hero)</h4>
             <div style="display: flex; flex-direction: column; gap: 10px; max-width: 500px;">
                 <input type="text" id="hero-img-1-url" placeholder="Link do zdjęcia Hero 1">
                 <input type="text" id="hero-img-2-url" placeholder="Link do zdjęcia Hero 2">
                 <input type="text" id="logo-url-input" placeholder="Link do Twojego Logo">
                 <button class="btn" style="background: #333;" onclick="adminUpdateMedia()">ZAPISZ ZMIANY MEDIÓW</button>
+            </div>
+        </div>
+
+        <div id="admin-tab-players" class="admin-tab-content" style="padding:20px; background:#eceff1; border: 1px solid #cfd8dc;">
+            <h3 style="margin-top:0;">Globalna Lista Zawodników</h3>
+            <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+                <select id="filter-season" class="btn" style="background:white; color:black; width:auto;"><option value="1">Sezon 1</option></select>
+                <select id="filter-country" class="btn" style="background:white; color:black; width:auto;"><option value="all">Wszystkie Kraje</option></select>
+                <select id="filter-league" class="btn" style="background:white; color:black; width:auto;"><option value="all">Wszystkie Ligi</option></select>
+                <button class="btn" onclick="fetchAdminPlayersList()" style="width:auto; background:#455a64;">FILTRUJ</button>
+            </div>
+            <div id="admin-players-table" style="overflow-x:auto;">
+                <p>Użyj filtrów, aby załadować zawodników...</p>
             </div>
         </div>
     </div>
@@ -81,6 +142,19 @@
 <script src="js/world_gen.js"></script>
 <script src="js/setup_team.js"></script> 
 <script src="js/roster.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/draft.js"></script>
+
+<script>
+    // Prosta funkcja przełączania tabów (możesz ją przenieść do js/admin.js)
+    function showAdminTab(tabName) {
+        document.querySelectorAll('.admin-tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
+        
+        document.getElementById('admin-tab-' + tabName).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+</script>
 
 </body>
 </html>
