@@ -26,6 +26,15 @@ let currentLang = localStorage.getItem('ebl_lang') || 'pl';
 function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('ebl_lang', lang);
+    
+    // Aktualizacja widoku przycisku głównego
+    const btn = document.getElementById('current-lang');
+    if (lang === 'pl') {
+        btn.innerHTML = '🇵🇱 PL <i class="arrow down"></i>';
+    } else {
+        btn.innerHTML = '🇺🇸 EN <i class="arrow down"></i>';
+    }
+    
     applyTranslations();
 }
 
