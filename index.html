@@ -11,14 +11,11 @@
 <div id="landing-page">
     <header>
         <h1 style="color:var(--nba-orange); margin:0" data-i18n="welcome_title">ELITE BUZZER LEAGUE</h1>
-        <div class="lang-dropdown-header">
-            <button class="dropbtn-header" id="current-lang-landing">
-                🇵🇱 PL <i class="arrow down"></i>
-            </button>
-            <div class="dropdown-content">
-                <a href="#" onclick="setLanguage('pl')">🇵🇱 Polski</a>
-                <a href="#" onclick="setLanguage('en')">🇺🇸 English</a>
-            </div>
+        
+        <div class="lang-switcher">
+            <img src="https://flagcdn.com/w40/pl.png" id="lang-pl-landing" onclick="setLanguage('pl')" class="lang-flag" alt="PL">
+            <span class="lang-divider">|</span>
+            <img src="https://flagcdn.com/w40/us.png" id="lang-en-landing" onclick="setLanguage('en')" class="lang-flag" alt="EN">
         </div>
     </header>
 
@@ -39,7 +36,7 @@
 <div id="game-app" style="display:none;">
     <header>
         <div class="header-left">
-            <div class="logo-container">
+            <div class="logo-container" onclick="location.reload()" style="cursor: pointer;">
                 <img src="logo_EBL.png" alt="Logo" class="main-logo" id="main-logo-img">
             </div>
             <div class="league-name-text" style="font-weight:bold; color:var(--nba-blue); font-size: 1.2rem;" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
@@ -48,14 +45,10 @@
         <div class="header-right">
             <div id="user-info-display" class="user-info"></div>
             
-            <div class="lang-dropdown-header">
-                <button class="dropbtn-header" id="current-lang-header">
-                    🇵🇱 PL <i class="arrow down"></i>
-                </button>
-                <div class="dropdown-content">
-                    <a href="#" onclick="setLanguage('pl')">🇵🇱 Polski</a>
-                    <a href="#" onclick="setLanguage('en')">🇺🇸 English</a>
-                </div>
+            <div class="lang-switcher">
+                <img src="https://flagcdn.com/w40/pl.png" id="lang-pl" onclick="setLanguage('pl')" class="lang-flag" alt="PL">
+                <span class="lang-divider">|</span>
+                <img src="https://flagcdn.com/w40/us.png" id="lang-en" onclick="setLanguage('en')" class="lang-flag" alt="EN">
             </div>
 
             <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
