@@ -8,9 +8,14 @@
 </head>
 <body>
 
-<div class="lang-switcher">
-    <button class="lang-btn" id="btn-pl" onclick="setLanguage('pl')">PL</button>
-    <button class="lang-btn" id="btn-en" onclick="setLanguage('en')">EN</button>
+<div class="lang-dropdown">
+    <button class="dropbtn" id="current-lang">
+        🇵🇱 PL <i class="arrow down"></i>
+    </button>
+    <div class="dropdown-content">
+        <a href="#" onclick="setLanguage('pl')">🇵🇱 Polski</a>
+        <a href="#" onclick="setLanguage('en')">🇺🇸 English</a>
+    </div>
 </div>
 
 <div id="landing-page">
