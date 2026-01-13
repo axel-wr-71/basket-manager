@@ -21,12 +21,6 @@
             </div>
         </div>
     </header>
-</div>
-
-<div id="landing-page">
-    <header>
-        <h1 style="color:var(--nba-orange); margin:0" data-i18n="welcome_title">ELITE BUZZER LEAGUE</h1>
-    </header>
 
     <div class="hero-container">
         <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400" class="hero-img">
@@ -48,25 +42,26 @@
             <div class="logo-container">
                 <img src="logo_EBL.png" alt="Logo" class="main-logo" id="main-logo-img">
             </div>
-            <div class="league-name-text" style="font-weight:bold; color:var(--nba-blue)" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
+            <div class="league-name-text" style="font-weight:bold; color:var(--nba-blue); font-size: 1.2rem;" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
         </div>
         
         <div class="header-right">
-    <div id="user-info-display" class="user-info"></div>
-    
-    <div class="lang-dropdown-header">
-        <button class="dropbtn-header" id="current-lang-header">
-            🇵🇱 PL <i class="arrow down"></i>
-        </button>
-        <div class="dropdown-content">
-            <a href="#" onclick="setLanguage('pl')">🇵🇱 Polski</a>
-            <a href="#" onclick="setLanguage('en')">🇺🇸 English</a>
-        </div>
-    </div>
+            <div id="user-info-display" class="user-info"></div>
+            
+            <div class="lang-dropdown-header">
+                <button class="dropbtn-header" id="current-lang-header">
+                    🇵🇱 PL <i class="arrow down"></i>
+                </button>
+                <div class="dropdown-content">
+                    <a href="#" onclick="setLanguage('pl')">🇵🇱 Polski</a>
+                    <a href="#" onclick="setLanguage('en')">🇺🇸 English</a>
+                </div>
+            </div>
 
-    <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
-</div>
-    
+            <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
+        </div>
+    </header>
+
     <div id="admin-panel" style="display:none;">
         <div class="admin-section" style="padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
             <h3 data-i18n="admin_panel" style="margin-top:0; color:#e65100;">Panel Administratora</h3>
