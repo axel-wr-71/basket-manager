@@ -39,9 +39,38 @@
 
 <div id="game-app" style="display:none;">
     <header>
-        <div class="logo-container">
-            <img src="https://twoje-logo-url.png" alt="Logo Elite Buzzer League" class="main-logo">
+        <div class="header-left">
+            <div class="logo-container">
+                <img src="logo_EBL.png" alt="Logo" class="main-logo">
+            </div>
+            <div style="font-weight:bold; color:var(--nba-blue)" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
         </div>
+        
+        <div class="header-right">
+            <div id="user-display"></div>
+            <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
+        </div>
+    </header>
+    
+    <div id="admin-panel" style="display:none; padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
+        <h3 data-i18n="admin_panel">Panel Administratora</h3>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 250px;">
+                <button class="btn" onclick="initWorld()" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
+            </div>
+
+            <div style="flex: 1; min-width: 250px; background: #fff; padding: 15px; border-radius: 8px;">
+                <h4>Zmień zdjęcia na stronie głównej</h4>
+                <input type="text" id="hero-img-1-url" placeholder="Link do zdjęcia 1">
+                <input type="text" id="hero-img-2-url" placeholder="Link do zdjęcia 2">
+                <button class="btn" style="margin-top:10px; background: #333;" onclick="updateHeroImages()">ZAPISZ ZDJĘCIA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-content" style="padding:20px;"></div>
+</div>
 
         <div style="font-weight:bold; color:var(--nba-blue)" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
         
