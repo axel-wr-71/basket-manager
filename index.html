@@ -8,9 +8,14 @@
 </head>
 <body>
 
+<div class="lang-switcher">
+    <button class="lang-btn" id="btn-pl" onclick="setLanguage('pl')">PL</button>
+    <button class="lang-btn" id="btn-en" onclick="setLanguage('en')">EN</button>
+</div>
+
 <div id="landing-page">
     <header>
-        <h1 style="color:var(--nba-orange); margin:0">ELITE <span style="color:#333">BUZZER LEAGUE</span></h1>
+        <h1 style="color:var(--nba-orange); margin:0" data-i18n="welcome_title">ELITE BUZZER LEAGUE</h1>
     </header>
 
     <div class="hero-container">
@@ -19,11 +24,11 @@
     </div>
 
     <div class="auth-card">
-        <h2>Panel Managera</h2>
+        <h2 data-i18n="login_header">Panel Managera</h2>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Hasło">
-        <button class="btn" onclick="signIn()">ZALOGUJ SIĘ</button>
-        <button class="btn" style="background:#555; margin-top:10px;" onclick="signUp()">ZAŁÓŻ KONTO</button>
+        <button class="btn" onclick="signIn()" data-i18n="btn_login">ZALOGUJ SIĘ</button>
+        <button class="btn" style="background:#555; margin-top:10px;" onclick="signUp()" data-i18n="btn_signup">ZAŁÓŻ KONTO</button>
     </div>
 </div>
 
@@ -33,21 +38,22 @@
             <img src="https://twoje-logo-url.png" alt="Logo Elite Buzzer League" class="main-logo">
         </div>
 
-        <div style="font-weight:bold; color:var(--nba-blue)">ELITE BUZZER LEAGUE</div>
+        <div style="font-weight:bold; color:var(--nba-blue)" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
         
         <div id="user-display" style="font-size: 13px; font-weight: bold;"></div>
-        <button onclick="logout()" class="btn-logout">Wyloguj</button>
+        <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
     </header>
     
     <div id="admin-panel" style="display:none; padding:20px; background:#fff3e0; margin:20px; border-radius:10px; border: 1px solid #ffe0b2;">
-        <h3 style="margin-top:0; color:#e65100;">Panel Administratora</h3>
-        <p style="font-size: 14px;">Witaj, Szefie. Użyj poniższego przycisku, aby powołać do życia ligę i wygenerować zawodników z unikalnymi twarzami.</p>
-        <button class="btn" onclick="initWorld()" style="max-width:300px;">GENERUJ ŚWIAT I LIGI</button>
+        <h3 style="margin-top:0; color:#e65100;" data-i18n="admin_panel">Panel Administratora</h3>
+        <p style="font-size: 14px;" data-i18n="admin_desc">Witaj, Szefie. Użyj poniższego przycisku, aby powołać do życia ligę i wygenerować zawodników z unikalnymi twarzami.</p>
+        <button class="btn" onclick="initWorld()" style="max-width:300px;" data-i18n="gen_world">GENERUJ ŚWIAT I LIGI</button>
     </div>
 
     <div id="main-content" style="padding:20px;"></div>
 </div>
 
+<script src="js/lang.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/world_gen.js"></script>
 </body>
