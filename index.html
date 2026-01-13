@@ -8,14 +8,19 @@
 </head>
 <body>
 
-<div class="lang-dropdown">
-    <button class="dropbtn" id="current-lang">
-        🇵🇱 PL <i class="arrow down"></i>
-    </button>
-    <div class="dropdown-content">
-        <a href="#" onclick="setLanguage('pl')">🇵🇱 Polski</a>
-        <a href="#" onclick="setLanguage('en')">🇺🇸 English</a>
-    </div>
+<div id="landing-page">
+    <header>
+        <h1 style="color:var(--nba-orange); margin:0" data-i18n="welcome_title">ELITE BUZZER LEAGUE</h1>
+        <div class="lang-dropdown-header">
+            <button class="dropbtn-header" id="current-lang-landing">
+                🇵🇱 PL <i class="arrow down"></i>
+            </button>
+            <div class="dropdown-content">
+                <a href="#" onclick="setLanguage('pl')">🇵🇱 PL</a>
+                <a href="#" onclick="setLanguage('en')">🇺🇸 EN</a>
+            </div>
+        </div>
+    </header>
 </div>
 
 <div id="landing-page">
