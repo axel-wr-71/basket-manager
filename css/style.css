@@ -1,11 +1,14 @@
+/* KONFIGURACJA ZMIENNYCH */
 :root {
     --nba-orange: #f58426;
     --nba-blue: #00471b;
     --bg-light: #f8f9fa;
     --text-dark: #333;
     --danger: #e74c3c;
+    --white: #ffffff;
 }
 
+/* PODSTAWY */
 body { 
     font-family: 'Inter', sans-serif; 
     background: var(--bg-light); 
@@ -13,16 +16,31 @@ body {
     margin: 0; 
 }
 
-/* NAGŁÓWEK - Wsparcie dla Logo i Języków */
+/* NAGŁÓWEK (Aplikacja i Landing Page) */
 header { 
-    background: white; 
+    background: var(--white); 
     padding: 10px 25px; 
     border-bottom: 4px solid var(--nba-orange); 
     display: flex; 
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    min-height: 60px;
+    min-height: 70px;
+    flex-wrap: wrap; /* Zapobiega nakładaniu się przy mniejszym oknie */
+    gap: 15px;
+    box-sizing: border-box;
+}
+
+.header-left { 
+    display: flex; 
+    align-items: center; 
+    gap: 20px; 
+}
+
+.header-right { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
 }
 
 /* LOGO */
@@ -33,18 +51,38 @@ header {
 }
 
 .main-logo {
-    height: 100%;
+    height: 50px; /* Stała wysokość zapobiega skokom interfejsu */
     width: auto;
     object-fit: contain;
 }
 
-/* HERO SECTION */
-.hero-container { display: flex; justify-content: center; gap: 20px; padding: 40px; }
-.hero-img { width: 250px; height: 180px; border-radius: 12px; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+#user-display {
+    font-size: 14px;
+    color: #555;
+    font-weight: 500;
+}
 
-/* KARTA LOGOWANIA */
+/* HERO SECTION (Landing Page) */
+.hero-container { 
+    display: flex; 
+    justify-content: center; 
+    gap: 20px; 
+    padding: 40px; 
+    flex-wrap: wrap;
+}
+
+.hero-img { 
+    width: 250px; 
+    height: 180px; 
+    border-radius: 12px; 
+    object-fit: cover; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+    background: #eee;
+}
+
+/* KARTA LOGOWANIA / FORMULARZE */
 .auth-card { 
-    background: white; 
+    background: var(--white); 
     max-width: 350px; 
     margin: 40px auto; 
     padding: 30px; 
@@ -76,13 +114,8 @@ input {
     transition: transform 0.1s, background 0.2s;
 }
 
-.btn:hover {
-    background: #e67616;
-}
-
-.btn:active {
-    transform: scale(0.98);
-}
+.btn:hover { background: #e67616; }
+.btn:active { transform: scale(0.98); }
 
 .btn-logout {
     background: var(--danger);
@@ -93,50 +126,10 @@ input {
     font-weight: 600;
     cursor: pointer;
     font-size: 13px;
-    transition: opacity 0.2s;
+    white-space: nowrap;
 }
 
-.btn-logout:hover {
-    opacity: 0.9;
-}
-
-/* PRZEŁĄCZNIK JĘZYKÓW */
-.lang-switcher {
-    position: fixed;
-    top: 75px; /* Tuż pod headerem */
-    right: 25px;
-    display: flex;
-    gap: 5px;
-    background: white;
-    padding: 5px;
-    border-radius: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    z-index: 1000;
-}
-
-.lang-btn {
-    border: none;
-    background: none;
-    padding: 5px 10px;
-    border-radius: 15px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 12px;
-    color: #777;
-}
-
-.lang-btn.active {
-    background: var(--nba-orange);
-    color: white;
-}
-
-/* PANEL ADMINA */
-#admin-panel {
-    border: 1px solid #ffe0b2;
-    transition: all 0.3s;
-}
-
-/* Kontener Dropdown */
+/* DROPDOWN JĘZYKOWY */
 .lang-dropdown {
     position: fixed;
     top: 15px;
@@ -145,9 +138,8 @@ input {
     z-index: 2000;
 }
 
-/* Przycisk Główny */
 .dropbtn {
-    background-color: white;
+    background-color: var(--white);
     color: #333;
     padding: 8px 15px;
     font-size: 14px;
@@ -161,12 +153,11 @@ input {
     gap: 8px;
 }
 
-/* Zawartość listy (ukryta domyślnie) */
 .dropdown-content {
     display: none;
     position: absolute;
     right: 0;
-    background-color: white;
+    background-color: var(--white);
     min-width: 120px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
     border-radius: 12px;
@@ -174,26 +165,17 @@ input {
     margin-top: 5px;
 }
 
-/* Linki wewnątrz listy */
 .dropdown-content a {
     color: #333;
     padding: 10px 16px;
     text-decoration: none;
     display: block;
     font-size: 14px;
-    transition: background 0.2s;
 }
 
-.dropdown-content a:hover {
-    background-color: #f1f1f1;
-}
+.dropdown-content a:hover { background-color: #f1f1f1; }
+.lang-dropdown:hover .dropdown-content { display: block; }
 
-/* Pokaż listę po najechaniu */
-.lang-dropdown:hover .dropdown-content {
-    display: block;
-}
-
-/* Mała strzałka obok tekstu */
 .arrow {
     border: solid #777;
     border-width: 0 2px 2px 0;
@@ -202,26 +184,24 @@ input {
 }
 .down { transform: rotate(45deg); }
 
+/* ROSTER / KARTY ZAWODNIKÓW */
 .roster-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
-    padding-bottom: 50px;
+    padding: 20px;
 }
 
 .player-card {
-    background: white;
+    background: var(--white);
     border-radius: 16px;
     border: 1px solid #e0e0e0;
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
     box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    transition: transform 0.2s;
 }
 
-.player-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 20px rgba(0,0,0,0.08);
-}
+.player-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
 
 .card-top {
     background: linear-gradient(135deg, #fdfdfd 0%, #f5f5f5 100%);
@@ -229,7 +209,6 @@ input {
     display: flex;
     align-items: center;
     gap: 15px;
-    border-bottom: 1px solid #eee;
 }
 
 .player-avatar {
@@ -240,28 +219,14 @@ input {
     border: 2px solid var(--nba-orange);
 }
 
-.player-main-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.player-name {
-    font-weight: 800;
-    font-size: 1.1rem;
-    color: #222;
-}
-
-.player-meta {
-    font-size: 0.85rem;
-    color: #777;
-}
+.player-name { font-weight: 800; font-size: 1.1rem; }
 
 .skills-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     padding: 15px;
     gap: 10px;
-    background: white;
+    background: var(--white);
 }
 
 .skill-item {
@@ -271,19 +236,11 @@ input {
     align-items: center;
 }
 
-.skill-item label {
-    font-size: 10px;
-    text-transform: uppercase;
-    color: #999;
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
 .skill-value {
     font-weight: 700;
     font-size: 14px;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -291,28 +248,15 @@ input {
     background: #f0f0f0;
 }
 
-/* Kolorystyka poziomów umiejętności */
+/* KOLORY SKILLI */
 .skill-legendary { background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; }
 .skill-good { background: #e8f5e9; color: #4caf50; }
 .skill-average { background: #fafafa; color: #666; }
 .skill-poor { background: #f5f5f5; color: #bbb; }
 
-header { 
-    background: white; 
-    padding: 10px 20px; 
-    border-bottom: 4px solid var(--nba-orange); 
-    display: flex; 
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px; /* Odstęp między elementami */
-    flex-wrap: wrap; /* Zapobiega nakładaniu się */
-}
-
-.header-left { display: flex; align-items: center; gap: 20px; }
-.header-right { display: flex; align-items: center; gap: 15px; }
-
-#user-display {
-    font-size: 14px;
-    color: #555;
-    font-weight: 500;
+/* PANEL ADMINA */
+.admin-section {
+    margin: 20px;
+    padding: 20px;
+    border-radius: 12px;
 }
