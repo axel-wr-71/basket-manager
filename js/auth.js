@@ -93,15 +93,19 @@ async function checkUser() {
                 if(!insertError) teamData = newTeam;
             }
 
-            // Aktualizacja tekstu w headerze: "email / Nazwa Drużyny"
-            if(userDisplay) {
-                const teamName = teamData ? teamData.team_name : "New Manager";
-                userDisplay.innerText = `${user.email} / ${teamName}`;
-            }
-        } catch (err) {
-            console.error("Auth Exception:", err);
-            if(userDisplay) userDisplay.innerText = user.email;
-        }
+    
+            // Aktualizacja tekstu w headerze: "email / Nazwa Drużyny lub Admin"
+if(userDisplay) {
+    let statusText = "";
+    
+    if(user.email === 'strubbe23@gmail.com') {
+        statusText = "Admin";
+    } else {
+        statusText = teamData ? teamData.team_name : "New Manager";
+    }
+    
+    userDisplay.innerText = `${user.email} / ${statusText}`;
+}
 
     } else {
         // Użytkownik niezalogowany
