@@ -16,7 +16,7 @@ body {
     margin: 0; 
 }
 
-/* NAGŁÓWEK (Aplikacja i Landing Page) */
+/* NAGŁÓWEK */
 header { 
     background: var(--white); 
     padding: 10px 25px; 
@@ -26,8 +26,6 @@ header {
     align-items: center;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     min-height: 70px;
-    flex-wrap: wrap; /* Zapobiega nakładaniu się przy mniejszym oknie */
-    gap: 15px;
     box-sizing: border-box;
 }
 
@@ -51,54 +49,83 @@ header {
 }
 
 .main-logo {
-    height: 50px; /* Stała wysokość zapobiega skokom interfejsu */
+    height: 50px;
     width: auto;
     object-fit: contain;
 }
 
-#user-display {
+/* DANE UŻYTKOWNIKA */
+.user-info {
     font-size: 14px;
-    color: #555;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
 }
 
-/* HERO SECTION (Landing Page) */
-.hero-container { 
-    display: flex; 
-    justify-content: center; 
-    gap: 20px; 
-    padding: 40px; 
-    flex-wrap: wrap;
+/* DROPDOWN JĘZYKOWY (Uniwersalny dla Landing Page i App) */
+.lang-dropdown, .lang-dropdown-header {
+    position: relative;
+    display: inline-block;
 }
 
-.hero-img { 
-    width: 250px; 
-    height: 180px; 
-    border-radius: 12px; 
-    object-fit: cover; 
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
-    background: #eee;
+/* Specyficzne dla Landing Page (jeśli chcesz go mieć w rogu poza headerem) */
+.lang-dropdown {
+    position: fixed;
+    top: 15px;
+    right: 25px;
+    z-index: 2000;
 }
 
-/* KARTA LOGOWANIA / FORMULARZE */
-.auth-card { 
-    background: var(--white); 
-    max-width: 350px; 
-    margin: 40px auto; 
-    padding: 30px; 
-    border-radius: 15px; 
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+.dropbtn, .dropbtn-header {
+    background-color: var(--white);
+    color: #333;
+    padding: 8px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
 }
 
-input { 
-    width: 100%; 
-    padding: 12px; 
-    margin: 10px 0; 
-    border: 1px solid #ddd; 
-    border-radius: 8px; 
-    box-sizing: border-box; 
-    font-family: inherit;
+.dropbtn-header {
+    padding: 5px 12px;
+    font-size: 13px;
+    background: none;
+}
+
+.dropbtn:hover, .dropbtn-header:hover {
+    background-color: #f9f9f9;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: var(--white);
+    min-width: 130px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 5px;
+    z-index: 3000;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 10px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+}
+
+.dropdown-content a:hover { background-color: #f1f1f1; }
+.lang-dropdown:hover .dropdown-content, 
+.lang-dropdown-header:hover .dropdown-content { 
+    display: block; 
 }
 
 /* PRZYCISKI */
@@ -114,9 +141,6 @@ input {
     transition: transform 0.1s, background 0.2s;
 }
 
-.btn:hover { background: #e67616; }
-.btn:active { transform: scale(0.98); }
-
 .btn-logout {
     background: var(--danger);
     color: white;
@@ -129,182 +153,45 @@ input {
     white-space: nowrap;
 }
 
-/* DROPDOWN JĘZYKOWY */
-.lang-dropdown {
-    position: fixed;
-    top: 15px;
-    right: 25px;
-    display: inline-block;
-    z-index: 2000;
+/* HERO & AUTH CARD */
+.hero-container { 
+    display: flex; 
+    justify-content: center; 
+    gap: 20px; 
+    padding: 40px; 
+    flex-wrap: wrap;
 }
 
-.dropbtn {
-    background-color: var(--white);
-    color: #333;
-    padding: 8px 15px;
-    font-size: 14px;
-    font-weight: bold;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.hero-img { 
+    width: 250px; 
+    height: 180px; 
+    border-radius: 12px; 
+    object-fit: cover; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
 }
 
-.dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    background-color: var(--white);
-    min-width: 120px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-top: 5px;
-}
-
-.dropdown-content a {
-    color: #333;
-    padding: 10px 16px;
-    text-decoration: none;
-    display: block;
-    font-size: 14px;
-}
-
-.dropdown-content a:hover { background-color: #f1f1f1; }
-.lang-dropdown:hover .dropdown-content { display: block; }
-
-.arrow {
-    border: solid #777;
-    border-width: 0 2px 2px 0;
-    display: inline-block;
-    padding: 3px;
-}
-.down { transform: rotate(45deg); }
-
-/* ROSTER / KARTY ZAWODNIKÓW */
-.roster-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    padding: 20px;
-}
-
-.player-card {
-    background: var(--white);
-    border-radius: 16px;
-    border: 1px solid #e0e0e0;
-    overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-    transition: transform 0.2s;
-}
-
-.player-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
-
-.card-top {
-    background: linear-gradient(135deg, #fdfdfd 0%, #f5f5f5 100%);
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.player-avatar {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: white;
-    border: 2px solid var(--nba-orange);
-}
-
-.player-name { font-weight: 800; font-size: 1.1rem; }
-
-.skills-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    padding: 15px;
-    gap: 10px;
-    background: var(--white);
-}
-
-.skill-item {
+.auth-card { 
+    background: var(--white); 
+    max-width: 350px; 
+    margin: 0 auto 40px; 
+    padding: 30px; 
+    border-radius: 15px; 
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
-.skill-value {
-    font-weight: 700;
-    font-size: 14px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    background: #f0f0f0;
+input { 
+    width: 100%; 
+    padding: 12px; 
+    margin: 10px 0; 
+    border: 1px solid #ddd; 
+    border-radius: 8px; 
+    box-sizing: border-box; 
 }
 
-/* KOLORY SKILLI */
-.skill-legendary { background: #fff3e0; color: #ff9800; border: 1px solid #ff9800; }
-.skill-good { background: #e8f5e9; color: #4caf50; }
-.skill-average { background: #fafafa; color: #666; }
-.skill-poor { background: #f5f5f5; color: #bbb; }
-
-/* PANEL ADMINA */
-.admin-section {
-    margin: 20px;
-    padding: 20px;
-    border-radius: 12px;
-}
-
-/* Poprawka prawego kontenera w nagłówku */
-.header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px; /* Odstęp między info, językami i wylogowaniem */
-    flex-wrap: nowrap;
-}
-
-.user-info {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-dark);
-    white-space: nowrap;
-}
-
-/* Stylizacja dropdowna wewnątrz nagłówka */
-.lang-dropdown-header {
-    position: relative; /* Zmiana z fixed na relative, by siedział w headerze */
-    display: inline-block;
-}
-
-.dropbtn-header {
-    background: none;
-    border: 1px solid #ddd;
-    border-radius: 15px;
-    padding: 5px 10px;
-    cursor: pointer;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-/* Ukrycie starego dropdowna, jeśli był ustawiony jako fixed */
-.lang-dropdown {
-    display: none; 
-}
-
-/* RWD: Na małych ekranach zmniejsz odstępy */
+/* RWD */
 @media (max-width: 768px) {
-    .header-right {
-        gap: 10px;
-    }
-    .user-info {
-        font-size: 12px;
-    }
+    header { padding: 10px 15px; }
+    .header-right { gap: 10px; }
+    .user-info { font-size: 12px; }
 }
