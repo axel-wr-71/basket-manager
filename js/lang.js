@@ -7,7 +7,8 @@ const translations = {
         admin_panel: "Panel Administratora",
         gen_world: "GENERUJ ŚWIAT I LIGI",
         logout: "Wyloguj",
-        rookie_edit: "Edycja Wyglądu Rookie"
+        rookie_edit: "Edycja Wyglądu Rookie",
+        admin_desc: "Witaj, Szefie. Wygeneruj zawodników do Draftu."
     },
     en: {
         welcome_title: "ELITE BUZZER LEAGUE",
@@ -17,7 +18,8 @@ const translations = {
         admin_panel: "Admin Dashboard",
         gen_world: "GENERATE WORLD & LEAGUES",
         logout: "Logout",
-        rookie_edit: "Edit Rookie Appearance"
+        rookie_edit: "Edit Rookie Appearance",
+        admin_desc: "Welcome, Boss. Generate players for the Draft."
     }
 };
 
@@ -27,39 +29,38 @@ function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('ebl_lang', lang);
     
-    // Aktualizacja widoku przycisku głównego
-    const btn = document.getElementById('current-lang');
-    if (lang === 'pl') {
-        btn.innerHTML = '🇵🇱 PL <i class="arrow down"></i>';
-    } else {
-        btn.innerHTML = '🇺🇸 EN <i class="arrow down"></i>';
-    }
-    
+    // 1. Zastosuj tłumaczenia tekstów
     applyTranslations();
+    
+    // 2. Zaktualizuj wygląd flag (kolorowe vs szare)
+    updateFlagUI(lang);
 }
 
 function applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translations[currentLang][key]) {
+        if (translations[currentLang] && translations[currentLang][key]) {
             el.innerText = translations[currentLang][key];
         }
     });
 }
 
-// Inicjalizacja po załadowaniu strony
-document.addEventListener('DOMContentLoaded', applyTranslations);
-
 function updateFlagUI(lang) {
-    const plFlag = document.getElementById('lang-pl');
-    const enFlag = document.getElementById('lang-en');
+    // Pobieramy wszystkie flagi PL i EN (zarówno z landing page jak i z aplikacji)
+    const plFlags = document.querySelectorAll('#lang-pl, #lang-pl-landing');
+    const enFlags = document.querySelectorAll('#lang-en, #lang-en-landing');
     
     if(lang === 'pl') {
-        plFlag.classList.add('active'); plFlag.classList.remove('inactive');
-        enFlag.classList.add('inactive'); enFlag.classList.remove('active');
+        plFlags.forEach(f => { f.classList.add('active'); f.classList.remove('inactive'); });
+        enFlags.forEach(f => { f.classList.add('inactive'); f.classList.remove('active'); });
     } else {
-        enFlag.classList.add('active'); enFlag.classList.remove('inactive');
-        plFlag.classList.add('inactive'); plFlag.classList.remove('active');
+        enFlags.forEach(f => { f.classList.add('active'); f.classList.remove('inactive'); });
+        plFlags.forEach(f => { f.classList.add('inactive'); f.classList.remove('active'); });
     }
 }
-// Wywołaj updateFlagUI(lang) wewnątrz swojej istniejącej funkcji setLanguage(lang)
+
+// Inicjalizacja przy starcie strony
+document.addEventListener('DOMContentLoaded', () => {
+    applyTranslations();
+    updateFlagUI(currentLang);
+});
