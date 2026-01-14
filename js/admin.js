@@ -1,6 +1,7 @@
 // js/admin.js
 import { renderAdminPlayers } from './admin/admin_players.js';
 import { renderLeagueSettings } from './admin/admin_leagues.js';
+import { renderMediaSettings } from './admin/admin_media.js'; // Import nowej sekcji
 
 /**
  * Główny przełącznik widoków w panelu Admina
@@ -16,6 +17,9 @@ window.switchAdminTab = function(tabName) {
             break;
         case 'leagues':
             renderLeagueSettings();
+            break;
+        case 'media':
+            renderMediaSettings(); // Wywołanie nowej sekcji Media
             break;
         case 'dashboard':
             // renderAdminDashboard(); // Tu dodasz funkcję w przyszłości
