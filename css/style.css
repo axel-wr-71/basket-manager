@@ -251,3 +251,31 @@ input, select {
         width: 100%;
     }
 }
+
+/* Tabela listy zawodników */
+.player-list-table th, 
+.player-list-table td {
+    text-align: center; /* Centrowanie wszystkich komórek */
+    padding: 10px 5px;
+}
+
+/* Komórki z umiejętnościami - dodatkowe centrowanie i styl */
+.skill-cell {
+    font-weight: 500;
+    color: #555;
+    background: rgba(0,0,0,0.02); /* Delikatne tło dla czytelności kolumn */
+}
+
+/* Przycisk POKAŻ w tabeli */
+.show-btn {
+    padding: 5px 12px !important;
+    font-size: 11px !important;
+    height: auto !important;
+    width: auto !important;
+    text-transform: uppercase;
+}
+
+/* Podświetlanie wiersza po najechaniu */
+.admin-table tbody tr:hover {
+    background-color: #fff9f4 !important; /* Delikatny pomarańczowy nalot */
+}
