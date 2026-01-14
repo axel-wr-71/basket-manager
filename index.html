@@ -156,14 +156,21 @@
 
 <script src="js/lang.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/admin.js"></script> <script src="js/world_gen.js"></script>
+
+<script type="module" src="js/admin.js"></script> 
+
+<script src="js/world_gen.js"></script>
 <script src="js/draft.js"></script>
 <script src="js/manager.js"></script>
 
 <script>
     let currentUserRole = null;
 
-    function switchTab(tabId) {
+    /**
+     * Główna funkcja przełączania zakładek
+     */
+    async function switchTab(tabId) {
+        // UI: Aktywacja przycisków i widoczność sekcji
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
         
@@ -173,7 +180,7 @@
         const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
         if (btn) btn.classList.add('active');
 
-        // Wywołanie funkcji dla Managera
+        // Obsługa logiki Managera
         if (currentUserRole === 'manager') {
             if (tabId === 'm-roster') renderRoster(); 
             if (tabId === 'm-market') renderTransferMarket();
@@ -181,21 +188,20 @@
             if (tabId === 'm-draft') renderDraftBoard();
         }
         
-        // Wywołanie funkcji dla Admina
-        if (currentUserRole === 'admin') {
-            if (tabId === 'admin-tab-players') {
-                if(typeof renderAdminPlayers === 'function') renderAdminPlayers();
-            }
-            if (tabId === 'admin-tab-config') {
-                if(typeof renderLeagueSettings === 'function') renderLeagueSettings();
-            }
+        // Obsługa logiki Admina (wywołanie funkcji z modułów przez admin.js)
+        if (currentUserRole === 'admin' && window.switchAdminTab) {
+            // Mapowanie tabID na akcje w admin.js
+            if (tabId === 'admin-tab-players') window.switchAdminTab('players');
+            if (tabId === 'admin-tab-config') window.switchAdminTab('leagues');
+            if (tabId === 'admin-tab-gen') window.switchAdminTab('dashboard');
         }
     }
 
+    /**
+     * Inicjalizacja interfejsu po zalogowaniu
+     */
     async function setupUI(userRole) {
         currentUserRole = userRole;
-        console.log("System gotowy dla:", userRole);
-
         const landing = document.getElementById('landing-page');
         const app = document.getElementById('game-app');
         const adminNav = document.getElementById('admin-nav');
@@ -207,19 +213,16 @@
         if (userRole === 'admin') {
             adminNav.style.display = 'flex';
             managerNav.style.display = 'none';
-            switchTab('admin-tab-gen');
+            // Dajemy chwilę na załadowanie modułu admin.js
+            setTimeout(() => switchTab('admin-tab-gen'), 100);
         } else {
             adminNav.style.display = 'none';
             managerNav.style.display = 'flex';
             
-            try {
-                if (typeof initManagerData === 'function') {
-                    await initManagerData(); 
-                }
-                switchTab('m-roster');
-            } catch (e) {
-                console.error("Błąd ładowania danych managera:", e);
+            if (typeof initManagerData === 'function') {
+                await initManagerData(); 
             }
+            switchTab('m-roster');
         }
     }
 </script>
