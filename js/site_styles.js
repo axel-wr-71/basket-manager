@@ -1,11 +1,13 @@
 // js/site_styles.js
-import { supabase } from './auth.js';
+import { supabaseClient } from './auth.js'; // Poprawiona nazwa importu
 
 export async function applySiteSettings() {
     try {
-        const { data: settings, error } = await supabase.from('site_settings').select('*');
+        // Pobieramy ustawienia z tabeli site_settings
+        const { data: settings, error } = await supabaseClient.from('site_settings').select('*');
         if (error) throw error;
 
+        // Mapujemy tablicę klucz-wartość na obiekt dla łatwiejszego dostępu
         const s = {};
         settings.forEach(item => s[item.key] = item.value);
 
@@ -28,6 +30,8 @@ export async function applySiteSettings() {
         if (s.gal_1 && galleryImgs[0]) galleryImgs[0].src = s.gal_1;
         if (s.gal_2 && galleryImgs[1]) galleryImgs[1].src = s.gal_2;
         if (s.gal_3 && galleryImgs[2]) galleryImgs[2].src = s.gal_3;
+
+        console.log("Style strony zostały pomyślnie zaktualizowane.");
 
     } catch (err) {
         console.error("Błąd podczas ładowania stylów strony:", err);
