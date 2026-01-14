@@ -1,46 +1,104 @@
 // js/admin/admin_media.js
+import { supabase } from '../auth.js'; 
 
 export async function renderMediaSettings() {
     const container = document.getElementById('admin-media-manager-container');
     if (!container) return;
 
+    // Pobieramy aktualne dane, aby wyświetlić podgląd
+    const { data: settings } = await supabase.from('site_settings').select('*');
+    const s = {};
+    if (settings) settings.forEach(item => s[item.key] = item.value);
+
     container.innerHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
-                <h4>Grafiki Główne</h4>
-                <label style="display:block; margin-bottom:5px;">URL Tła (Landing Page):</label>
-                <input type="text" id="media-bg-url" style="width:100%; padding:8px; margin-bottom:15px;" placeholder="https://...">
+            <div class="admin-card" style="background: #f9f9f9; padding: 20px; border-radius: 8px;">
+                <h4>Grafiki Główne (Upload)</h4>
                 
-                <label style="display:block; margin-bottom:5px;">URL Logo Gry:</label>
-                <input type="text" id="media-logo-url" style="width:100%; padding:8px; margin-bottom:15px;" placeholder="https://...">
+                <label>Tło Landing Page:</label>
+                <input type="file" id="upload-bg" accept="image/*" style="margin-bottom:10px;">
+                <div id="preview-bg">${s.landing_bg ? `<img src="${s.landing_bg}" style="height:50px; border-radius:4px;">` : ''}</div>
+                <hr>
                 
-                <button class="btn" onclick="handleSaveMedia()" style="width:100%; background: #2e7d32; color:white;">Zapisz Główne</button>
+                <label>Logo Gry:</label>
+                <input type="file" id="upload-logo" accept="image/*" style="margin-bottom:10px;">
+                <div id="preview-logo">${s.game_logo ? `<img src="${s.game_logo}" style="height:50px; border-radius:4px;">` : ''}</div>
+                
+                <button class="btn" onclick="handleUploadMainMedia()" style="width:100%; background: #2e7d32; color:white; margin-top:15px;">Wyślij i Zapisz Grafiki</button>
             </div>
 
-            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
-                <h4>Galeria Screenów (Strona Główna)</h4>
-                <input type="text" id="media-gal-1" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="URL Zdjęcia 1">
-                <input type="text" id="media-gal-2" style="width:100%; padding:8px; margin-bottom:10px;" placeholder="URL Zdjęcia 2">
-                <input type="text" id="media-gal-3" style="width:100%; padding:8px; margin-bottom:15px;" placeholder="URL Zdjęcia 3">
+            <div class="admin-card" style="background: #f9f9f9; padding: 20px; border-radius: 8px;">
+                <h4>Galeria (Upload)</h4>
+                <label>Zdjęcie 1:</label> <input type="file" id="up-gal-1" accept="image/*" style="margin-bottom:5px;">
+                <label>Zdjęcie 2:</label> <input type="file" id="up-gal-2" accept="image/*" style="margin-bottom:5px;">
+                <label>Zdjęcie 3:</label> <input type="file" id="up-gal-3" accept="image/*" style="margin-bottom:10px;">
                 
-                <button class="btn" onclick="handleSaveGallery()" style="width:100%; background: #2e7d32; color:white;">Zapisz Galerię</button>
+                <button class="btn" onclick="handleUploadGallery()" style="width:100%; background: #2e7d32; color:white;">Wyślij Galerię</button>
             </div>
         </div>
     `;
 }
 
-// Funkcje pomocnicze przypisane do window, aby działały z onclick w HTML
-window.handleSaveMedia = () => {
-    const bg = document.getElementById('media-bg-url').value;
-    const logo = document.getElementById('media-logo-url').value;
-    console.log("Zapisywanie mediów:", { bg, logo });
-    alert("Zapisano media główne (sprawdź konsolę)");
+// Funkcja pomocnicza do wysyłania pliku i pobierania URL
+async function uploadAndGetURL(fileInputId, fileNamePrefix) {
+    const file = document.getElementById(fileInputId).files[0];
+    if (!file) return null;
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${fileNamePrefix}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `public/${fileName}`;
+
+    // 1. Wysyłka do Storage
+    const { data, error } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+
+    if (error) throw error;
+
+    // 2. Pobranie Publicznego URL
+    const { data: urlData } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+}
+
+window.handleUploadMainMedia = async () => {
+    try {
+        const bgUrl = await uploadAndGetURL('upload-bg', 'bg');
+        const logoUrl = await uploadAndGetURL('upload-logo', 'logo');
+
+        const updates = [];
+        if (bgUrl) updates.push({ key: 'landing_bg', value: bgUrl });
+        if (logoUrl) updates.push({ key: 'game_logo', value: logoUrl });
+
+        if (updates.length > 0) {
+            await supabase.from('site_settings').upsert(updates);
+            alert("Grafiki wysłane i zapisane!");
+            renderMediaSettings(); // Odśwież podgląd
+        }
+    } catch (err) {
+        alert("Błąd: " + err.message);
+    }
 };
 
-window.handleSaveGallery = () => {
-    const g1 = document.getElementById('media-gal-1').value;
-    const g2 = document.getElementById('media-gal-2').value;
-    const g3 = document.getElementById('media-gal-3').value;
-    console.log("Zapisywanie galerii:", [g1, g2, g3]);
-    alert("Zapisano galerię (sprawdź konsolę)");
+window.handleUploadGallery = async () => {
+    try {
+        const g1 = await uploadAndGetURL('up-gal-1', 'gal1');
+        const g2 = await uploadAndGetURL('up-gal-2', 'gal2');
+        const g3 = await uploadAndGetURL('up-gal-3', 'gal3');
+
+        const updates = [];
+        if (g1) updates.push({ key: 'gal_1', value: g1 });
+        if (g2) updates.push({ key: 'gal_2', value: g2 });
+        if (g3) updates.push({ key: 'gal_3', value: g3 });
+
+        if (updates.length > 0) {
+            await supabase.from('site_settings').upsert(updates);
+            alert("Galeria zaktualizowana!");
+            renderMediaSettings();
+        }
+    } catch (err) {
+        alert("Błąd uploadu: " + err.message);
+    }
 };
