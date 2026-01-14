@@ -9,22 +9,47 @@ let currentManagerTeam = null;
  * Funkcja inicjująca dane managera po zalogowaniu
  */
 async function initManagerData() {
-    const user = supabase.auth.user();
-    if (!user) return;
-
-    const { data: team, error } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('owner_id', user.id)
-        .single();
-
-    if (error || !team) {
-        console.warn("Nie znaleziono przypisanego zespołu dla tego managera.");
+    console.log("Inicjalizacja danych managera...");
+    
+    // Pobieramy użytkownika (poprawiona metoda Supabase v2)
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (!user || userError) {
+        console.error("Brak zalogowanego użytkownika.");
         return;
     }
 
+    // 1. Szukamy zespołu przypisanego do owner_id
+    let { data: team, error: fetchError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
+    // 2. Jeśli nie znaleziono zespołu, tworzymy go automatycznie (aby uniknąć pustego widoku)
+    if (!team) {
+        console.log("Manager nie ma zespołu. Tworzenie nowego klubu...");
+        const { data: newTeam, error: createError } = await supabase
+            .from('teams')
+            .insert([{
+                owner_id: user.id,
+                team_name: `Klub ${user.email.split('@')[0]}`,
+                balance: 1000000,
+                league_name: 'PLK'
+            }])
+            .select()
+            .single();
+
+        if (createError) {
+            console.error("Błąd tworzenia zespołu:", createError);
+            return;
+        }
+        team = newTeam;
+    }
+
     currentManagerTeam = team;
+    console.log("Aktywny zespół managera:", currentManagerTeam.team_name);
     
+    // Aktualizacja nazwy w UI
     const teamTitle = document.getElementById('team-name-display');
     if (teamTitle) teamTitle.innerText = team.team_name;
 }
@@ -34,7 +59,8 @@ async function initManagerData() {
  */
 async function renderRoster() {
     if (!currentManagerTeam) await initManagerData();
-    
+    if (!currentManagerTeam) return;
+
     const container = document.getElementById('roster-container');
     container.innerHTML = "<p>Pobieranie składu...</p>";
 
@@ -49,8 +75,12 @@ async function renderRoster() {
         return;
     }
 
-    if (players.length === 0) {
-        container.innerHTML = "<p>Twój skład jest obecnie pusty. Przejdź do Rynku lub czekaj na Draft!</p>";
+    if (!players || players.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding: 40px; border: 2px dashed #ccc; border-radius: 10px;">
+                <p style="font-size: 1.2rem; color: #666;">Twój skład jest obecnie pusty.</p>
+                <p>Przejdź do zakładki <strong>RYNEK</strong> lub czekaj na <strong>DRAFT</strong>, aby pozyskać graczy.</p>
+            </div>`;
         return;
     }
 
@@ -82,26 +112,26 @@ async function renderRoster() {
 }
 
 /**
- * 2. ZAKŁADKA: RYNEK TRANSFEROWY (NOWOŚĆ)
+ * 2. ZAKŁADKA: RYNEK TRANSFEROWY
  */
 async function renderTransferMarket() {
     if (!currentManagerTeam) await initManagerData();
+    if (!currentManagerTeam) return;
     
     const container = document.getElementById('transfer-market-container');
     container.innerHTML = "<p>Przeszukiwanie rynku...</p>";
 
-    // Pobieramy zawodników wraz z nazwami ich klubów
     const { data: players, error } = await supabase
         .from('players')
         .select(`*, teams (team_name)`)
         .order('overall_rating', { ascending: false })
-        .limit(100);
+        .limit(50);
 
     if (error) return container.innerHTML = "<p>Błąd pobierania rynku.</p>";
 
     let html = `
-        <div style="margin-bottom: 15px; background: #f0f0f0; padding: 10px; border-radius: 5px;">
-            <strong>Twój budżet: ${currentManagerTeam.balance.toLocaleString()} $</strong>
+        <div style="margin-bottom: 15px; background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 5px solid #2196f3;">
+            <strong style="font-size: 1.1rem;">Twój budżet: ${currentManagerTeam.balance.toLocaleString()} $</strong>
         </div>
         <table class="admin-table">
             <thead>
@@ -116,7 +146,7 @@ async function renderTransferMarket() {
             <tbody>
                 ${players.map(p => {
                     const isMyPlayer = p.team_id === currentManagerTeam.id;
-                    const price = p.price || (p.overall_rating * 15000); // Automatyczna wycena
+                    const price = p.price || (p.overall_rating * 15000); 
                     
                     return `
                     <tr>
@@ -177,6 +207,7 @@ async function processTransfer(playerId, price) {
  */
 async function renderFinances() {
     if (!currentManagerTeam) await initManagerData();
+    if (!currentManagerTeam) return;
 
     const container = document.getElementById('finances-container');
     
@@ -195,7 +226,7 @@ async function renderFinances() {
             </div>
             <div style="background: #fff3e0; padding: 20px; border-radius: 10px; border: 2px solid #ef6c00;">
                 <h4 style="margin:0; color: #e65100;">Tygodniowe koszty</h4>
-                <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">Obliczanie...</p>
+                <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">Wkrótce...</p>
                 <small>Suma pensji zawodników i personelu</small>
             </div>
         </div>
@@ -211,11 +242,7 @@ async function renderDraftBoard() {
 
     const { data: picks, error } = await supabase
         .from('draft_picks')
-        .select(`
-            pick_number,
-            teams (team_name)
-        `)
-        .eq('league_name', 'PLK')
+        .select(`pick_number, teams (team_name)`)
         .order('pick_number', { ascending: true });
 
     if (error || !picks || picks.length === 0) {
