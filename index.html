@@ -110,6 +110,11 @@
         <div id="admin-players-table-container"></div>
     </div>
 
+    <div id="admin-tab-config" class="tab-content">
+        <h3>Ustawienia Struktur Ligowych</h3>
+        <div id="admin-league-config-container"></div>
+    </div>
+
     <div id="m-roster" class="tab-content">
         <h3>Skład Drużyny: <span id="team-name-display">...</span></h3>
         <div id="roster-container">Pobieranie zawodników...</div>
@@ -151,7 +156,7 @@
 
 <script src="js/lang.js"></script>
 <script src="js/auth.js"></script>
-<script src="js/world_gen.js"></script>
+<script src="js/admin.js"></script> <script src="js/world_gen.js"></script>
 <script src="js/draft.js"></script>
 <script src="js/manager.js"></script>
 
@@ -159,18 +164,16 @@
     let currentUserRole = null;
 
     function switchTab(tabId) {
-        // Ukryj wszystkie zakładki
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
         
-        // Pokaż aktywną
         const target = document.getElementById(tabId);
         if (target) target.classList.add('active');
         
         const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
         if (btn) btn.classList.add('active');
 
-        // Wywołanie odpowiednich funkcji JS
+        // Wywołanie funkcji dla Managera
         if (currentUserRole === 'manager') {
             if (tabId === 'm-roster') renderRoster(); 
             if (tabId === 'm-market') renderTransferMarket();
@@ -178,10 +181,13 @@
             if (tabId === 'm-draft') renderDraftBoard();
         }
         
+        // Wywołanie funkcji dla Admina
         if (currentUserRole === 'admin') {
             if (tabId === 'admin-tab-players') {
-                // Jeśli masz funkcję do listowania graczy dla admina
                 if(typeof renderAdminPlayers === 'function') renderAdminPlayers();
+            }
+            if (tabId === 'admin-tab-config') {
+                if(typeof renderLeagueSettings === 'function') renderLeagueSettings();
             }
         }
     }
@@ -207,7 +213,6 @@
             managerNav.style.display = 'flex';
             
             try {
-                // Inicjalizacja danych klubu dla Managera z manager.js
                 if (typeof initManagerData === 'function') {
                     await initManagerData(); 
                 }
