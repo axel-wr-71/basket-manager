@@ -95,3 +95,12 @@ window.checkUser = checkUser;
 
 // Sprawdź stan sesji przy załadowaniu strony
 checkUser();
+
+// js/auth.js
+
+// ... Twoje istniejące funkcje (signIn, signUp, logout) ...
+
+// Dodaj to na samym dole pliku:
+window.signIn = signIn;
+window.signUp = signUp;
+window.logout = logout;
