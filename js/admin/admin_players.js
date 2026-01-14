@@ -35,11 +35,10 @@ export async function renderAdminPlayers() {
             </div>
             <div id="search-results-container"></div>
         </div>
-        <div id="player-profile-view" style="display:none; background: #f4f4f4; padding: 20px; border-radius: 8px;"></div>
+        <div id="player-profile-view" style="display:none;"></div>
     `;
 }
 
-// Globalne funkcje pomocnicze
 window.updateLeagueFilter = (selectedCountry) => {
     const leagueSelect = document.getElementById('filter-league');
     const filtered = window.allLeaguesData.filter(l => l.country_name === selectedCountry);
@@ -54,13 +53,13 @@ window.searchPlayers = async () => {
 
     resultsContainer.innerHTML = "<div class='loading'>Pobieranie...</div>";
 
-    // Pobieramy dane zawodników wraz z relacją do drużyn
+    // Wykonujemy zapytanie do tabeli players
     let query = supabase.from('players').select(`*, teams (team_name, league_name)`);
     if (country) query = query.eq('country', country);
 
     const { data: players, error } = await query;
     if (error) {
-        resultsContainer.innerHTML = `<p style="color:red">Błąd bazy: ${error.message}</p>`;
+        resultsContainer.innerHTML = `<p style="color:red">Błąd: ${error.message}</p>`;
         return;
     }
 
@@ -83,26 +82,38 @@ window.searchPlayers = async () => {
                 </tr>
             </thead>
             <tbody>
-                ${filtered.map(p => `
+                ${filtered.map(p => {
+                    // LOGIKA NAPRAWCZA DLA NAZW I POZYCJI:
+                    // 1. Sprawdzamy czy imię i nazwisko istnieją, jeśli nie, szukamy kolumny 'name'
+                    const displayName = (p.first_name && p.last_name) 
+                        ? `${p.first_name} ${p.last_name}` 
+                        : (p.name || `Zawodnik ${p.id.substring(0,5)}`);
+                    
+                    // 2. Obsługa pozycji (próbujemy position, pos lub skrót)
+                    const displayPos = p.position || p.pos || "N/A";
+
+                    return `
                     <tr>
-                        <td style="text-align:left;"><strong>${p.first_name || 'Gracz'} ${p.last_name || p.id.substring(0,5)}</strong></td>
+                        <td style="text-align:left;"><strong>${displayName}</strong></td>
                         <td style="text-align:center;">${p.age || '--'}</td>
-                        <td style="text-align:center; font-weight:bold; color: #e65100;">${p.position || '??'}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.jump_shot}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.jump_range}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.outside_defense}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.handling}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.driving}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.passing}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.inside_shot}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.inside_defense}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.rebounding}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.shot_blocking}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.stamina}</td>
-                        <td class="skill-cell" style="text-align:center;">${p.free_throw}</td>
-                        <td style="text-align:center;"><button class="btn show-btn" onclick='showPlayerProfile(${JSON.stringify(p)})'>POKAŻ</button></td>
-                    </tr>
-                `).join('')}
+                        <td style="text-align:center; font-weight:bold; color: #e65100;">${displayPos}</td>
+                        <td style="text-align:center;">${p.jump_shot || 0}</td>
+                        <td style="text-align:center;">${p.jump_range || 0}</td>
+                        <td style="text-align:center;">${p.outside_defense || 0}</td>
+                        <td style="text-align:center;">${p.handling || 0}</td>
+                        <td style="text-align:center;">${p.driving || 0}</td>
+                        <td style="text-align:center;">${p.passing || 0}</td>
+                        <td style="text-align:center;">${p.inside_shot || 0}</td>
+                        <td style="text-align:center;">${p.inside_defense || 0}</td>
+                        <td style="text-align:center;">${p.rebounding || 0}</td>
+                        <td style="text-align:center;">${p.shot_blocking || 0}</td>
+                        <td style="text-align:center;">${p.stamina || 0}</td>
+                        <td style="text-align:center;">${p.free_throw || 0}</td>
+                        <td style="text-align:center;">
+                            <button class="btn show-btn" onclick='showPlayerProfile(${JSON.stringify(p)})'>POKAŻ</button>
+                        </td>
+                    </tr>`;
+                }).join('')}
             </tbody>
         </table>`;
     resultsContainer.innerHTML = html;
