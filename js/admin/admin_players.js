@@ -77,15 +77,13 @@ window.searchPlayers = async () => {
 
     let query = supabaseClient.from('players').select(`*, teams (team_name, league_name)`);
     
-    // Filtrowanie narodowości
     if (country) query = query.eq('country', country);
     
-    // Logika filtrów specjalnych
     if (isFreeAgent || isRetirement) {
-        query = query.is('team_id', null); // Wolni agenci nie mają team_id
+        query = query.is('team_id', null);
     }
     if (isRetirement) {
-        query = query.gte('age', 35); // Emerytura to wiek >= 35
+        query = query.gte('age', 35);
     }
 
     const { data: players, error } = await query;
@@ -106,31 +104,29 @@ window.searchPlayers = async () => {
             <thead>
                 <tr>
                     <th>ZAWODNIK</th><th>KLUB</th><th>WIEK</th><th>POZ</th>
-                    <th>PENSJA</th><th>POTENCJAŁ</th> <th>2PT</th><th>3PT</th><th>PAS</th><th>DRI</th>
-                    <th>REB</th><th>BLK</th><th>STL</th><th>FT</th>
+                    <th>PENSJA</th><th>POT.</th>
+                    <th>2PT</th><th>3PT</th><th>DNK</th><th>PAS</th><th>1v1O</th><th>DRI</th>
+                    <th>REB</th><th>BLK</th><th>STL</th><th>1v1D</th><th>FT</th><th>STA</th>
                     <th>AKCJA</th>
                 </tr>
             </thead>
             <tbody>
                 ${filtered.map(p => {
                     const pData = JSON.stringify(p).replace(/'/g, "&apos;");
-                    // Formatowanie pensji
                     const salaryFormatted = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(p.salary || 0);
                     
                     return `
                     <tr>
                         <td style="text-align:left;"><strong>${p.first_name || ''} ${p.last_name || ''}</strong></td>
-                        <td style="text-align:left;">${p.teams?.team_name || '<span style="color:gray italic">Wolny agent</span>'}</td>
+                        <td style="text-align:left;">${p.teams?.team_name || '<span style="color:gray; font-style:italic;">Wolny agent</span>'}</td>
                         <td>${p.age}</td>
                         <td style="color:orange; font-weight:bold;">${p.position || '??'}</td>
-                        
-                        <td style="color: #2ecc71;">${salaryFormatted}</td>
-                        <td style="font-weight:bold;">${p.potential_name || p.potential}</td>
-
-                        <td>${p.skill_2pt}</td><td>${p.skill_3pt}</td>
-                        <td>${p.skill_passing}</td><td>${p.skill_dribbling}</td>
-                        <td>${p.skill_rebound}</td><td>${p.skill_block}</td>
-                        <td>${p.skill_steal}</td><td>${p.skill_ft}</td>
+                        <td style="color: #2ecc71; font-size: 0.85em;">${salaryFormatted}</td>
+                        <td style="font-weight:bold; font-size: 0.85em;">${p.potential_name || p.potential || '-'}</td>
+                        <td>${p.skill_2pt}</td><td>${p.skill_3pt}</td><td>${p.skill_dunk}</td>
+                        <td>${p.skill_passing}</td><td>${p.skill_1on1_off}</td><td>${p.skill_dribbling}</td>
+                        <td>${p.skill_rebound}</td><td>${p.skill_block}</td><td>${p.skill_steal}</td>
+                        <td>${p.skill_1on1_def}</td><td>${p.skill_ft}</td><td>${p.skill_stamina}</td>
                         <td><button class="btn-show" onclick='showDetails(${pData})'>PROFIL</button></td>
                     </tr>
                     `;
