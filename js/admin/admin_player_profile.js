@@ -1,50 +1,54 @@
 // js/admin/admin_player_profile.js
 import { supabaseClient } from '../auth.js';
 
-// --- ALGORYTM GENEROWANIA TWARZY SVG (Styl Hattrick) ---
-function generatePlayerSVG(config) {
-    if (!config) config = { skin: 0, eyes: 0, nose: 0, mouth: 0, hair: 0, beard: 0 };
+// --- SILNIK GRAFICZNY NBA LAYERED SVG ---
+function generateNBAFaceSVG(config) {
+    if (!config) config = { skin: 1, eyes: 0, nose: 0, mouth: 0, hair: 0, beard: 0, access: 0 };
     
-    const colors = ['#FFDBAC', '#F1C27D', '#E0AC69', '#8D5524', '#C68642', '#71492E', '#442E1F'];
-    const skinColor = colors[config.skin] || colors[0];
+    // Paleta barw
+    const skins = ['#FFDBAC', '#F1C27D', '#E0AC69', '#BD9778', '#8D5524', '#5E3C1E', '#3B2219'];
+    const hairColors = ['#000000', '#221100', '#442200', '#664422'];
+    const s = skins[config.skin] || skins[1];
+    const h = hairColors[0]; // Na razie czarne włosy dla stylu NBA
 
-    const eyesStyles = [
-        '<circle cx="35" cy="45" r="3" fill="black"/><circle cx="65" cy="45" r="3" fill="black"/>', // Kropki
-        '<ellipse cx="35" cy="45" rx="4" ry="2" fill="black"/><ellipse cx="65" cy="45" rx="4" ry="2" fill="black"/>', // Elipsy
-        '<path d="M30 45 L40 45 M60 45 L70 45" stroke="black" stroke-width="2"/>', // Kreski
-        '<path d="M30 46 Q35 40 40 46 M60 46 Q65 40 70 46" fill="none" stroke="black" stroke-width="2"/>' // Łuki
+    // Definicje kształtów (Paths)
+    const eyes = [
+        `<g transform="translate(32,45)"><ellipse cx="0" cy="0" rx="6" ry="3" fill="white"/><circle cx="1" cy="0" r="2.5" fill="black"/></g>
+         <g transform="translate(68,45)"><ellipse cx="0" cy="0" rx="6" ry="3" fill="white"/><circle cx="-1" cy="0" r="2.5" fill="black"/></g>`, // Standard
+        `<g transform="translate(32,45)"><path d="M-7,0 Q0,-5 7,0" fill="none" stroke="black" stroke-width="2.5"/></g>
+         <g transform="translate(68,45)"><path d="M-7,0 Q0,-5 7,0" fill="none" stroke="black" stroke-width="2.5"/></g>`, // Skupione
+        `<circle cx="33" cy="45" r="3" fill="black"/><circle cx="67" cy="45" r="3" fill="black"/>` // Minimalistyczne
     ];
 
-    const noseStyles = [
-        '<path d="M50 45 L50 55 L45 55" fill="none" stroke="black" stroke-width="2"/>', // L-kształt
-        '<path d="M48 55 Q50 60 52 55" fill="none" stroke="black" stroke-width="2"/>', // Mały
-        '<path d="M47 50 Q50 40 53 50" fill="none" stroke="black" stroke-width="2"/>', // Garbaty
-        '<circle cx="50" cy="55" r="2" fill="black"/>' // Kropka
-    ];
-
-    const mouthStyles = [
-        '<path d="M40 70 Q50 80 60 70" fill="none" stroke="black" stroke-width="2"/>', // Uśmiech
-        '<path d="M42 75 L58 75" fill="none" stroke="black" stroke-width="2"/>', // Płaskie
-        '<path d="M45 75 Q50 70 55 75" fill="none" stroke="black" stroke-width="2"/>', // Smutny
-        '<circle cx="50" cy="75" r="4" fill="none" stroke="black" stroke-width="2"/>' // Zdziwiony
-    ];
-
-    const hairStyles = [
+    const hair = [
         '', // Łysy
-        '<path d="M20 40 Q50 5 80 40" fill="brown" stroke="black"/>', // Klasyczne
-        '<path d="M20 35 Q50 -5 80 35 L80 45 Q50 15 20 45 Z" fill="black"/>', // Wysokie
-        '<rect x="25" y="10" width="50" height="15" rx="5" fill="#552200"/>', // Jeżyk
-        '<circle cx="50" cy="25" r="20" fill="#221100"/>' // Afro
+        `<path d="M25,40 Q25,5 50,5 Q75,5 75,40 Q50,30 25,40" fill="${h}"/>`, // Krótkie / Buzzcut
+        `<path d="M20,40 Q20,-10 50,-10 Q80,-10 80,40 L80,45 Q50,20 20,45 Z" fill="${h}"/>`, // High Top Fade
+        `<circle cx="50" cy="30" r="30" fill="${h}" opacity="0.9"/>`, // Afro
+        `<path d="M25,35 L30,5 L40,5 L35,35 M45,30 L50,0 L60,0 L55,30 M65,35 L70,5 L80,5 L75,35" fill="${h}" stroke="black" stroke-width="1"/>` // Krótkie dredy
+    ];
+
+    const beards = [
+        '', // Brak
+        `<path d="M30,75 Q50,95 70,75 L70,70 Q50,85 30,70 Z" fill="black" opacity="0.6"/>`, // Zarost 3-dniowy
+        `<path d="M30,70 Q50,105 70,70 Q50,90 30,70" fill="black"/>`, // Pełna broda
+        `<path d="M45,78 Q50,85 55,78" fill="none" stroke="black" stroke-width="3"/>`, // Kozia bródka
+        `<path d="M40,70 Q50,75 60,70" fill="none" stroke="black" stroke-width="4" opacity="0.8"/>` // Wąsy
     ];
 
     return `
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%; border-radius:8px;">
-            <rect width="100" height="100" fill="#f0f0f0"/>
-            <path d="M25 40 Q25 15 50 15 Q75 15 75 40 L75 70 Q75 85 50 85 Q25 85 25 70 Z" fill="${skinColor}" stroke="#333" stroke-width="1"/>
-            ${eyesStyles[config.eyes] || eyesStyles[0]}
-            ${noseStyles[config.nose] || noseStyles[0]}
-            ${mouthStyles[config.mouth] || mouthStyles[0]}
-            ${hairStyles[config.hair] || ''}
+        <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+            <defs>
+                <radialGradient id="grad1" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" style="stop-color:${s};stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:${s};stop-opacity:0.8" />
+                </radialGradient>
+            </defs>
+            <rect x="40" y="80" width="20" height="20" fill="${s}" stroke="rgba(0,0,0,0.1)"/>
+            <path d="M25,40 Q25,10 50,10 Q75,10 75,40 L75,70 Q75,95 50,95 Q25,95 25,70 Z" fill="url(#grad1)" stroke="#333" stroke-width="0.5"/>
+            ${eyes[config.eyes] || eyes[0]}
+            <path d="M47,55 Q50,62 53,55" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="2"/> <path d="M42,80 Q50,85 58,80" fill="none" stroke="rgba(0,0,0,0.6)" stroke-width="2.5"/> ${beards[config.beard] || ''}
+            ${hair[config.hair] || ''}
         </svg>
     `;
 }
@@ -52,27 +56,10 @@ function generatePlayerSVG(config) {
 export function renderPlayerProfile(p) {
     const profileContainer = document.getElementById('player-profile-view');
     const mainView = document.getElementById('admin-main-view');
-    
     if (!profileContainer || !mainView) return;
 
-    mainView.style.display = 'none';
-    profileContainer.style.display = 'block';
-
-    const mainSkills = [
-        { key: "jump_shot", label: "RzW" }, { key: "jump_range", label: "ZR" },
-        { key: "outside_defense", label: "ObO" }, { key: "handling", label: "Koz" },
-        { key: "driving", label: "1/1" }, { key: "passing", label: "Pod" },
-        { key: "inside_shot", label: "RzB" }, { key: "inside_defense", label: "ObK" },
-        { key: "rebounding", label: "Zb" }, { key: "shot_blocking", label: "Blk" }
-    ];
-
-    const physicalSkills = [
-        { key: "stamina", label: "Kon" }, { key: "free_throw", label: "RzO" }
-    ];
-
-    const potentialLevel = p.potential_id || 1;
-    const salaryFormatted = (p.salary || 0).toLocaleString('pl-PL') + " $";
     const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+    const config = p.face_config || { skin: 1, hair: 1, eyes: 0, beard: 0 };
 
     profileContainer.innerHTML = `
         <div class="profile-header-nav" style="margin-bottom: 20px;">
@@ -82,143 +69,64 @@ export function renderPlayerProfile(p) {
         <div class="modern-profile-card">
             <div class="profile-main-info">
                 <div class="avatar-column">
-                    <div class="avatar-wrapper" id="svg-container" style="width:180px; height:180px; border:3px solid #ddd; background:#fff;">
-                        ${generatePlayerSVG(p.face_config)}
+                    <div id="main-svg-wrapper" class="avatar-wrapper" style="width:180px; height:200px; background:#e9ecef; border-radius:12px; border:4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                        ${generateNBAFaceSVG(config)}
                     </div>
-                    <button class="btn-edit-avatar-new" onclick='openAvatarEditor(${JSON.stringify(p)})'>⚙️ EDYTUJ WYGLĄD</button>
+                    <button class="btn-edit-avatar-new" style="margin-top:15px; width:100%; cursor:pointer; padding:10px; border-radius:8px; border:none; background:var(--nba-orange); color:white; font-weight:bold;" 
+                            onclick='openNBAEditor(${JSON.stringify(p)})'>⚙️ EDYTUJ WYGLĄD</button>
                 </div>
                 
-                <div class="bio-container">
-                    <h1 class="player-title">
-                        ${getFlagEmoji(p.country)} ${fullName}
-                    </h1>
-                    
-                    <div class="bio-grid-modern">
-                        <div class="bio-item"><strong>KLUB</strong><span>${p.teams ? p.teams.team_name : 'Wolny Agent'}</span></div>
-                        <div class="bio-item"><strong>POZYCJA</strong><span>${p.position || 'N/A'}</span></div>
-                        <div class="bio-item"><strong>WIEK</strong><span>${p.age} lat</span></div>
-                        <div class="bio-item"><strong>WZROST</strong><span>${p.height || 200} cm</span></div>
-                        <div class="bio-item"><strong>PENSJA</strong><span>${salaryFormatted}</span></div>
-                        <div class="bio-item"><strong>DRAFT</strong><span>${p.draft_pick ? `#${p.draft_pick}` : 'N/A'}</span></div>
-                    </div>
-                    
-                    <div class="potential-section">
-                        <div class="pot-header"><span>POTENCJAŁ</span><span>Tier ${potentialLevel}/10</span></div>
-                        <div class="pot-bar-wrapper"><div class="pot-bar-fill" style="width: ${(potentialLevel/10)*100}%"></div></div>
+                <div class="bio-container" style="flex:1; padding-left:20px;">
+                    <h1 class="player-title" style="margin:0 0 15px 0; font-size:28px;">${getFlagEmoji(p.country)} ${fullName}</h1>
+                    <div class="bio-grid-modern" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div class="bio-item"><strong>WIEK</strong> <span>${p.age} lat</span></div>
+                        <div class="bio-item"><strong>WZROST</strong> <span>${p.height || 200} cm</span></div>
+                        <div class="bio-item"><strong>POZYCJA</strong> <span>${p.position}</span></div>
+                        <div class="bio-item"><strong>PENSJA</strong> <span>${(p.salary || 0).toLocaleString()} $</span></div>
                     </div>
                 </div>
             </div>
-
-            <div class="skills-container-new">
-                <h2 class="skills-title">UMIEJĘTNOŚCI</h2>
-                <div class="skills-split-view">
-                    <div class="skill-column">${mainSkills.slice(0, 5).map(s => renderSkillBar(s, p)).join('')}</div>
-                    <div class="skill-column">${mainSkills.slice(5, 10).map(s => renderSkillBar(s, p)).join('')}</div>
-                </div>
-                <div class="skills-physical-row">${physicalSkills.map(s => renderSkillBar(s, p)).join('')}</div>
+            <div class="skills-container-new" style="margin-top:30px; background:#f4f4f4; padding:20px; border-radius:12px;">
+                 <h3 style="margin-top:0;">STATYSTYKI ZAWODNIKA</h3>
+                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div>${renderSkill("RzW", p.jump_shot)}${renderSkill("ZR", p.jump_range)}${renderSkill("ObO", p.outside_defense)}</div>
+                    <div>${renderSkill("Koz", p.handling)}${renderSkill("Pod", p.passing)}${renderSkill("Zb", p.rebounding)}</div>
+                 </div>
             </div>
         </div>
 
-        <div id="avatar-editor-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
-            <div class="modal-content" style="background:#fff; padding:30px; border-radius:12px; max-width:500px; width:90%;">
-                <h3>KREATOR WYGLĄDU (SVG)</h3>
-                <div style="display:flex; gap:20px;">
-                    <div id="editor-preview-container" style="width:150px; height:150px; border:2px solid #ccc;"></div>
-                    <div class="controls-side" style="flex:1; display:flex; flex-direction:column; gap:10px;">
-                        <label>Kolor Skóry:</label>
-                        <input type="range" id="f-skin" min="0" max="6" oninput="updateFacePreview()">
-                        <label>Fryzura:</label>
-                        <input type="range" id="f-hair" min="0" max="4" oninput="updateFacePreview()">
-                        <label>Oczy:</label>
-                        <input type="range" id="f-eyes" min="0" max="3" oninput="updateFacePreview()">
-                        <label>Nos:</label>
-                        <input type="range" id="f-nose" min="0" max="3" oninput="updateFacePreview()">
-                        <label>Usta:</label>
-                        <input type="range" id="f-mouth" min="0" max="3" oninput="updateFacePreview()">
+        <div id="nba-editor-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+            <div class="modal-content" style="background:white; padding:30px; border-radius:15px; display:flex; gap:30px; max-width:700px; width:95%;">
+                <div id="editor-preview" style="width:250px; height:280px; background:#eee; border-radius:10px;"></div>
+                <div style="flex:1;">
+                    <h3 style="margin-top:0;">KREATOR ZAWODNIKA</h3>
+                    <div class="edit-row" style="margin-bottom:15px;">
+                        <label style="display:block; font-size:12px; font-weight:bold;">KOLOR SKÓRY</label>
+                        <input type="range" id="e-skin" min="0" max="6" style="width:100%" oninput="syncNBAEditor()">
                     </div>
-                </div>
-                <div style="margin-top:20px; display:flex; gap:10px;">
-                    <button class="btn-save" onclick="saveFaceConfig()" style="flex:1; padding:10px; background:green; color:white; border:none; cursor:pointer;">ZAPISZ</button>
-                    <button class="btn-cancel" onclick="closeAvatarEditor()" style="flex:1; padding:10px; background:#666; color:white; border:none; cursor:pointer;">ANULUJ</button>
+                    <div class="edit-row" style="margin-bottom:15px;">
+                        <label style="display:block; font-size:12px; font-weight:bold;">FRYZURA</label>
+                        <input type="range" id="e-hair" min="0" max="4" style="width:100%" oninput="syncNBAEditor()">
+                    </div>
+                    <div class="edit-row" style="margin-bottom:15px;">
+                        <label style="display:block; font-size:12px; font-weight:bold;">ZAROST</label>
+                        <input type="range" id="e-beard" min="0" max="4" style="width:100%" oninput="syncNBAEditor()">
+                    </div>
+                    <div class="edit-row" style="margin-bottom:15px;">
+                        <label style="display:block; font-size:12px; font-weight:bold;">OCZY</label>
+                        <input type="range" id="e-eyes" min="0" max="2" style="width:100%" oninput="syncNBAEditor()">
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button onclick="saveNBAFace()" style="flex:1; padding:12px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">ZAPISZ</button>
+                        <button onclick="closeNBAEditor()" style="flex:1; padding:12px; background:#6c757d; color:white; border:none; border-radius:5px; cursor:pointer;">ANULUJ</button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
 }
 
-function renderSkillBar(s, p) {
-    const val = p[s.key] || 0;
-    const percent = (val / 20) * 100;
-    return `
-        <div class="skill-row-new">
-            <span class="s-label">${s.label}</span>
-            <div class="s-bar-bg"><div class="s-bar-fill" style="width:${percent}%"></div></div>
-            <span class="s-value">${val}</span>
-        </div>
-    `;
-}
-
-function getFlagEmoji(country) {
-    const flags = { "Poland": "🇵🇱", "USA": "🇺🇸", "Spain": "🇪🇸", "France": "🇫🇷", "Germany": "🇩🇪", "Italy": "🇮🇹" };
-    return flags[country] || "🏳️";
-}
-
-// --- LOGIKA OBSŁUGI EDYTORA ---
-let currentEditingPlayerId = null;
-
-window.openAvatarEditor = (p) => {
-    currentEditingPlayerId = p.id;
-    const config = p.face_config || { skin: 0, eyes: 0, nose: 0, mouth: 0, hair: 0 };
-    
-    document.getElementById('avatar-editor-modal').style.display = 'flex';
-    document.getElementById('f-skin').value = config.skin;
-    document.getElementById('f-hair').value = config.hair;
-    document.getElementById('f-eyes').value = config.eyes;
-    document.getElementById('f-nose').value = config.nose;
-    document.getElementById('f-mouth').value = config.mouth;
-    
-    updateFacePreview();
-};
-
-window.updateFacePreview = () => {
-    const config = {
-        skin: parseInt(document.getElementById('f-skin').value),
-        hair: parseInt(document.getElementById('f-hair').value),
-        eyes: parseInt(document.getElementById('f-eyes').value),
-        nose: parseInt(document.getElementById('f-nose').value),
-        mouth: parseInt(document.getElementById('f-mouth').value)
-    };
-    document.getElementById('editor-preview-container').innerHTML = generatePlayerSVG(config);
-};
-
-window.saveFaceConfig = async () => {
-    const config = {
-        skin: parseInt(document.getElementById('f-skin').value),
-        hair: parseInt(document.getElementById('f-hair').value),
-        eyes: parseInt(document.getElementById('f-eyes').value),
-        nose: parseInt(document.getElementById('f-nose').value),
-        mouth: parseInt(document.getElementById('f-mouth').value)
-    };
-
-    const { error } = await supabaseClient
-        .from('players')
-        .update({ face_config: config })
-        .eq('id', currentEditingPlayerId);
-
-    if (!error) {
-        document.getElementById('svg-container').innerHTML = generatePlayerSVG(config);
-        closeAvatarEditor();
-        alert("Wygląd zawodnika został zapisany!");
-    } else {
-        alert("Błąd: " + error.message);
-    }
-};
-
-window.closeAvatarEditor = () => {
-    document.getElementById('avatar-editor-modal').style.display = 'none';
-};
-
-window.hidePlayerProfile = () => {
-    document.getElementById('player-profile-view').style.display = 'none';
-    document.getElementById('admin-main-view').style.display = 'block';
-};
+function renderSkill(label, val) {
+    const pct = (val / 20) * 100;
+    return `<div style="margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px;"><span>${label}</span><span>
