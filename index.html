@@ -6,31 +6,25 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Styl dla zakładek Admina */
-        .admin-nav { display: flex; gap: 5px; padding: 0 20px; margin-top: 15px; }
+        /* Styl dla zakładek (Wspólny) */
+        .nav-container { display: flex; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
         .btn-tab { 
             padding: 10px 20px; border: none; background: #ddd; cursor: pointer; 
             border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s;
         }
         .btn-tab.active { background: #e65100; color: white; }
-        .admin-tab-content { display: none; margin: 0 20px 20px 20px; border-radius: 0 10px 10px 10px; }
-        .admin-tab-content.active { display: block; }
+        .tab-content { display: none; margin: 0 20px 20px 20px; border-radius: 0 10px 10px 10px; padding: 20px; background: white; border: 1px solid #ddd; }
+        .tab-content.active { display: block; }
         
-        /* Tabela zawodników */
         .admin-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
         .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
         .admin-table th { background: #f2f2f2; }
 
         /* DRAFT LOTTERY STYLES */
         #draft-lottery-screen {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, #1a237e 0%, #000010 100%);
-            z-index: 9999;
-            color: white;
-            overflow-y: auto;
-            padding: 40px 20px;
+            z-index: 9999; color: white; overflow-y: auto; padding: 40px 20px;
         }
         .lottery-container { max-width: 900px; margin: 0 auto; text-align: center; }
         .machine-ball {
@@ -41,23 +35,14 @@
         }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
         
-        .results-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px; margin-top: 30px;
-        }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 30px; }
         .envelope {
             background: #283593; border: 2px solid #3f51b5; padding: 15px;
             border-radius: 5px; font-weight: bold; transition: all 0.5s;
             text-transform: uppercase; letter-spacing: 1px;
         }
-        .envelope.revealed {
-            background: white; color: #1a237e; border-color: #ff6d00;
-            transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.3);
-        }
-        .exit-lottery {
-            margin-top: 40px; padding: 10px 20px; background: transparent;
-            border: 1px solid white; color: white; cursor: pointer;
-        }
+        .envelope.revealed { background: white; color: #1a237e; border-color: #ff6d00; transform: scale(1.05); }
+        .exit-lottery { margin-top: 40px; padding: 10px 20px; background: transparent; border: 1px solid white; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -65,19 +50,16 @@
 <div id="landing-page">
     <header>
         <h1 style="color:var(--nba-orange); margin:0" data-i18n="welcome_title">ELITE BUZZER LEAGUE</h1>
-        
         <div class="lang-switcher">
-            <img src="https://flagcdn.com/w40/pl.png" id="lang-pl-landing" onclick="setLanguage('pl')" class="lang-flag" alt="PL">
+            <img src="https://flagcdn.com/w40/pl.png" onclick="setLanguage('pl')" class="lang-flag" alt="PL">
             <span class="lang-divider">|</span>
-            <img src="https://flagcdn.com/w40/us.png" id="lang-en-landing" onclick="setLanguage('en')" class="lang-flag" alt="EN">
+            <img src="https://flagcdn.com/w40/us.png" onclick="setLanguage('en')" class="lang-flag" alt="EN">
         </div>
     </header>
-
     <div class="hero-container">
         <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400" class="hero-img">
         <img src="https://images.unsplash.com/photo-1519861531473-920036214751?w=400" class="hero-img">
     </div>
-
     <div class="auth-card">
         <h2 data-i18n="login_header">Panel Managera</h2>
         <input type="email" id="email" placeholder="Email">
@@ -93,169 +75,102 @@
             <div class="logo-container" onclick="location.reload()" style="cursor: pointer;">
                 <img src="logo_EBL.png" alt="Logo" class="main-logo" id="main-logo-img">
             </div>
-            <div class="league-name-text" style="font-weight:bold; color:var(--nba-blue); font-size: 1.2rem;" data-i18n="welcome_title">ELITE BUZZER LEAGUE</div>
+            <div class="league-name-text" style="font-weight:bold; color:var(--nba-blue); font-size: 1.2rem;">ELITE BUZZER LEAGUE</div>
         </div>
-        
         <div class="header-right">
             <div id="user-info-display" class="user-info"></div>
-            
-            <div class="lang-switcher">
-                <img src="https://flagcdn.com/w40/pl.png" id="lang-pl" onclick="setLanguage('pl')" class="lang-flag" alt="PL">
-                <span class="lang-divider">|</span>
-                <img src="https://flagcdn.com/w40/us.png" id="lang-en" onclick="setLanguage('en')" class="lang-flag" alt="EN">
-            </div>
-
             <button onclick="logout()" class="btn-logout" data-i18n="logout">Wyloguj</button>
         </div>
     </header>
 
-    <div id="admin-panel" style="display:none;">
-        <div class="admin-nav">
-            <button class="btn-tab active" onclick="showAdminTab('gen')">Generowanie</button>
-            <button class="btn-tab" onclick="showAdminTab('config')">Potencjały i Skille</button>
-            <button class="btn-tab" onclick="showAdminTab('media')">Media</button>
-            <button class="btn-tab" onclick="showAdminTab('players')">Baza Zawodników</button>
-        </div>
-
-        <div id="admin-tab-gen" class="admin-tab-content active" style="padding:20px; background:#fff3e0; border: 1px solid #ffe0b2;">
-            <h3 data-i18n="admin_panel" style="margin-top:0; color:#e65100;">Generator Świata</h3>
-            <p style="font-size: 14px;" data-i18n="admin_desc">Witaj, Szefie. Wygeneruj zawodników do Draftu lub uruchom loterię.</p>
-            <div style="display:flex; gap:10px;">
-                <button class="btn" onclick="initWorld()" style="flex:1;">GENERUJ ŚWIAT I LIGI</button>
-                <button class="btn" onclick="startLotteryShow()" style="flex:1; background:#1a237e;">URUCHOM LOTERIĘ DRAFTU</button>
-            </div>
-        </div>
-
-        <div id="admin-tab-config" class="admin-tab-content" style="padding:20px; background:#e3f2fd; border: 1px solid #bbdefb;">
-            <h3 style="margin-top:0;">Edytor Nazewnictwa</h3>
-            <div style="display:flex; gap:20px; flex-wrap: wrap;">
-                <div style="flex:1; min-width:300px;">
-                    <label>Wybierz element do edycji:</label>
-                    <select id="config-type-select" class="btn" style="background:white; color:black; margin-top:5px;" onchange="loadConfigList()">
-                        <option value="">-- Wybierz kategorię --</option>
-                        <option value="potential">Potencjały (BuzzerBeater)</option>
-                        <option value="skill">Umiejętności (Skille)</option>
-                    </select>
-                    <div id="config-list-container" style="margin-top:15px; display:none;">
-                        <select id="config-item-select" class="btn" style="background:white; color:black;" onchange="showConfigEditor()"></select>
-                    </div>
-                </div>
-                <div id="config-editor-fields" style="flex:1; min-width:300px; display:none; background:white; padding:15px; border-radius:8px;">
-                    <h4 id="edit-item-title" style="margin-top:0;">Edytuj</h4>
-                    <label>Nazwa PL:</label><br>
-                    <input type="text" id="edit-name-pl" style="width:100%; margin-bottom:10px;"><br>
-                    <label>Nazwa EN:</label><br>
-                    <input type="text" id="edit-name-en" style="width:100%; margin-bottom:10px;">
-                    <button class="btn" onclick="saveGameConfig()">ZAPISZ ZMIANY</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="admin-tab-media" class="admin-tab-content" style="padding:20px; background:#f5f5f5; border: 1px solid #ddd;">
-            <h4 style="margin-top:0;">Zarządzanie wizualne (Logo & Hero)</h4>
-            <div style="display: flex; flex-direction: column; gap: 10px; max-width: 500px;">
-                <input type="text" id="hero-img-1-url" placeholder="Link do zdjęcia Hero 1">
-                <input type="text" id="hero-img-2-url" placeholder="Link do zdjęcia Hero 2">
-                <input type="text" id="logo-url-input" placeholder="Link do Twojego Logo">
-                <button class="btn" style="background: #333;" onclick="adminUpdateMedia()">ZAPISZ ZMIANY MEDIÓW</button>
-            </div>
-        </div>
-
-        <div id="admin-tab-players" class="admin-tab-content" style="padding:20px; background:#eceff1; border: 1px solid #cfd8dc;">
-            <h3 style="margin-top:0;">Globalna Lista Zawodników</h3>
-            <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
-                <select id="filter-season" class="btn" style="background:white; color:black; width:auto;"><option value="1">Sezon 1</option></select>
-                <select id="filter-country" class="btn" style="background:white; color:black; width:auto;"><option value="all">Wszystkie Kraje</option></select>
-                <select id="filter-league" class="btn" style="background:white; color:black; width:auto;"><option value="all">Wszystkie Ligi</option></select>
-                <button class="btn" onclick="fetchAdminPlayersList()" style="width:auto; background:#455a64;">FILTRUJ</button>
-            </div>
-            <div id="admin-players-table" style="overflow-x:auto;">
-                <p>Użyj filtrów, aby załadować zawodników...</p>
-            </div>
-        </div>
+    <div id="admin-nav" class="nav-container" style="display:none;">
+        <button class="btn-tab active" onclick="switchTab('admin-tab-gen')">Generowanie</button>
+        <button class="btn-tab" onclick="switchTab('admin-tab-config')">Potencjały</button>
+        <button class="btn-tab" onclick="switchTab('admin-tab-media')">Media</button>
+        <button class="btn-tab" onclick="switchTab('admin-tab-players')">Baza Zawodników</button>
     </div>
 
-    <div id="main-content" style="padding:20px;"></div>
+    <div id="manager-nav" class="nav-container" style="display:none;">
+        <button class="btn-tab active" onclick="switchTab('m-roster')">ZAWODNICY</button>
+        <button class="btn-tab" onclick="switchTab('m-schedule')">TERMINARZ</button>
+        <button class="btn-tab" onclick="switchTab('m-draft')">DRAFT</button>
+        <button class="btn-tab" onclick="switchTab('m-finances')">FINANSE</button>
+        <button class="btn-tab" onclick="switchTab('m-training')">TRENING</button>
+    </div>
+
+    <div id="admin-tab-gen" class="tab-content">
+        <h3>Generator Świata</h3>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" onclick="initWorld()" style="flex:1;">GENERUJ ŚWIAT I LIGI</button>
+            <button class="btn" onclick="startLotteryShow()" style="flex:1; background:#1a237e;">URUCHOM LOTERIĘ DRAFTU</button>
+        </div>
+    </div>
+    <div id="admin-tab-players" class="tab-content">
+        <h3>Baza Zawodników</h3>
+        <div id="admin-players-table-container"></div>
+    </div>
+
+    <div id="m-roster" class="tab-content">
+        <h3>Skład Drużyny: <span id="team-name-display">...</span></h3>
+        <div id="roster-container"></div>
+    </div>
+    <div id="m-finances" class="tab-content">
+        <h3>Finanse</h3>
+        <div id="finances-container"></div>
+    </div>
+    <div id="m-draft" class="tab-content">
+        <h3>Draft Board</h3>
+        <div id="draft-board-container"></div>
+    </div>
 </div>
 
 <div id="draft-lottery-screen">
     <div class="lottery-container">
         <h1 style="color:#ff6d00; margin-bottom:10px;">DRAFT LOTTERY STUDIO</h1>
         <p id="lottery-status">Czekamy na oficjalne wyniki...</p>
-        
         <div class="machine-ball">🏀</div>
-        
-        <div id="lottery-results" class="results-grid">
-            </div>
-
+        <div id="lottery-results" class="results-grid"></div>
         <div style="margin-top:40px;">
-            <button id="next-pick-btn" class="btn" style="background:#ff6d00; padding:15px 40px; font-size:18px;">
-                OTWÓRZ KOLEJNĄ KOPERTĘ
-            </button>
+            <button id="next-pick-btn" class="btn" style="background:#ff6d00; padding:15px 40px; font-size:18px;">OTWÓRZ KOLEJNĄ KOPERTĘ</button>
         </div>
-        
-        <button class="exit-lottery" onclick="document.getElementById('draft-lottery-screen').style.display='none'">
-            ZAMKNIJ STUDIO (PO POWROCIE)
-        </button>
+        <button class="exit-lottery" onclick="document.getElementById('draft-lottery-screen').style.display='none'">ZAMKNIJ STUDIO</button>
     </div>
 </div>
 
 <script src="js/lang.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/world_gen.js"></script>
-<script src="js/setup_team.js"></script> 
-<script src="js/roster.js"></script>
-<script src="js/admin.js"></script>
 <script src="js/draft.js"></script>
-
-<script>
-    function showAdminTab(tabName) {
-        document.querySelectorAll('.admin-tab-content').forEach(tab => tab.classList.remove('active'));
+<script src="js/manager.js"></script> <script>
+    // Uniwersalna funkcja przełączania zakładek
+    function switchTab(tabId) {
+        // Ukryj wszystkie
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
         
-        document.getElementById('admin-tab-' + tabName).classList.add('active');
-        event.currentTarget.classList.add('active');
+        // Pokaż wybraną
+        const target = document.getElementById(tabId);
+        if (target) target.classList.add('active');
+        
+        // Aktywuj przycisk
+        const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
+        if (btn) btn.classList.add('active');
+
+        // Specyficzne ładowanie danych
+        if (tabId === 'm-roster') renderRoster(); 
+        if (tabId === 'm-finances') renderFinances();
     }
 
-    // Funkcje UI dla Loterii (możesz przenieść do js/draft.js)
-    let currentDraftOrder = [];
-    let revealIndex = 0;
-
-    async function startLotteryShow() {
-        // 1. Pokaż ekran
-        document.getElementById('draft-lottery-screen').style.display = 'block';
-        const resultsContainer = document.getElementById('lottery-results');
-        resultsContainer.innerHTML = '<p>Losowanie kulek...</p>';
-        
-        // 2. Pobierz dane z draft.js
-        currentDraftOrder = await runLeagueLottery('PLK'); // Używamy Twojej funkcji z pkt 1
-        
-        // 3. Przygotuj "zamknięte" koperty (od 20 do 1)
-        resultsContainer.innerHTML = '';
-        revealIndex = currentDraftOrder.length - 1; // Zaczynamy od końca (Pick 20)
-
-        for(let i=0; i < currentDraftOrder.length; i++) {
-            resultsContainer.innerHTML += `<div id="env-${i}" class="envelope">Pick #${i+1}</div>`;
+    // Ten skrypt uruchomi się po zalogowaniu (wywoływany z auth.js)
+    async function setupUI(userRole) {
+        if (userRole === 'admin') {
+            document.getElementById('admin-nav').style.display = 'flex';
+            switchTab('admin-tab-gen');
+        } else {
+            document.getElementById('manager-nav').style.display = 'flex';
+            switchTab('m-roster');
         }
-        document.getElementById('lottery-status').innerText = "Wszystkie koperty są gotowe. Zaczynamy od Picku #20!";
     }
-
-    document.getElementById('next-pick-btn').onclick = () => {
-        if(revealIndex < 0) {
-            alert("To był numer 1! Draft Lottery Sezonu zakończony.");
-            return;
-        }
-
-        const team = currentDraftOrder[revealIndex];
-        const env = document.getElementById(`env-${revealIndex}`);
-        
-        env.classList.add('revealed');
-        env.innerHTML = `<span>PICK #${revealIndex+1}</span><br><small>${team.name}</small>`;
-        
-        document.getElementById('lottery-status').innerText = `Odkryto Pick #${revealIndex+1}: ${team.name}`;
-        
-        revealIndex--;
-    };
 </script>
 
 </body>
