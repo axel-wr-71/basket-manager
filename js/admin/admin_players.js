@@ -2,6 +2,11 @@
 import { supabaseClient } from '../auth.js';
 import { renderPlayerProfile } from './admin_player_profile.js';
 
+// Zmienne do obsługi stron
+let currentPage = 1;
+const itemsPerPage = 50;
+let currentFilteredData = [];
+
 export async function renderAdminPlayers() {
     const container = document.getElementById('admin-players-table-container');
     if (!container) return;
@@ -20,7 +25,7 @@ export async function renderAdminPlayers() {
         <div id="admin-main-view">
             <div class="admin-section">
                 <h4>Wyszukiwarka Zawodników (ADMIN)</h4>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px;">
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px;">
                     <div>
                         <label class="admin-label">NARODOWOŚĆ:</label>
                         <select id="filter-country" class="admin-input" onchange="updateLeagueFilter(this.value)">
@@ -35,24 +40,33 @@ export async function renderAdminPlayers() {
                         </select>
                     </div>
                     
-                    <div style="display: flex; gap: 15px; align-items: center; padding-bottom: 10px;">
-                        <label style="color: white; font-size: 0.85em; cursor: pointer;">
-                            <input type="checkbox" id="filter-free-agent"> Wolny agent
-                        </label>
-                        <label style="color: white; font-size: 0.85em; cursor: pointer;">
-                            <input type="checkbox" id="filter-retirement"> Emerytura (+35)
-                        </label>
+                    <div style="display: flex; gap: 20px; align-items: center; border-left: 1px solid #444; padding-left: 20px;">
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <span style="color: gray; font-size: 0.7em; font-weight: bold; text-transform: uppercase;">Status Kontraktu</span>
+                            <label style="color: white; font-size: 0.85em; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="filter-free-agent"> Wolny agent
+                            </label>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <span style="color: gray; font-size: 0.7em; font-weight: bold; text-transform: uppercase;">Etap Kariery</span>
+                            <label style="color: white; font-size: 0.85em; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="filter-retirement"> Emerytura (+35)
+                            </label>
+                        </div>
                     </div>
 
-                    <button class="btn" onclick="searchPlayers()" style="height: 38px;">SZUKAJ</button>
+                    <button class="btn" onclick="searchPlayers(true)" style="height: 38px; min-width: 120px; background: #f39c12; color: black; font-weight: bold;">SZUKAJ</button>
                 </div>
             </div>
+            
             <div id="search-results-container"></div>
+            
+            <div id="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 20px; padding-bottom: 30px;"></div>
         </div>
         <div id="player-profile-view" style="display:none;"></div>
     `;
 
-    setTimeout(() => { window.searchPlayers(); }, 100);
+    setTimeout(() => { window.searchPlayers(true); }, 100);
 }
 
 window.updateLeagueFilter = (selectedCountry) => {
@@ -66,25 +80,25 @@ window.updateLeagueFilter = (selectedCountry) => {
         filtered.map(l => `<option value="${l.name}">${l.name}</option>`).join('');
 };
 
-window.searchPlayers = async () => {
+window.searchPlayers = async (isNewSearch = true) => {
+    if (isNewSearch) currentPage = 1;
+    
     const resultsContainer = document.getElementById('search-results-container');
+    const paginationContainer = document.getElementById('pagination-controls');
+    
     const country = document.getElementById('filter-country').value;
     const league = document.getElementById('filter-league').value;
     const isFreeAgent = document.getElementById('filter-free-agent').checked;
     const isRetirement = document.getElementById('filter-retirement').checked;
 
-    resultsContainer.innerHTML = "<div class='loading'>Pobieranie danych...</div>";
+    resultsContainer.innerHTML = "<div class='loading'>Analizowanie bazy danych...</div>";
+    paginationContainer.innerHTML = "";
 
     let query = supabaseClient.from('players').select(`*, teams (team_name, league_name)`);
     
     if (country) query = query.eq('country', country);
-    
-    if (isFreeAgent || isRetirement) {
-        query = query.is('team_id', null);
-    }
-    if (isRetirement) {
-        query = query.gte('age', 35);
-    }
+    if (isFreeAgent || isRetirement) query = query.is('team_id', null);
+    if (isRetirement) query = query.gte('age', 35);
 
     const { data: players, error } = await query;
     if (error) {
@@ -92,14 +106,28 @@ window.searchPlayers = async () => {
         return;
     }
 
-    let filtered = league ? players.filter(p => p.teams?.league_name === league) : players;
+    // Filtracja ligi po stronie klienta (ze względu na relację)
+    currentFilteredData = league ? players.filter(p => p.teams?.league_name === league) : players;
 
-    if (filtered.length === 0) {
-        resultsContainer.innerHTML = "<p>Brak zawodników spełniających kryteria.</p>";
+    if (currentFilteredData.length === 0) {
+        resultsContainer.innerHTML = "<p style='text-align:center; padding: 40px; color: gray;'>Brak zawodników spełniających kryteria.</p>";
         return;
     }
 
+    renderTablePage();
+};
+
+function renderTablePage() {
+    const resultsContainer = document.getElementById('search-results-container');
+    const totalPages = Math.ceil(currentFilteredData.length / itemsPerPage);
+    
+    // Wycinanie kawałka danych dla aktualnej strony
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageData = currentFilteredData.slice(start, end);
+
     resultsContainer.innerHTML = `
+        <div style="margin-bottom: 10px; color: gray; font-size: 0.8em;">Pokazano ${start + 1}-${Math.min(end, currentFilteredData.length)} z ${currentFilteredData.length} zawodników</div>
         <table class="admin-table">
             <thead>
                 <tr>
@@ -111,14 +139,13 @@ window.searchPlayers = async () => {
                 </tr>
             </thead>
             <tbody>
-                ${filtered.map(p => {
+                ${pageData.map(p => {
                     const pData = JSON.stringify(p).replace(/'/g, "&apos;");
                     const salaryFormatted = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(p.salary || 0);
-                    
                     return `
                     <tr>
                         <td style="text-align:left;"><strong>${p.first_name || ''} ${p.last_name || ''}</strong></td>
-                        <td style="text-align:left;">${p.teams?.team_name || '<span style="color:gray; font-style:italic;">Wolny agent</span>'}</td>
+                        <td style="text-align:left;">${p.teams?.team_name || '<span style="color:#777; font-style:italic;">Wolny agent</span>'}</td>
                         <td>${p.age}</td>
                         <td style="color:orange; font-weight:bold;">${p.position || '??'}</td>
                         <td style="color: #2ecc71; font-size: 0.85em;">${salaryFormatted}</td>
@@ -134,6 +161,25 @@ window.searchPlayers = async () => {
             </tbody>
         </table>
     `;
+
+    renderPaginationControls(totalPages);
+}
+
+function renderPaginationControls(totalPages) {
+    const paginationContainer = document.getElementById('pagination-controls');
+    if (totalPages <= 1) return;
+
+    paginationContainer.innerHTML = `
+        <button class="btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled style="opacity:0.3"' : ''}>← Poprzednia</button>
+        <span style="color: white; font-weight: bold;">Strona ${currentPage} z ${totalPages}</span>
+        <button class="btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled style="opacity:0.3"' : ''}>Następna →</button>
+    `;
+}
+
+window.changePage = (newPage) => {
+    currentPage = newPage;
+    renderTablePage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 window.showDetails = (p) => { 
