@@ -85,9 +85,8 @@
 
     <div id="admin-nav" class="nav-container" style="display:none;">
         <button class="btn-tab active" onclick="switchTab('admin-tab-gen')">Generowanie</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-config')">Potencjały</button>
-        <button class="btn-tab" onclick="switchTab('admin-tab-media')">Media</button>
         <button class="btn-tab" onclick="switchTab('admin-tab-players')">Baza Zawodników</button>
+        <button class="btn-tab" onclick="switchTab('admin-tab-config')">Ustawienia Ligi</button>
     </div>
 
     <div id="manager-nav" class="nav-container" style="display:none;">
@@ -96,7 +95,6 @@
         <button class="btn-tab" onclick="switchTab('m-schedule')">TERMINARZ</button>
         <button class="btn-tab" onclick="switchTab('m-draft')">DRAFT</button>
         <button class="btn-tab" onclick="switchTab('m-finances')">FINANSE</button>
-        <button class="btn-tab" onclick="switchTab('m-training')">TRENING</button>
     </div>
 
     <div id="admin-tab-gen" class="tab-content">
@@ -108,7 +106,7 @@
     </div>
     
     <div id="admin-tab-players" class="tab-content">
-        <h3>Baza Zawodników (Globalna)</h3>
+        <h3>Baza Wszystkich Zawodników</h3>
         <div id="admin-players-table-container"></div>
     </div>
 
@@ -134,7 +132,7 @@
     
     <div id="m-schedule" class="tab-content">
         <h3>Terminarz Sezonu</h3>
-        <p>Terminarz będzie dostępny po zakończeniu Draftu.</p>
+        <p>Terminarz będzie dostępny po starcie sezonu.</p>
     </div>
 </div>
 
@@ -161,19 +159,18 @@
     let currentUserRole = null;
 
     function switchTab(tabId) {
-        // 1. Ukryj wszystkie sekcje i dezaktywuj przyciski
+        // Ukryj wszystkie zakładki
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
         
-        // 2. Pokaż wybraną sekcję
+        // Pokaż aktywną
         const target = document.getElementById(tabId);
         if (target) target.classList.add('active');
         
-        // 3. Aktywuj odpowiedni przycisk
         const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
         if (btn) btn.classList.add('active');
 
-        // 4. Ładowanie danych zależnie od roli i zakładki
+        // Wywołanie odpowiednich funkcji JS
         if (currentUserRole === 'manager') {
             if (tabId === 'm-roster') renderRoster(); 
             if (tabId === 'm-market') renderTransferMarket();
@@ -181,32 +178,42 @@
             if (tabId === 'm-draft') renderDraftBoard();
         }
         
-        // Dodaj tutaj funkcje admina jeśli są potrzebne przy przełączaniu
         if (currentUserRole === 'admin') {
-            if (tabId === 'admin-tab-players' && typeof fetchAdminPlayersList === 'function') {
-                fetchAdminPlayersList();
+            if (tabId === 'admin-tab-players') {
+                // Jeśli masz funkcję do listowania graczy dla admina
+                if(typeof renderAdminPlayers === 'function') renderAdminPlayers();
             }
         }
     }
 
     async function setupUI(userRole) {
         currentUserRole = userRole;
-        console.log("Inicjalizacja UI dla roli:", userRole);
+        console.log("System gotowy dla:", userRole);
+
+        const landing = document.getElementById('landing-page');
+        const app = document.getElementById('game-app');
+        const adminNav = document.getElementById('admin-nav');
+        const managerNav = document.getElementById('manager-nav');
+
+        landing.style.display = 'none';
+        app.style.display = 'block';
 
         if (userRole === 'admin') {
-            document.getElementById('admin-nav').style.display = 'flex';
-            document.getElementById('manager-nav').style.display = 'none';
+            adminNav.style.display = 'flex';
+            managerNav.style.display = 'none';
             switchTab('admin-tab-gen');
         } else {
-            document.getElementById('admin-nav').style.display = 'none';
-            document.getElementById('manager-nav').style.display = 'flex';
+            adminNav.style.display = 'none';
+            managerNav.style.display = 'flex';
             
-            // Bezpieczne ładowanie danych managera
             try {
-                await initManagerData(); 
+                // Inicjalizacja danych klubu dla Managera z manager.js
+                if (typeof initManagerData === 'function') {
+                    await initManagerData(); 
+                }
                 switchTab('m-roster');
             } catch (e) {
-                console.error("Błąd inicjalizacji managera:", e);
+                console.error("Błąd ładowania danych managera:", e);
             }
         }
     }
