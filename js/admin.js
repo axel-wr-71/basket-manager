@@ -1,127 +1,106 @@
 // js/admin.js
 
 /**
- * Ładowanie listy elementów (potencjały/skille) do selecta w panelu Admina
+ * Widok bazy wszystkich zawodników dla Admina
  */
-async function loadConfigList() {
-    const type = document.getElementById('config-type-select').value;
-    const itemSelect = document.getElementById('config-item-select');
-    const listContainer = document.getElementById('config-list-container');
-    
-    if(!type) {
-        listContainer.style.display = 'none';
-        return;
-    }
+async function renderAdminPlayers() {
+    const container = document.getElementById('admin-players-table-container');
+    if (!container) return;
 
-    const { data, error } = await _supabase
-        .from('game_config')
-        .select('*')
-        .eq('category', type)
-        .order('key_name', { ascending: true });
+    container.innerHTML = "<p>Ładowanie bazy wszystkich zawodników...</p>";
 
-    if(error) return console.error(error);
-
-    itemSelect.innerHTML = '<option value="">-- Wybierz konkretny element --</option>';
-    data.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.key_name;
-        option.textContent = `${item.key_name}: ${item.name_pl} / ${item.name_en}`;
-        itemSelect.appendChild(option);
-    });
-
-    listContainer.style.display = 'block';
-}
-
-/**
- * Pokazywanie formularza edycji po wybraniu np. Potencjału nr 5
- */
-async function showConfigEditor() {
-    const type = document.getElementById('config-type-select').value;
-    const key = document.getElementById('config-item-select').value;
-    const editor = document.getElementById('config-editor-fields');
-
-    if(!key) {
-        editor.style.display = 'none';
-        return;
-    }
-
-    const { data } = await _supabase
-        .from('game_config')
-        .select('*')
-        .eq('category', type)
-        .eq('key_name', key)
-        .single();
-
-    if(data) {
-        document.getElementById('edit-item-title').innerText = `Edytujesz: ${data.name_pl}`;
-        document.getElementById('edit-name-pl').value = data.name_pl;
-        document.getElementById('edit-name-en').value = data.name_en;
-        editor.style.display = 'block';
-    }
-}
-
-/**
- * Zapisywanie zmienionej nazwy do bazy
- */
-async function saveGameConfig() {
-    const type = document.getElementById('config-type-select').value;
-    const key = document.getElementById('config-item-select').value;
-    const nPl = document.getElementById('edit-name-pl').value;
-    const nEn = document.getElementById('edit-name-en').value;
-
-    const { error } = await _supabase
-        .from('game_config')
-        .update({ name_pl: nPl, name_en: nEn })
-        .eq('category', type)
-        .eq('key_name', key);
-
-    if(error) alert("Błąd zapisu: " + error.message);
-    else {
-        alert("Zapisano pomyślnie!");
-        loadConfigList(); // Odśwież listę
-    }
-}
-
-/**
- * 6. Globalna lista zawodników dla Admina
- */
-async function fetchAdminPlayersList() {
-    const season = document.getElementById('filter-season').value;
-    const container = document.getElementById('admin-players-table');
-    
-    container.innerHTML = "<p>Ładowanie...</p>";
-
-    // Pobieramy zawodników oraz nazwy ich potencjałów jednym zapytaniem
-    const { data, error } = await _supabase
+    // Pobieramy zawodników wraz z nazwami ich klubów (JOIN)
+    const { data: players, error } = await supabase
         .from('players')
         .select(`
-            id, name, age, position, potential_id, country, team_id,
-            game_config!inner (name_pl)
+            *,
+            teams (
+                team_name,
+                country_name,
+                league_name
+            )
         `)
-        // Mała uwaga: Aby to zadziałało idealnie, w Supabase musi być relacja FK 
-        // między players.potential_id a game_config.key_name (jako int)
-        // Jeśli nie masz relacji, pobierzemy to prościej:
-        
-    const { data: players } = await _supabase.from('players').select('*').limit(100);
-    const { data: configs } = await _supabase.from('game_config').eq('category', 'potential');
+        .order('overall_rating', { ascending: false });
 
-    let html = `<table class="admin-table">
-        <tr>
-            <th>Zawodnik</th><th>Wiek</th><th>Poz</th><th>Potencjał</th><th>Kraj</th><th>Akcje</th>
-        </tr>`;
+    if (error) {
+        container.innerHTML = "<p>Błąd pobierania danych: " + error.message + "</p>";
+        return;
+    }
 
-    players.forEach(p => {
-        const potName = configs.find(c => c.key_name == p.potential_id)?.name_pl || p.potential_id;
-        html += `<tr>
-            <td><b>${p.name}</b></td>
-            <td>${p.age}</td>
-            <td>${p.position}</td>
-            <td>${potName}</td>
-            <td>${p.country}</td>
-            <td><button onclick="console.log('${p.id}')">Edytuj</button></td>
-        </tr>`;
-    });
-
-    html += `</table>`;
+    let html = `
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>OVR</th>
+                    <th>Imię i Nazwisko</th>
+                    <th>Pozycja</th>
+                    <th>Kraj</th>
+                    <th>Liga</th>
+                    <th>Klub</th>
+                    <th>Wiek</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${players.map(p => `
+                    <tr>
+                        <td style="font-weight:bold; background:#fff9c4; text-align:center;">${p.overall_rating}</td>
+                        <td>${p.first_name} ${p.last_name}</td>
+                        <td>${p.position}</td>
+                        <td>${p.teams ? p.teams.country_name : '-'}</td>
+                        <td>${p.teams ? p.teams.league_name : '-'}</td>
+                        <td>${p.teams ? p.teams.team_name : '<span style="color:red">Wolny Agent</span>'}</td>
+                        <td>${p.age}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
     container.innerHTML = html;
 }
+
+/**
+ * Widok ustawień lig (lista 10 krajów)
+ */
+async function renderLeagueSettings() {
+    const container = document.getElementById('admin-league-config-container');
+    if (!container) return;
+
+    container.innerHTML = "<p>Pobieranie struktur ligowych...</p>";
+
+    const { data: leagues, error } = await supabase
+        .from('leagues')
+        .select('*')
+        .order('country_name', { ascending: true })
+        .order('tier', { ascending: true });
+
+    if (error) {
+        container.innerHTML = "<p>Błąd: " + error.message + "</p>";
+        return;
+    }
+
+    let html = `
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Kraj</th>
+                    <th>Nazwa Ligi</th>
+                    <th>Tier</th>
+                    <th>Podział (Sub-tier)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${leagues.map(l => `
+                    <tr>
+                        <td>${l.country_name}</td>
+                        <td><strong>${l.league_name}</strong></td>
+                        <td>${l.tier}</td>
+                        <td>${l.sub_tier}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    container.innerHTML = html;
+}
+
+// Pozostałe Twoje funkcje edycji (Game Config) mogą zostać tutaj...
