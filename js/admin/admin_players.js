@@ -6,15 +6,16 @@ export async function renderAdminPlayers() {
     const container = document.getElementById('admin-players-table-container');
     if (!container) return;
 
-    // Pobieramy ligi do filtrów
+    // POPRAWKA: Pobieramy poprawne nazwy kolumn z tabeli leagues (country i name)
     const { data: leagues, error: lError } = await supabaseClient
         .from('leagues')
-        .select('country_name, league_name')
-        .order('country_name', { ascending: true });
+        .select('country, name')
+        .order('country', { ascending: true });
 
     if (lError) return console.error("Błąd pobierania lig:", lError);
 
-    const uniqueCountries = [...new Set(leagues.map(l => l.country_name))];
+    // POPRAWKA: Używamy l.country zamiast l.country_name
+    const uniqueCountries = [...new Set(leagues.map(l => l.country))];
     window.allLeaguesData = leagues;
 
     container.innerHTML = `
@@ -53,9 +54,10 @@ window.updateLeagueFilter = (selectedCountry) => {
         leagueSelect.innerHTML = '<option value="">Wybierz kraj najpierw</option>';
         return;
     }
-    const filtered = window.allLeaguesData.filter(l => l.country_name === selectedCountry);
+    // POPRAWKA: l.country zamiast l.country_name
+    const filtered = window.allLeaguesData.filter(l => l.country === selectedCountry);
     leagueSelect.innerHTML = `<option value="">Wszystkie ligi</option>` + 
-        filtered.map(l => `<option value="${l.league_name}">${l.league_name}</option>`).join('');
+        filtered.map(l => `<option value="${l.name}">${l.name}</option>`).join('');
 };
 
 window.searchPlayers = async () => {
@@ -65,7 +67,7 @@ window.searchPlayers = async () => {
 
     resultsContainer.innerHTML = "<div class='loading'>Pobieranie danych...</div>";
 
-    // Budujemy zapytanie - uwzględniamy nowe nazwy kolumn
+    // Budujemy zapytanie - uwzględniamy nowe nazwy kolumn zawodników i relację teams
     let query = supabaseClient.from('players').select(`*, teams (team_name, league_name)`);
     
     if (country) query = query.eq('country', country);
