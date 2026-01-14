@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- NOWA STYLIZACJA STRONY GŁÓWNEJ (LANDING PAGE) --- */
+        /* --- STYLIZACJA STRONY GŁÓWNEJ (LANDING PAGE) --- */
         
         .landing-hero {
             position: relative;
@@ -164,7 +164,7 @@
 
         .hero-gallery img:hover { transform: scale(1.1); }
 
-        /* --- STYLOVANIE APLIKACJI (BEZ ZMIAN) --- */
+        /* --- STYLOVANIE APLIKACJI (ZAKŁADKI I TABELE) --- */
         .nav-container { display: flex; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
         .btn-tab { padding: 10px 20px; border: none; background: #ddd; cursor: pointer; border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s; }
         .btn-tab.active { background: #e65100; color: white; }
@@ -173,6 +173,8 @@
         .admin-table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
         .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
         .admin-table th { background: #f2f2f2; }
+
+        /* DRAFT LOTTERY SCREEN */
         #draft-lottery-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a237e 0%, #000010 100%); z-index: 9999; color: white; overflow-y: auto; padding: 40px 20px; }
         .lottery-container { max-width: 900px; margin: 0 auto; text-align: center; }
         .machine-ball { width: 120px; height: 120px; background: #ff6d00; border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 50px; box-shadow: 0 0 30px rgba(255,109,0,0.5); animation: bounce 0.5s infinite alternate; }
@@ -215,7 +217,7 @@
             </div>
         </div>
 
-        <div class="hero-gallery">
+        <div class="hero-gallery" id="landing-gallery-container">
             <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400" alt="Screen 1">
             <img src="https://images.unsplash.com/photo-1519861531473-920036214751?w=400" alt="Screen 2">
             <img src="https://images.unsplash.com/photo-1518063311540-30b8acb1d7a8?w=400" alt="Screen 3">
@@ -241,7 +243,8 @@
         <button class="btn-tab active" onclick="switchTab('admin-tab-gen')" data-i18n="admin_panel">Generowanie</button>
         <button class="btn-tab" onclick="switchTab('admin-tab-players')">Baza Zawodników</button>
         <button class="btn-tab" onclick="switchTab('admin-tab-config')">Ustawienia Ligi</button>
-        </div>
+        <button class="btn-tab" onclick="switchTab('admin-tab-media')">Media</button>
+    </div>
 
     <div id="manager-nav" class="nav-container" style="display:none;">
         <button class="btn-tab active" onclick="switchTab('m-roster')" data-i18n="m_roster">ZAWODNICY</button>
@@ -267,6 +270,13 @@
     <div id="admin-tab-config" class="tab-content">
         <h3>Ustawienia Struktur Ligowych</h3>
         <div id="admin-league-config-container"></div>
+    </div>
+
+    <div id="admin-tab-media" class="tab-content">
+        <h3>Zarządzanie Mediami i Wyglądem</h3>
+        <div id="admin-media-manager-container">
+            <p>Ładowanie panelu mediów...</p>
+        </div>
     </div>
 
     <div id="m-roster" class="tab-content">
@@ -319,12 +329,12 @@
     let currentUserRole = null;
 
     function setLanguage(lang) {
-        // Usuwamy klasę active ze wszystkich flag na landing page
+        // Wizualna obsługa flag
         document.querySelectorAll('.lang-flag').forEach(f => f.classList.remove('active'));
-        // Dodajemy do wybranej
         const selected = document.getElementById(`flag-${lang}`);
         if(selected) selected.classList.add('active');
 
+        // Logika zmiany języka
         if (typeof window.setLanguage === 'function') {
             window.setLanguage(lang);
         }
@@ -351,6 +361,8 @@
             if (tabId === 'admin-tab-players') window.switchAdminTab('players');
             if (tabId === 'admin-tab-config') window.switchAdminTab('leagues');
             if (tabId === 'admin-tab-gen') window.switchAdminTab('dashboard');
+            // Wywołanie logiki dla nowej zakładki Media
+            if (tabId === 'admin-tab-media') window.switchAdminTab('media');
         }
     }
 
