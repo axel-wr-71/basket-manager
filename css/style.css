@@ -317,3 +317,121 @@ body {
     height: auto;
     display: block;
 }
+
+/* --- STYLIZACJA LANDING PAGE A LA BUZZERBEATER --- */
+.landing-hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background-image: url('default_bg.jpg'); /* Zdjęcie z bazy w przyszłości */
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    color: white;
+    overflow: hidden;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Przyciemnienie tła */
+    z-index: 1;
+}
+
+.landing-header {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 40px;
+}
+
+.media-logo {
+    height: 60px;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.main-title {
+    font-size: 4rem;
+    font-weight: 900;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 15px rgba(0,0,0,0.8);
+    letter-spacing: 2px;
+}
+
+.auth-box {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    width: 100%;
+    max-width: 450px;
+    color: #333;
+    text-align: center;
+}
+
+.auth-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.auth-inputs input {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.auth-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-primary { background: #e65100; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.btn-secondary { background: #444; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+/* Flagi */
+.lang-flag {
+    width: 35px;
+    border-radius: 6px; /* Zaokrąglone delikatnie */
+    cursor: pointer;
+    transition: 0.3s;
+    filter: grayscale(100%);
+    margin-left: 10px;
+}
+
+.lang-flag.active {
+    filter: grayscale(0%);
+    transform: scale(1.1);
+}
+
+/* Galeria zdjęć na dole */
+.hero-gallery {
+    margin-top: 40px;
+    display: flex;
+    gap: 15px;
+}
+
+.hero-gallery img {
+    width: 150px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
