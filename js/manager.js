@@ -12,7 +12,6 @@ async function initManagerData() {
     const user = supabase.auth.user();
     if (!user) return;
 
-    // Pobierz dane zespołu, gdzie owner_id zgadza się z ID zalogowanego usera
     const { data: team, error } = await supabase
         .from('teams')
         .select('*')
@@ -26,7 +25,6 @@ async function initManagerData() {
 
     currentManagerTeam = team;
     
-    // Zaktualizuj nazwę zespołu w nagłówku
     const teamTitle = document.getElementById('team-name-display');
     if (teamTitle) teamTitle.innerText = team.team_name;
 }
@@ -52,7 +50,7 @@ async function renderRoster() {
     }
 
     if (players.length === 0) {
-        container.innerHTML = "<p>Twój skład jest obecnie pusty. Czekaj na Draft!</p>";
+        container.innerHTML = "<p>Twój skład jest obecnie pusty. Przejdź do Rynku lub czekaj na Draft!</p>";
         return;
     }
 
@@ -84,14 +82,104 @@ async function renderRoster() {
 }
 
 /**
- * 2. ZAKŁADKA: FINANSE
+ * 2. ZAKŁADKA: RYNEK TRANSFEROWY (NOWOŚĆ)
+ */
+async function renderTransferMarket() {
+    if (!currentManagerTeam) await initManagerData();
+    
+    const container = document.getElementById('transfer-market-container');
+    container.innerHTML = "<p>Przeszukiwanie rynku...</p>";
+
+    // Pobieramy zawodników wraz z nazwami ich klubów
+    const { data: players, error } = await supabase
+        .from('players')
+        .select(`*, teams (team_name)`)
+        .order('overall_rating', { ascending: false })
+        .limit(100);
+
+    if (error) return container.innerHTML = "<p>Błąd pobierania rynku.</p>";
+
+    let html = `
+        <div style="margin-bottom: 15px; background: #f0f0f0; padding: 10px; border-radius: 5px;">
+            <strong>Twój budżet: ${currentManagerTeam.balance.toLocaleString()} $</strong>
+        </div>
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Gracz</th>
+                    <th>OVR</th>
+                    <th>Obecny Klub</th>
+                    <th>Cena</th>
+                    <th>Akcja</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${players.map(p => {
+                    const isMyPlayer = p.team_id === currentManagerTeam.id;
+                    const price = p.price || (p.overall_rating * 15000); // Automatyczna wycena
+                    
+                    return `
+                    <tr>
+                        <td>${p.first_name} ${p.last_name} (${p.position})</td>
+                        <td>${p.overall_rating}</td>
+                        <td>${p.teams ? p.teams.team_name : '<span style="color:gray">Wolny Agent</span>'}</td>
+                        <td>${price.toLocaleString()} $</td>
+                        <td>
+                            ${isMyPlayer ? 
+                                '<button class="btn" disabled style="background:#ccc; cursor:default">TWÓJ GRACZ</button>' : 
+                                `<button class="btn" style="background:#2e7d32" onclick="processTransfer('${p.id}', ${price})">KUP</button>`
+                            }
+                        </td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+    container.innerHTML = html;
+}
+
+/**
+ * LOGIKA ZAKUPU ZAWODNIKA
+ */
+async function processTransfer(playerId, price) {
+    if (currentManagerTeam.balance < price) {
+        alert("Błąd: Nie masz wystarczających środków!");
+        return;
+    }
+
+    if (!confirm(`Czy chcesz wydać ${price.toLocaleString()} $ na tego zawodnika?`)) return;
+
+    // 1. Odejmij balans
+    const newBalance = currentManagerTeam.balance - price;
+    const { error: teamErr } = await supabase
+        .from('teams')
+        .update({ balance: newBalance })
+        .eq('id', currentManagerTeam.id);
+
+    if (teamErr) return alert("Błąd płatności.");
+
+    // 2. Zmień team_id zawodnika
+    const { error: playerErr } = await supabase
+        .from('players')
+        .update({ team_id: currentManagerTeam.id })
+        .eq('id', playerId);
+
+    if (playerErr) return alert("Błąd transferu zawodnika.");
+
+    // 3. Sukces
+    currentManagerTeam.balance = newBalance;
+    alert("Gratulacje! Zawodnik podpisał kontrakt.");
+    renderTransferMarket();
+}
+
+/**
+ * 3. ZAKŁADKA: FINANSE
  */
 async function renderFinances() {
     if (!currentManagerTeam) await initManagerData();
 
     const container = document.getElementById('finances-container');
     
-    // Pobierz najświeższy balans bezpośrednio z bazy
     const { data: team } = await supabase
         .from('teams')
         .select('balance')
@@ -115,7 +203,7 @@ async function renderFinances() {
 }
 
 /**
- * 3. ZAKŁADKA: DRAFT (WIDOK DLA MANAGERA)
+ * 4. ZAKŁADKA: DRAFT (WIDOK DLA MANAGERA)
  */
 async function renderDraftBoard() {
     const container = document.getElementById('draft-board-container');
@@ -125,7 +213,7 @@ async function renderDraftBoard() {
         .from('draft_picks')
         .select(`
             pick_number,
-            teams!current_owner_id (team_name)
+            teams (team_name)
         `)
         .eq('league_name', 'PLK')
         .order('pick_number', { ascending: true });
@@ -141,7 +229,7 @@ async function renderDraftBoard() {
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
                 ${picks.map(p => `
                     <div style="padding: 10px; background: white; border: 1px solid #ddd; border-left: 4px solid #1a237e;">
-                        <strong>#${p.pick_number}</strong> ${p.teams.team_name}
+                        <strong>#${p.pick_number}</strong> ${p.teams ? p.teams.team_name : 'Brak'}
                     </div>
                 `).join('')}
             </div>
