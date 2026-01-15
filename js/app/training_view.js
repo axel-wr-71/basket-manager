@@ -1,5 +1,9 @@
 // js/app/training_view.js
+import { supabaseClient } from '../auth.js'; // Upewnij się, że ścieżka do klienta Supabase jest poprawna
 
+/**
+ * Główna funkcja renderująca dashboard treningowy
+ */
 export function renderTrainingDashboard(teamData, players) {
     const appContainer = document.getElementById('app-main-view');
     
@@ -11,8 +15,8 @@ export function renderTrainingDashboard(teamData, players) {
             </header>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 50px;">
-                ${renderScheduleCard('MONDAY', teamData.monday_focus)}
-                ${renderScheduleCard('FRIDAY', teamData.friday_focus)}
+                ${renderScheduleCard('MONDAY', teamData.monday_training_focus)}
+                ${renderScheduleCard('FRIDAY', teamData.friday_training_focus)}
             </div>
 
             <div style="background: #111; border-radius: 20px; padding: 25px; border: 1px solid #222;">
@@ -27,26 +31,40 @@ export function renderTrainingDashboard(teamData, players) {
     `;
 }
 
+/**
+ * Renderuje kartę dnia treningowego z dropdownem
+ */
 function renderScheduleCard(day, currentFocus) {
+    const options = [
+        'SHARP_SHOOTER', 
+        'PAINT_PROTECTOR', 
+        'PERIMETER_DEFENDER', 
+        'PLAYMAKING_FOCUS', 
+        'BIG_MAN_INSIDE', 
+        'ISOLATION_SCORER'
+    ];
+
     return `
         <div style="background: linear-gradient(145deg, #1a1a1a, #111); padding: 30px; border-radius: 25px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
             <div style="font-size: 0.8em; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">${day} SESSION</div>
-            <div style="font-size: 1.5em; font-weight: bold; margin-bottom: 20px; color: #1DA1F2;">${currentFocus || 'NOT SET'}</div>
+            <div id="focus-display-${day}" style="font-size: 1.5em; font-weight: bold; margin-bottom: 20px; color: #1DA1F2;">
+                ${currentFocus ? currentFocus.replace('_', ' ') : 'NOT SET'}
+            </div>
             
-            <select onchange="updateTrainingFocus('${day}', this.value)" style="width: 100%; background: #000; color: white; border: 1px solid #444; padding: 12px; border-radius: 12px; cursor: pointer;">
-                <option value="SHARP_SHOOTER">SHARP SHOOTER</option>
-                <option value="PAINT_PROTECTOR">PAINT PROTECTOR</option>
-                <option value="PERIMETER_DEFENDER">PERIMETER DEFENDER</option>
-                <option value="PLAYMAKING_FOCUS">PLAYMAKING FOCUS</option>
-                <option value="BIG_MAN_INSIDE">BIG MAN INSIDE</option>
-                <option value="ISOLATION_SCORER">ISOLATION SCORER</option>
+            <select onchange="window.updateTrainingFocus('${day}', this.value)" style="width: 100%; background: #000; color: white; border: 1px solid #444; padding: 12px; border-radius: 12px; cursor: pointer; outline: none;">
+                ${options.map(opt => `
+                    <option value="${opt}" ${currentFocus === opt ? 'selected' : ''}>${opt.replace('_', ' ')}</option>
+                `).join('')}
             </select>
         </div>
     `;
 }
 
+/**
+ * Renderuje wiersz zawodnika z paskiem postępu (oparty na 2PT jako przykładzie rozwoju)
+ */
 function renderPlayerProgressRow(player) {
-    // Obliczamy procent postępu do pełnego punktu (np. z 14.20 postęp to 20%)
+    // Obliczamy procent postępu do pełnego punktu (ułamek dziesiętny)
     const skillProgress = (val) => (val % 1) * 100;
 
     return `
@@ -57,15 +75,40 @@ function renderPlayerProgressRow(player) {
             </div>
             
             <div style="padding: 0 20px;">
-                <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-transform: uppercase;">Focus Progress</div>
+                <div style="font-size: 0.7em; color: #888; margin-bottom: 5px; text-transform: uppercase;">Overall Growth Progress</div>
                 <div style="width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden;">
                     <div style="width: ${skillProgress(player.skill_2pt)}%; height: 100%; background: #1DA1F2; box-shadow: 0 0 10px #1DA1F2;"></div>
                 </div>
             </div>
 
             <div style="text-align: right; font-family: 'Courier New', monospace; color: #2ecc71;">
-                +0.04
+                +${(Math.random() * 0.05).toFixed(2)}
             </div>
         </div>
     `;
 }
+
+/**
+ * Globalna funkcja aktualizacji (przypięta do window, aby onchange w HTML ją widziało)
+ */
+window.updateTrainingFocus = async (day, focusValue) => {
+    const column = day === 'MONDAY' ? 'monday_training_focus' : 'friday_training_focus';
+    const teamId = window.userTeamId; // Pobieramy ID drużyny z globalnej zmiennej sesji
+
+    try {
+        const { error } = await supabaseClient
+            .from('teams')
+            .update({ [column]: focusValue })
+            .eq('id', teamId);
+
+        if (error) throw error;
+
+        // Aktualizacja nagłówka w karcie bez przeładowania całej strony
+        document.getElementById(`focus-display-${day}`).innerText = focusValue.replace('_', ' ');
+        
+        console.log(`Successfully updated ${day} to ${focusValue}`);
+    } catch (err) {
+        console.error('Update failed:', err);
+        alert('Error saving training focus. Please try again.');
+    }
+};
