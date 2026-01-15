@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Elite Basket League</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/market.css">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -40,10 +42,9 @@
         .hero-gallery img { width: 160px; height: 100px; object-fit: cover; border: 2px solid white; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: 0.3s; }
         .hero-gallery img:hover { transform: scale(1.1); }
         
-        /* ZAKTUALIZOWANE CENTROWANIE MENU */
         .nav-container { 
             display: flex; 
-            justify-content: center; /* Centrowanie przycisków */
+            justify-content: center; 
             gap: 5px; 
             padding: 0 20px; 
             margin-top: 15px; 
@@ -66,7 +67,6 @@
         .main-logo { height: 45px; width: auto; }
         .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
-        /* Ikona ustawień na końcu nawigacji */
         .btn-settings-nav {
             background: #eee;
             border: none;
@@ -218,7 +218,6 @@
     }
 
     async function switchTab(tabId) {
-        // UI: Zmiana aktywnych klas
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
         
@@ -228,7 +227,6 @@
         const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
         if (btn) btn.classList.add('active');
 
-        // LOGIKA MANAGERA (End-to-End)
         if (currentUserRole === 'manager') {
             const { showRoster, showTraining, showMarket, showFinances } = await import('./js/app/app.js');
 
@@ -243,7 +241,6 @@
             }
         }
         
-        // LOGIKA ADMINA
         if (currentUserRole === 'admin') {
             const runAdminTab = () => {
                 if (window.switchAdminTab) {
@@ -258,7 +255,7 @@
     }
 
     function openNavSettings() {
-        alert("Tu otworzy się panel przeciągania zakładek (JSONB Config)");
+        alert("Tu otworzy się panel konfiguracji nawigacji (JSONB Config)");
     }
 
     async function setupUI(userRole) {
