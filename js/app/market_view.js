@@ -2,124 +2,109 @@
 import { supabaseClient } from '../auth.js';
 import { calculateMarketValue } from '../core/economy.js';
 
+const skillNames = {
+    1: "okropny", 2: "żałosny", 3: "tragiczny", 4: "słaby", 5: "przeciętny",
+    6: "ponadprzeciętny", 7: "porządny", 8: "solidny", 9: "sprawny", 10: "znaczący",
+    11: "wybitny", 12: "wspaniały", 13: "świetny", 14: "niesamowity", 15: "cudowny"
+};
+
 export async function renderMarketView(teamData) {
-    // 1. Sprawdzamy oba możliwe kontenery (z index.html i Twoich skryptów)
-    const container = document.getElementById('market-container') || document.getElementById('m-market');
-    
-    if (!container) {
-        console.error("BŁĄD: Nie znaleziono kontenera dla rynku w index.html!");
-        return;
-    }
+    const container = document.getElementById('market-container');
+    if (!container) return;
 
-    // 2. Budujemy szkielet UI (Uproszczony styl inline dla pewności wyświetlenia)
     container.innerHTML = `
-        <div class="market-wrapper" style="padding: 20px; background: #0f172a; color: white; min-height: 80vh;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin:0;">RYNEK TRANSFEROWY</h2>
-                <div style="color: #22c55e; font-weight: bold;">BUDŻET: $${teamData?.balance?.toLocaleString() || '0'}</div>
-            </div>
+        <div class="market-modern-container">
+            <header class="market-header">
+                <div>
+                    <h1>Rynek Transferowy</h1>
+                    <p class="budget-display">Twój budżet: <strong>$${teamData.balance.toLocaleString()}</strong></p>
+                </div>
+            </header>
 
-            <div class="filter-panel" style="background: rgba(30, 41, 59, 0.8); padding: 15px; border-radius: 12px; display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; border: 1px solid #334155;">
-                <select id="f-pos" style="background: #1e293b; color: white; border: 1px solid #475569; padding: 8px; border-radius: 6px;">
-                    <option value="">Pozycje</option>
-                    <option value="PG">PG</option><option value="SG">SG</option>
-                    <option value="SF">SF</option><option value="PF">PF</option><option value="C">C</option>
-                </select>
-                <input type="number" id="f-max-ovr" placeholder="Max OVR" style="width: 100px; background: #1e293b; color: white; border: 1px solid #475569; padding: 8px; border-radius: 6px;">
-                <input type="number" id="f-min-age" placeholder="Min Wiek" style="width: 100px; background: #1e293b; color: white; border: 1px solid #475569; padding: 8px; border-radius: 6px;">
-                <button id="btn-search-market" style="background: #38bdf8; color: #0f172a; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">SZUKAJ</button>
-            </div>
+            <section class="filter-section">
+                <div class="filter-group">
+                    <select id="f-pos"><option value="">Wszystkie pozycje</option><option value="PG">PG</option><option value="SG">SG</option><option value="SF">SF</option><option value="PF">PF</option><option value="C">C</option></select>
+                    <input type="number" id="f-max-ovr" placeholder="Max OVR">
+                    <input type="number" id="f-min-age" placeholder="Min Wiek">
+                    <input type="number" id="f-max-price" placeholder="Max Cena">
+                    <button id="btn-search-market" class="btn-primary">Filtruj Zawodników</button>
+                </div>
+            </section>
 
-            <div id="market-listings" style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="text-align:center; padding: 20px; color: #64748b;">Ładowanie ofert...</div>
-            </div>
+            <div id="market-listings" class="listings-grid">
+                </div>
         </div>
     `;
 
-    // 3. Podpięcie przycisku
-    const searchBtn = document.getElementById('btn-search-market');
-    if (searchBtn) {
-        searchBtn.onclick = () => loadMarketData();
-    }
-
-    // 4. Pierwsze ładowanie
-    await loadMarketData();
+    document.getElementById('btn-search-market').onclick = loadMarketData;
+    loadMarketData();
 }
 
 async function loadMarketData() {
     const list = document.getElementById('market-listings');
-    if (!list) return;
+    list.innerHTML = '<div class="loader">Szukanie ofert...</div>';
 
-    const fPos = document.getElementById('f-pos')?.value;
-    const fMaxOvr = document.getElementById('f-max-ovr')?.value;
-    const fMinAge = document.getElementById('f-min-age')?.value;
+    const { data, error } = await supabaseClient.from('transfer_market').select('*, players(*)').eq('status', 'active');
+    if (error) return;
 
-    try {
-        // Pobieramy dane z tabeli transfer_market i łączymy z players
-        const { data, error } = await supabaseClient
-            .from('transfer_market')
-            .select('*, players(*)')
-            .eq('status', 'active');
+    const fPos = document.getElementById('f-pos').value;
+    const fMaxOvr = document.getElementById('f-max-ovr').value;
+    const fMinAge = document.getElementById('f-min-age').value;
+    const fMaxPrice = document.getElementById('f-max-price').value;
 
-        if (error) throw error;
+    const filtered = data.filter(item => {
+        const p = item.players;
+        return (!fPos || p.position === fPos) &&
+               (!fMaxOvr || p.overall_rating <= fMaxOvr) &&
+               (!fMinAge || p.age >= fMinAge) &&
+               (!fMaxPrice || item.current_price <= fMaxPrice);
+    });
 
-        if (!data || data.length === 0) {
-            list.innerHTML = `<div style="text-align:center; padding: 40px;">Brak aktywnych ofert na rynku.</div>`;
-            return;
-        }
-
-        // Filtrowanie OVR i Wieku po stronie klienta
-        const filtered = data.filter(item => {
-            const p = item.players;
-            if (!p) return false;
-            const matchPos = fPos ? p.position === fPos : true;
-            const matchMaxOvr = fMaxOvr ? p.overall_rating <= parseInt(fMaxOvr) : true;
-            const matchMinAge = fMinAge ? p.age >= parseInt(fMinAge) : true;
-            return matchPos && matchMaxOvr && matchMinAge;
-        });
-
-        list.innerHTML = filtered.map(item => renderPlayerRow(item)).join('');
-
-    } catch (err) {
-        console.error("Market Load Error:", err);
-        list.innerHTML = `<div style="color:red; text-align:center;">Błąd ładowania danych: ${err.message}</div>`;
-    }
+    list.innerHTML = filtered.map(item => renderPlayerCard(item)).join('');
 }
 
-function renderPlayerRow(item) {
+function renderPlayerCard(item) {
     const p = item.players;
     const marketVal = calculateMarketValue(p);
     
-    // Mini statystyki (SHT, DEF, SPD, PAS, REB)
-    const stats = [
-        { l: 'SHT', v: p.shooting || 60, c: '#f87171' },
-        { l: 'DEF', v: p.defense || 60, c: '#38bdf8' },
-        { l: 'SPD', v: p.speed || 60, c: '#fbbf24' },
-        { l: 'PAS', v: p.passing || 60, c: '#c084fc' },
-        { l: 'REB', v: p.rebounding || 60, c: '#4ade80' }
-    ];
+    const getSkillLabel = (val) => `<span class="skill-label level-${val}">${skillNames[val] || 'nieznany'} (${val})</span>`;
 
     return `
-        <div class="market-row" style="background: #1e293b; border-radius: 8px; padding: 12px 20px; display: grid; grid-template-columns: 50px 180px 1fr 180px 120px; align-items: center; border: 1px solid #334155;">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 40px; height: 40px; border-radius: 50%; background: #0f172a;">
-            
-            <div>
-                <div style="font-weight:bold;">${p.last_name}</div>
-                <div style="font-size: 0.75rem; color: #94a3b8;">${p.position} | OVR: ${p.overall_rating} | ${p.age} l.</div>
+        <div class="player-card-modern">
+            <div class="card-header">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" class="player-avatar">
+                <div class="player-main-info">
+                    <h3>${p.first_name} ${p.last_name} (${p.id})</h3>
+                    <p>${p.position} | Wiek: ${p.age} | Wzrost: ${p.height} cm | Potencjał: <span class="pot-tag">${p.potential}</span></p>
+                </div>
+                <div class="player-ovr-box">${p.overall_rating}</div>
             </div>
 
-            <div style="display: flex; gap: 8px; justify-content: center; height: 30px; align-items: flex-end;">
-                ${stats.map(s => `
-                    <div style="width: 10px; height: ${s.v/2.5}px; background: ${s.c}; border-radius: 2px;" title="${s.l}: ${s.v}"></div>
-                `).join('')}
+            <div class="card-skills-grid">
+                <div class="skill-col">
+                    <p>Rzut z wyskoku: ${getSkillLabel(p.jump_shot)}</p>
+                    <p>Zasięg rzutu: ${getSkillLabel(p.range)}</p>
+                    <p>Obr. na obwodzie: ${getSkillLabel(p.outside_def)}</p>
+                    <p>Kozłowanie: ${getSkillLabel(p.handling)}</p>
+                    <p>Jeden na jeden: ${getSkillLabel(p.driving)}</p>
+                </div>
+                <div class="skill-col">
+                    <p>Podania: ${getSkillLabel(p.passing)}</p>
+                    <p>Rzut z bliska: ${getSkillLabel(p.inside_shot)}</p>
+                    <p>Obr. pod koszem: ${getSkillLabel(p.inside_def)}</p>
+                    <p>Zbieranie: ${getSkillLabel(p.rebounding)}</p>
+                    <p>Blokowanie: ${getSkillLabel(p.blocking)}</p>
+                </div>
             </div>
 
-            <div style="text-align: right; padding-right: 15px;">
-                <div style="font-size: 1.1rem; font-weight: bold; color: #fbbf24;">$${item.current_price.toLocaleString()}</div>
-                <div style="font-size: 0.6rem; color: #64748b;">Wycena: $${marketVal.toLocaleString()}</div>
+            <div class="card-footer">
+                <div class="price-info">
+                    <span class="label">Cena aktualna:</span>
+                    <span class="price">$${item.current_price.toLocaleString()}</span>
+                    <span class="valuation">Wycena: $${marketVal.toLocaleString()}</span>
+                </div>
+                <button class="btn-bid" onclick="handleBid('${item.id}')">Licytuj</button>
             </div>
-
-            <button style="background: #38bdf8; color: #0f172a; border: none; padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer;">LICYTUJ</button>
         </div>
     `;
 }
