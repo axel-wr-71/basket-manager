@@ -3,6 +3,8 @@ import { supabaseClient } from '../auth.js';
 import { checkLeagueEvents } from '../core/league_clock.js';
 import { renderTrainingDashboard } from './training_view.js';
 import { renderRosterView } from './roster_view.js';
+import { renderMarketView } from './market_view.js';
+import { renderFinancesView } from './finances_view.js';
 
 // Cache na dane, aby aplikacja działała szybciej przy przełączaniu zakładek
 let cachedTeam = null;
@@ -52,16 +54,30 @@ export async function initApp() {
 }
 
 /**
+ * Czyści kontenery, aby uniknąć nakładania się widoków
+ */
+function clearAllContainers() {
+    const containers = [
+        'roster-view-container',
+        'app-main-view',      // Trening
+        'market-container',
+        'finances-container'
+    ];
+    containers.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+}
+
+/**
  * Wyświetla widok zawodników (Roster)
  */
 export async function showRoster() {
-    // Jeśli nie mamy danych w cache, pobierz je najpierw
     if (!cachedTeam || !cachedPlayers) {
         const data = await initApp();
         if (!data) return;
     }
-    
-    // Renderujemy do kontenera zdefiniowanego w index.html
+    clearAllContainers();
     renderRosterView(cachedTeam, cachedPlayers);
 }
 
@@ -73,8 +89,32 @@ export async function showTraining() {
         const data = await initApp();
         if (!data) return;
     }
-    
+    clearAllContainers();
     renderTrainingDashboard(cachedTeam, cachedPlayers);
+}
+
+/**
+ * Wyświetla widok rynku transferowego
+ */
+export async function showMarket() {
+    if (!cachedTeam) {
+        const data = await initApp();
+        if (!data) return;
+    }
+    clearAllContainers();
+    renderMarketView(cachedTeam);
+}
+
+/**
+ * Wyświetla widok finansów
+ */
+export async function showFinances() {
+    if (!cachedTeam) {
+        const data = await initApp();
+        if (!data) return;
+    }
+    clearAllContainers();
+    renderFinancesView(cachedTeam);
 }
 
 /**
