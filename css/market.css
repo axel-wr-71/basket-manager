@@ -1,0 +1,78 @@
+/* css/market.css */
+
+/* Kontener główny */
+.market-wrapper {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Panel filtrów */
+.filter-panel {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+/* Styl wiersza zawodnika */
+.market-row {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(30, 41, 59, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.market-row:hover {
+    background: rgba(51, 65, 85, 0.6) !important;
+    border-color: #38bdf8 !important;
+    transform: scale(1.01);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Animacja słupków umiejętności */
+.skill-bar-fill {
+    transition: height 1s ease-out;
+}
+
+.market-row:hover .skill-bar-fill {
+    filter: brightness(1.2);
+}
+
+/* Przyciski */
+button#btn-search, button[onclick^="handleBid"] {
+    transition: all 0.2s ease;
+    text-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+button:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Formularze (Select/Input) */
+.filter-panel input, .filter-panel select {
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-panel input:focus, .filter-panel select:focus {
+    border-color: #38bdf8 !important;
+}
+
+/* Animacje */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsywność */
+@media (max-width: 1024px) {
+    .market-row {
+        grid-template-columns: 60px 1fr 1fr 120px !important;
+    }
+    .skills-column { display: none; } /* Ukrywamy wykresy na małych ekranach */
+}
