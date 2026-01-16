@@ -10,11 +10,18 @@ export async function renderMarketView(teamData) {
         <div class="market-modern-wrapper">
             <div class="market-top-bar">
                 <div class="market-title">
-                    <h1>Scouting & Market</h1>
-                    <div class="market-budget">Budget: <span>$${teamData.balance.toLocaleString()}</span></div>
+                    <h1>Transfer Market</h1>
+                    <div class="market-budget">Available Funds: <span>$${teamData.balance.toLocaleString()}</span></div>
                 </div>
                 <div class="market-filters">
-                    <select id="f-pos"><option value="">All Positions</option><option value="PG">PG</option><option value="SG">SG</option><option value="SF">SF</option><option value="PF">PF</option><option value="C">C</option></select>
+                    <select id="f-pos">
+                        <option value="">All Positions</option>
+                        <option value="PG">PG</option>
+                        <option value="SG">SG</option>
+                        <option value="SF">SF</option>
+                        <option value="PF">PF</option>
+                        <option value="C">C</option>
+                    </select>
                     <button id="btn-search-market">REFRESH LIST</button>
                 </div>
             </div>
@@ -30,45 +37,60 @@ async function loadMarketData() {
     const list = document.getElementById('market-listings');
     list.innerHTML = '<div class="loader">Analyzing prospects...</div>';
 
-    const { data, error } = await supabaseClient.from('transfer_market').select('*, players(*)').eq('status', 'active');
+    const { data, error } = await supabaseClient
+        .from('transfer_market')
+        .select('*, players(*)')
+        .eq('status', 'active');
     
     if (error) {
         console.error("Supabase Error:", error);
         return;
     }
 
+    if (!data || data.length === 0) {
+        list.innerHTML = '<div class="no-results">No players currently on the market.</div>';
+        return;
+    }
+
     list.innerHTML = data.map(item => renderPlayerCard(item)).join('');
-}
-
-// Funkcja rysująca mały wykres liniowy SVG
-function generateSparkline(values, color) {
-    const width = 100;
-    const height = 30;
-    const maxVal = 15; // Max skill level
-    const step = width / (values.length - 1);
-    
-    const points = values.map((v, i) => {
-        const x = i * step;
-        const y = height - (v / maxVal * height);
-        return `${x},${y}`;
-    }).join(' ');
-
-    return `
-        <svg viewBox="0 0 ${width} ${height}" class="sparkline">
-            <polyline fill="none" stroke="${color}" stroke-width="2" points="${points}" />
-        </svg>
-    `;
 }
 
 function renderPlayerCard(item) {
     const p = item.players;
+    if (!p) return '';
+
     const marketVal = calculateMarketValue(p);
     const accentColor = getPosColor(p.position);
 
-    // KATEGORIE (Upewnij się, że nazwy p.nazwa są identyczne z Twoją bazą!)
-    const offSkills = [p.jump_shot || 0, p.range || 0, p.inside_shot || 0, p.passing || 0];
-    const defSkills = [p.outside_def || 0, p.inside_def || 0, p.rebounding || 0, p.blocking || 0];
-    const genSkills = [p.handling || 0, p.driving || 0, p.stamina || 5, p.experience || 2];
+    // DOKŁADNE MAPOWANIE Z TWOJEJ BAZY (Prefix skill_)
+    const scoutingReport = {
+        attack: [
+            { label: 'Jump Shot (2PT)', val: p.skill_2pt },
+            { label: 'Range (3PT)', val: p.skill_3pt },
+            { label: 'Dunk/Inside', val: p.skill_dunk },
+            { label: 'Passing', val: p.skill_passing }
+        ],
+        defense: [
+            { label: '1on1 Defense', val: p.skill_1on1_def },
+            { label: 'Rebounding', val: p.skill_rebound },
+            { label: 'Blocking', val: p.skill_block },
+            { label: 'Stealing', val: p.skill_steal }
+        ],
+        general: [
+            { label: 'Handling', val: p.skill_dribbling },
+            { label: '1on1 Offense', val: p.skill_1on1_off },
+            { label: 'Stamina', val: p.skill_stamina },
+            { label: 'Free Throw', val: p.skill_ft }
+        ]
+    };
+
+    const renderRows = (skills) => skills.map(s => `
+        <div class="skill-row-numeric">
+            <span class="s-name">${s.label}</span>
+            <span class="s-dots"></span>
+            <span class="s-value" style="color: ${accentColor}">${s.val ?? 0}</span>
+        </div>
+    `).join('');
 
     return `
         <div class="player-card">
@@ -76,25 +98,28 @@ function renderPlayerCard(item) {
             <div class="card-main">
                 <div class="card-header">
                     <div class="p-info">
-                        <span class="p-pos" style="background: ${accentColor}20; color: ${accentColor}">${p.position}</span>
-                        <h3>${p.first_name[0]}. ${p.last_name}</h3>
-                        <p class="p-meta">Age: ${p.age} | ${p.height}cm</p>
+                        <h3>${p.first_name} ${p.last_name}</h3>
+                        <div class="p-sub-header">
+                            <span class="p-pos-tag" style="background: ${accentColor}">${p.position}</span>
+                            <span class="p-salary">Salary: <strong>$${(p.salary || 0).toLocaleString()}</strong></span>
+                        </div>
+                        <p class="p-meta">Age: ${p.age} | Height: ${p.height || '---'} cm</p>
                     </div>
-                    <div class="p-ovr" style="border-color: ${accentColor}">${p.overall_rating}</div>
+                    <div class="p-ovr" style="border-color: ${accentColor}; color: ${accentColor}">${p.overall_rating}</div>
                 </div>
 
-                <div class="scouting-report">
-                    <div class="report-segment">
-                        <div class="segment-label">ATTACK</div>
-                        ${generateSparkline(offSkills, accentColor)}
+                <div class="scouting-report-numeric">
+                    <div class="report-section">
+                        <h4>ATTACK</h4>
+                        ${renderRows(scoutingReport.attack)}
                     </div>
-                    <div class="report-segment">
-                        <div class="segment-label">DEFENSE</div>
-                        ${generateSparkline(defSkills, accentColor)}
+                    <div class="report-section">
+                        <h4>DEFENSE</h4>
+                        ${renderRows(scoutingReport.defense)}
                     </div>
-                    <div class="report-segment">
-                        <div class="segment-label">GENERAL</div>
-                        ${generateSparkline(genSkills, '#94a3b8')}
+                    <div class="report-section">
+                        <h4>GENERAL</h4>
+                        ${renderRows(scoutingReport.general)}
                     </div>
                 </div>
 
@@ -103,7 +128,7 @@ function renderPlayerCard(item) {
                         <span class="price-val">$${item.current_price.toLocaleString()}</span>
                         <span class="price-est">Valuation: $${marketVal.toLocaleString()}</span>
                     </div>
-                    <button class="bid-btn" style="background: ${accentColor}" onclick="handleBid('${item.id}')">BID</button>
+                    <button class="bid-btn" style="background: ${accentColor}" onclick="handleBid('${item.id}', ${item.current_price})">BID</button>
                 </div>
             </div>
         </div>
@@ -111,6 +136,18 @@ function renderPlayerCard(item) {
 }
 
 function getPosColor(pos) {
-    const colors = { 'PG': '#3b82f6', 'SG': '#60a5fa', 'SF': '#f59e0b', 'PF': '#fb923c', 'C': '#10b981' };
+    const colors = { 
+        'PG': '#3b82f6', 
+        'SG': '#60a5fa', 
+        'SF': '#f59e0b', 
+        'PF': '#fb923c', 
+        'C': '#10b981' 
+    };
     return colors[pos] || '#94a3b8';
 }
+
+// Globalna funkcja licytacji (do rozbudowy w kolejnym kroku)
+window.handleBid = async (marketId, currentPrice) => {
+    console.log(`Bidding for ${marketId} at ${currentPrice}`);
+    // Tu dodamy logikę sprawdzania funduszy i zapytanie do Supabase
+};
