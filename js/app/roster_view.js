@@ -94,15 +94,101 @@ function renderFeaturedPlayerCard(title, player) {
     `;
 }
 
+// Logika Przełączania Ostrzeżeń w Pop-upie
+window.updateSaleLogicUI = () => {
+    const buyNowInput = document.getElementById('bn-price-input');
+    const warningBox = document.getElementById('sale-warning-box');
+    
+    if (buyNowInput.value && parseInt(buyNowInput.value) > 0) {
+        warningBox.style.background = '#fff1f2';
+        warningBox.style.borderLeft = '5px solid #be123c';
+        warningBox.innerHTML = `
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span style="font-size: 1.2em;">🚫</span>
+                <span style="font-weight: 800; color: #be123c; font-size: 0.85em;">PLAYER WILL BE UNAVAILABLE</span>
+            </div>
+            <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #9f1239; line-height: 1.4;">
+                Due to the <strong>Buy Now</strong> option, the player must be withdrawn from the squad to ensure transfer readiness.
+            </p>
+        `;
+    } else {
+        warningBox.style.background = '#f0f9ff';
+        warningBox.style.borderLeft = '5px solid #0ea5e9';
+        warningBox.innerHTML = `
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span style="font-size: 1.2em;">⚽</span>
+                <span style="font-weight: 800; color: #075985; font-size: 0.85em;">PLAYER REMAINS IN SQUAD</span>
+            </div>
+            <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #0c4a6e; line-height: 1.4;">
+                Standard auction mode. The player <strong>can play</strong> in matches until the auction is successfully resolved.
+            </p>
+        `;
+    }
+};
+
 // Globalne handlery przycisków
 window.showPlayerProfile = (playerId) => {
     console.log("Opening Profile Hub for player:", playerId);
 };
 
 window.sellPlayer = (playerId) => {
-    // Tu za chwilę wywołamy Twój nowy Pop-up
-    const confirmSell = confirm("Czy na pewno chcesz wystawić tego zawodnika na listę transferową?");
-    if (confirmSell) {
-        console.log("Initiating sale for player:", playerId);
-    }
+    const modalHtml = `
+        <div id="sell-player-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px);">
+            <div style="background: white; width: 450px; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: modalFadeIn 0.3s ease-out;">
+                
+                <div style="background: #1a237e; padding: 25px; color: white; position: relative;">
+                    <h2 style="margin: 0; font-size: 1.3em; font-weight: 800;">TRANSFER LISTING</h2>
+                    <p style="margin: 5px 0 0 0; font-size: 0.8em; opacity: 0.7;">Player ID: ${playerId}</p>
+                    <button onclick="document.getElementById('sell-player-modal').remove()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 1.5em; cursor: pointer;">&times;</button>
+                </div>
+
+                <div id="sale-warning-box" style="margin: 20px; padding: 15px; border-radius: 12px; transition: 0.3s; background: #f0f9ff; border-left: 5px solid #0ea5e9;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span style="font-size: 1.2em;">⚽</span>
+                        <span style="font-weight: 800; color: #075985; font-size: 0.85em;">PLAYER REMAINS IN SQUAD</span>
+                    </div>
+                    <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #0c4a6e; line-height: 1.4;">
+                        Standard auction mode. The player <strong>can play</strong> in matches until the auction is successfully resolved.
+                    </p>
+                </div>
+
+                <div style="padding: 0 25px 30px 25px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px;">BUY NOW PRICE ($)</label>
+                        <input type="number" id="bn-price-input" oninput="window.updateSaleLogicUI()" placeholder="Leave empty for Auction only" style="width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #e2e8f0; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1.1em; box-sizing: border-box; outline: none;">
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px;">AUCTION DURATION</label>
+                        <select id="auction-duration-select" style="width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #e2e8f0; font-weight: 600; background: #fff; cursor: pointer;">
+                            <option value="12">12 Hours</option>
+                            <option value="24" selected>24 Hours</option>
+                            <option value="48">48 Hours</option>
+                        </select>
+                    </div>
+
+                    <button onclick="confirmListing('${playerId}')" style="width: 100%; padding: 18px; border-radius: 16px; border: none; background: #1a237e; color: white; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 15px -3px rgba(26,35,126,0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        CONFIRM & LIST PLAYER
+                    </button>
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes modalFadeIn {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+window.confirmListing = (playerId) => {
+    const buyNow = document.getElementById('bn-price-input').value;
+    const duration = document.getElementById('auction-duration-select').value;
+    
+    // Logika finalizacji (TBD: Supabase Update)
+    console.log(`Action: List player ${playerId}. BN: ${buyNow || 'NONE'}, Dur: ${duration}h`);
+    alert("Player has been listed on the market!");
+    document.getElementById('sell-player-modal').remove();
 };
