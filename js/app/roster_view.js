@@ -1,6 +1,9 @@
 // js/app/roster_view.js
 import { supabaseClient } from '../auth.js';
 
+/**
+ * Mapowanie liczbowego potencjału na prestiżowe rangi
+ */
 function getPotentialLabel(pot) {
     const p = parseInt(pot) || 0;
     if (p >= 96) return { label: 'G.O.A.T.', color: '#d4af37' };
@@ -13,6 +16,23 @@ function getPotentialLabel(pot) {
     if (p >= 60) return { label: 'Role Player', color: '#94a3b8' };
     if (p >= 50) return { label: 'Deep Bench', color: '#cbd5e1' };
     return { label: 'Project Player', color: '#e2e8f0' };
+}
+
+/**
+ * Zwraca kolor dla wartości umiejętności (Skala 1-20)
+ */
+function getSkillColor(val) {
+    const v = parseInt(val) || 0;
+    if (v >= 19) return '#d4af37'; // Złoty (GOAT)
+    if (v >= 17) return '#8b5cf6'; // Fioletowy (Elite)
+    if (v >= 15) return '#10b981'; // Zielony (Great)
+    if (v >= 13) return '#06b6d4'; // Morski (Good)
+    if (v >= 11) return '#3b82f6'; // Niebieski (Solid)
+    if (v >= 9)  return '#94a3b8'; // Stalowy (Average)
+    if (v >= 7)  return '#cbd5e1'; // Jasnoszary (Raw)
+    if (v >= 5)  return '#fbbf24'; // Żółty (Weak)
+    if (v >= 3)  return '#f97316'; // Pomarańczowy (Poor)
+    return '#ef4444';             // Czerwony (Critical)
 }
 
 export async function renderRosterView(teamData, players) {
@@ -51,10 +71,11 @@ export async function renderRosterView(teamData, players) {
                             <th style="padding: 15px 25px;">Player & Scouting Report</th>
                             <th style="padding: 15px;">Pos</th>
                             <th style="padding: 15px;">Age</th>
-                            <th style="padding: 15px;">Potential</th>
+                            <th style="padding: 15px;">Height</th>
                             <th style="padding: 15px;">Salary</th>
+                            <th style="padding: 15px;">Potential</th>
                             <th style="padding: 15px;">OVR</th>
-                            <th style="padding: 15px; text-align: center;">Action</th>
+                            <th style="padding: 15px; text-align: center;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -88,7 +109,7 @@ function renderPlayerRow(player) {
     const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}&backgroundColor=f0f2f5`;
 
     return `
-        <tr style="border-bottom: 1px solid #f8f9fa;">
+        <tr style="border-bottom: 1px solid #f8f9fa; transition: 0.2s;" onmouseover="this.style.background='#fcfdfe'" onmouseout="this.style.background='transparent'">
             <td style="padding: 20px 25px;">
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -129,11 +150,12 @@ function renderPlayerRow(player) {
                 <div style="font-size: 0.85em; font-weight: 600; color: #444; background: #f0f2f5; display: inline-block; padding: 4px 12px; border-radius: 20px;">${player.position}</div>
             </td>
             <td style="padding: 15px; color: #666; font-weight: 600;">${player.age}</td>
-            <td style="padding: 15px;">
-                <span style="font-weight: 800; color: ${pot.color}; font-size: 0.85em;">${pot.label}</span>
-            </td>
+            <td style="padding: 15px; color: #666; font-weight: 600;">${player.height || '--'} cm</td>
             <td style="padding: 15px; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #2e7d32; font-size: 0.9em;">
                 $${(player.salary || 0).toLocaleString()}
+            </td>
+            <td style="padding: 15px;">
+                <span style="font-weight: 800; color: ${pot.color}; font-size: 0.85em;">${pot.label}</span>
             </td>
             <td style="padding: 15px;">
                 <div style="width: 45px; height: 45px; border-radius: 12px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1em; border: 2px solid #c8e6c9;">
@@ -141,21 +163,23 @@ function renderPlayerRow(player) {
                 </div>
             </td>
             <td style="padding: 15px; text-align: center;">
-                <button onclick="window.showPlayerDetails('${player.id}')" style="background: white; border: 1px solid #e0e0e0; padding: 8px 16px; border-radius: 10px; color: #1a237e; font-weight: 700; cursor: pointer; font-size: 0.75em;">
-                    DEVELOPMENT
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+                    <button onclick="window.sellPlayer('${player.id}')" style="width: 100px; background: #fee2e2; border: 1px solid #ef4444; padding: 6px 0; border-radius: 8px; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 0.7em; transition: 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='white'">
+                        SELL
+                    </button>
+                    <button onclick="window.showPlayerProfile('${player.id}')" style="width: 100px; background: white; border: 1px solid #1a237e; padding: 6px 0; border-radius: 8px; color: #1a237e; font-weight: 700; cursor: pointer; font-size: 0.7em; transition: 0.2s;" onmouseover="this.style.background='#1a237e'; this.style.color='white'">
+                        PROFILE
+                    </button>
+                </div>
             </td>
         </tr>
     `;
 }
 
 function renderSkillMini(name, val) {
-    const v = val !== undefined && val !== null ? val : '--';
-    let color = '#444';
-    if (typeof v === 'number') {
-        if (v >= 16) color = '#10b981'; 
-        if (v <= 6) color = '#ef4444';  
-    }
+    const v = (val !== undefined && val !== null) ? val : '--';
+    const color = getSkillColor(v);
+    
     return `
         <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; border-bottom: 1px solid rgba(0,0,0,0.03);">
             <span style="color: #64748b; font-weight: 500;">${name}</span>
@@ -164,6 +188,17 @@ function renderSkillMini(name, val) {
     `;
 }
 
-window.showPlayerDetails = (playerId) => {
-    console.log("Opening Development Hub for player:", playerId);
+// Obsługa przycisków
+window.showPlayerProfile = (playerId) => {
+    console.log("Opening Profile Hub for player:", playerId);
+    // Logika otwierania profilu
+};
+
+window.sellPlayer = (playerId) => {
+    // Prosty pop-up przed akcją
+    const confirmSell = confirm("Czy na pewno chcesz wystawić tego zawodnika na listę transferową?");
+    if (confirmSell) {
+        console.log("Initiating sale for player:", playerId);
+        // Logika sprzedaży / pop-up handlowy
+    }
 };
