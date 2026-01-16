@@ -29,14 +29,19 @@ function renderSkillMini(name, val) {
     `;
 }
 
-// Ta funkcja służy tylko do renderowania paska w tabeli (widok ogólny)
+// Pełna lista 10 kategorii potencjału (zgodnie z wymaganiami)
 function getPotentialLabel(pot) {
     const p = parseInt(pot) || 0;
     if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500' };
     if (p >= 92) return { label: 'All-Time Great', color: '#b8860b' };
     if (p >= 88) return { label: 'Elite Franchise', color: '#d4af37' };
-    if (p >= 80) return { label: 'High Prospect', color: '#3b82f6' };
-    return { label: 'Standard', color: '#94a3b8' };
+    if (p >= 84) return { label: 'Star Performer', color: '#8b5cf6' };
+    if (p >= 79) return { label: 'High Prospect', color: '#10b981' };
+    if (p >= 74) return { label: 'Solid Starter', color: '#6366f1' };
+    if (p >= 68) return { label: 'Reliable Bench', color: '#64748b' };
+    if (p >= 60) return { label: 'Role Player', color: '#94a3b8' };
+    if (p >= 50) return { label: 'Deep Bench', color: '#cbd5e1' };
+    return { label: 'Project Player', color: '#94a3b8' };
 }
 
 // --- 2. WEWNĘTRZNY RENDER WIERSZA ---
@@ -53,7 +58,7 @@ function renderPlayerRowInternal(player, potLabel) {
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-weight: 800; color: #1a237e; font-size: 1.1em;">${player.first_name} ${player.last_name}</span>
-                        ${player.age <= 19 ? '<span style="background:#0ea5e9; color:white; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:900;">ROOKIE</span>' : ''}
+                        ${player.is_rookie ? '<span style="background:#ef4444; color:white; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:900;">ROOKIE</span>' : ''}
                     </div>
                     <div style="display: flex; align-items: flex-start; gap: 20px;">
                         <img src="${avatarUrl}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid #e0e0e0; background: #fff;">
@@ -119,7 +124,7 @@ export async function renderRosterView(teamData, players) {
         if (!player) return;
 
         if (type === 'profile') {
-            // POPRAWKA: Przekazujemy tylko player. showProfile samo wyliczy potencjał.
+            // Przekazujemy tylko player - profil sam wyliczy kategorię
             RosterActions.showProfile(player);
         } else if (type === 'sell') {
             RosterActions.showSellConfirm(player);
