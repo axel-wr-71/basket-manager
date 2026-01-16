@@ -32,6 +32,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     font-size: 13px;
+    outline: none;
 }
 .market-filters button {
     background: var(--text-main);
@@ -41,13 +42,15 @@
     border-radius: 6px;
     font-weight: 700;
     cursor: pointer;
+    transition: opacity 0.2s;
 }
+.market-filters button:hover { opacity: 0.9; }
 
 /* Grid Kart */
 .market-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 25px;
 }
 
 /* Karta Zawodnika */
@@ -57,17 +60,20 @@
     display: flex;
     overflow: hidden;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
-.player-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+.player-card:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 12px 24px rgba(0,0,0,0.08); 
+}
 
 .card-side-accent { width: 6px; }
 
 .card-main { flex: 1; padding: 20px; }
 
-.card-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
-.p-pos { font-weight: 800; color: var(--accent); font-size: 12px; }
-.card-header h3 { margin: 2px 0; font-size: 18px; }
+.card-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+.p-pos { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.card-header h3 { margin: 2px 0; font-size: 18px; color: var(--text-main); }
 .p-meta { font-size: 12px; color: var(--text-muted); }
 
 .p-ovr {
@@ -76,39 +82,88 @@
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-weight: 900; font-size: 18px;
+    background: #fff;
 }
 
-/* Wykresy Umiejętności */
-.skills-graph {
+/* Nowy Układ Umiejętności (2 kolumny) */
+.skills-grid-compact {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: x 20px;
+    column-gap: 20px;
     row-gap: 8px;
     margin-bottom: 20px;
+    padding: 10px 0;
 }
 
-.skill-bar-wrapper { display: flex; align-items: center; gap: 8px; }
-.skill-label { font-size: 10px; font-weight: 800; color: var(--text-muted); width: 20px; }
-.bar-bg { flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
-.bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-.skill-val { font-size: 10px; font-weight: bold; width: 15px; text-align: right; }
+.skill-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+}
+
+.s-label { 
+    font-size: 10px; 
+    font-weight: 800; 
+    color: var(--text-muted); 
+    width: 18px; 
+}
+
+.s-bar-bg { 
+    flex: 1; 
+    height: 5px; 
+    background: #f1f5f9; 
+    border-radius: 3px; 
+    overflow: hidden; 
+}
+
+.s-bar-fill { 
+    height: 100%; 
+    border-radius: 3px; 
+    transition: width 0.6s ease-out; 
+}
+
+.s-val { 
+    font-size: 10px; 
+    font-weight: bold; 
+    width: 12px; 
+    text-align: right; 
+    color: var(--text-main);
+}
 
 /* Stopka karty */
 .card-footer {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-top: 15px; border-top: 1px solid #f1f5f9;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding-top: 15px; 
+    border-top: 1px solid #f8fafc;
 }
-.price-tag { font-size: 18px; font-weight: 800; color: #10b981; }
-.valuation { font-size: 11px; color: var(--text-muted); }
+
+.price-now { font-size: 19px; font-weight: 800; color: #10b981; }
+.price-est { font-size: 11px; color: var(--text-muted); }
 
 .bid-btn {
-    background: #f1f5f9;
     border: none;
-    padding: 8px 20px;
-    border-radius: 6px;
+    padding: 10px 24px;
+    border-radius: 8px;
     font-weight: 800;
     font-size: 12px;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
-.bid-btn:hover { background: var(--text-main); color: white; }
+
+.bid-btn:hover {
+    filter: brightness(0.95);
+    transform: scale(1.05);
+}
+
+/* Informacja o braku wyników */
+.no-results, .loader {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
