@@ -167,4 +167,92 @@
 }
 .s-value { font-weight: 800; min-width: 20px; text-align: right; }
 
-/* P
+/* Paginacja */
+.market-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin-top: 40px;
+    padding: 20px;
+}
+
+.pag-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pag-btn:hover:not(:disabled) {
+    background: var(--text-main);
+    color: white;
+    border-color: var(--text-main);
+}
+
+.pag-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+#page-info { font-weight: 600; color: var(--text-muted); font-size: 14px; }
+
+/* Stopka i Akcje */
+.card-footer {
+    display: flex; 
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 15px; 
+    border-top: 1px solid #f8fafc;
+}
+
+.price-box { display: flex; flex-direction: column; }
+.price-val { font-size: 18px; font-weight: 800; color: var(--success); }
+
+/* Container dla przycisków */
+.action-container {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.bid-btn, .buy-btn {
+    flex: 1;
+    border: none;
+    padding: 12px 10px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 800;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.buy-btn {
+    background-color: var(--success) !important;
+}
+
+.bid-btn:hover, .buy-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.bid-btn:active, .buy-btn:active {
+    transform: translateY(0);
+}
+
+.no-results, .loader {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
