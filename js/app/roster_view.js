@@ -3,6 +3,19 @@ import { supabaseClient } from '../auth.js';
 import { renderPlayerRow } from './player_list_component.js';
 
 /**
+ * Symulacja ustawień z profilu Admina (Sekcja Teksty)
+ * W docelowej wersji dane te powinny być pobrane z Supabase
+ */
+const adminSettings = {
+    transferTexts: {
+        auctionOnlyTitle: "ZAWODNIK DOSTĘPNY W SKŁADZIE",
+        auctionOnlyDesc: "Standardowy tryb licytacji. Zawodnik pozostaje w rotacji i może grać w meczach do momentu zakończenia aukcji.",
+        buyNowTitle: "ZAWODNIK ZOSTANIE ZABLOKOWANY",
+        buyNowDesc: "Uwaga! Ustawienie ceny 'Kup Teraz' powoduje natychmiastowe wycofanie zawodnika ze składu, aby zapewnić gotowość do transferu."
+    }
+};
+
+/**
  * Mapowanie liczbowego potencjału na prestiżowe rangi
  */
 function getPotentialLabel(pot) {
@@ -94,10 +107,13 @@ function renderFeaturedPlayerCard(title, player) {
     `;
 }
 
-// Logika Przełączania Ostrzeżeń w Pop-upie
+/**
+ * Dynamiczna aktualizacja UI pop-upu na podstawie wpisanej kwoty
+ */
 window.updateSaleLogicUI = () => {
     const buyNowInput = document.getElementById('bn-price-input');
     const warningBox = document.getElementById('sale-warning-box');
+    const texts = adminSettings.transferTexts;
     
     if (buyNowInput.value && parseInt(buyNowInput.value) > 0) {
         warningBox.style.background = '#fff1f2';
@@ -105,33 +121,26 @@ window.updateSaleLogicUI = () => {
         warningBox.innerHTML = `
             <div style="display: flex; gap: 10px; align-items: center;">
                 <span style="font-size: 1.2em;">🚫</span>
-                <span style="font-weight: 800; color: #be123c; font-size: 0.85em;">PLAYER WILL BE UNAVAILABLE</span>
+                <span style="font-weight: 800; color: #be123c; font-size: 0.85em; text-transform: uppercase;">${texts.buyNowTitle}</span>
             </div>
-            <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #9f1239; line-height: 1.4;">
-                Due to the <strong>Buy Now</strong> option, the player must be withdrawn from the squad to ensure transfer readiness.
-            </p>
+            <p style="margin: 5px 0 0 0; font-size: 0.82em; color: #9f1239; line-height: 1.5;">${texts.buyNowDesc}</p>
         `;
     } else {
         warningBox.style.background = '#f0f9ff';
         warningBox.style.borderLeft = '5px solid #0ea5e9';
         warningBox.innerHTML = `
             <div style="display: flex; gap: 10px; align-items: center;">
-                <span style="font-size: 1.2em;">⚽</span>
-                <span style="font-weight: 800; color: #075985; font-size: 0.85em;">PLAYER REMAINS IN SQUAD</span>
+                <span style="font-size: 1.2em;">🏀</span>
+                <span style="font-weight: 800; color: #075985; font-size: 0.85em; text-transform: uppercase;">${texts.auctionOnlyTitle}</span>
             </div>
-            <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #0c4a6e; line-height: 1.4;">
-                Standard auction mode. The player <strong>can play</strong> in matches until the auction is successfully resolved.
-            </p>
+            <p style="margin: 5px 0 0 0; font-size: 0.82em; color: #0c4a6e; line-height: 1.5;">${texts.auctionOnlyDesc}</p>
         `;
     }
 };
 
-// Globalne handlery przycisków
-window.showPlayerProfile = (playerId) => {
-    console.log("Opening Profile Hub for player:", playerId);
-};
-
 window.sellPlayer = (playerId) => {
+    const texts = adminSettings.transferTexts;
+
     const modalHtml = `
         <div id="sell-player-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px);">
             <div style="background: white; width: 450px; border-radius: 28px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); animation: modalFadeIn 0.3s ease-out;">
@@ -142,24 +151,22 @@ window.sellPlayer = (playerId) => {
                     <button onclick="document.getElementById('sell-player-modal').remove()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; font-size: 1.5em; cursor: pointer;">&times;</button>
                 </div>
 
-                <div id="sale-warning-box" style="margin: 20px; padding: 15px; border-radius: 12px; transition: 0.3s; background: #f0f9ff; border-left: 5px solid #0ea5e9;">
+                <div id="sale-warning-box" style="margin: 20px; padding: 18px; border-radius: 14px; transition: 0.3s; background: #f0f9ff; border-left: 5px solid #0ea5e9;">
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <span style="font-size: 1.2em;">⚽</span>
-                        <span style="font-weight: 800; color: #075985; font-size: 0.85em;">PLAYER REMAINS IN SQUAD</span>
+                        <span style="font-size: 1.2em;">🏀</span>
+                        <span style="font-weight: 800; color: #075985; font-size: 0.85em; text-transform: uppercase;">${texts.auctionOnlyTitle}</span>
                     </div>
-                    <p style="margin: 5px 0 0 0; font-size: 0.8em; color: #0c4a6e; line-height: 1.4;">
-                        Standard auction mode. The player <strong>can play</strong> in matches until the auction is successfully resolved.
-                    </p>
+                    <p style="margin: 5px 0 0 0; font-size: 0.82em; color: #0c4a6e; line-height: 1.5;">${texts.auctionOnlyDesc}</p>
                 </div>
 
                 <div style="padding: 0 25px 30px 25px;">
                     <div style="margin-bottom: 20px;">
-                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px;">BUY NOW PRICE ($)</label>
-                        <input type="number" id="bn-price-input" oninput="window.updateSaleLogicUI()" placeholder="Leave empty for Auction only" style="width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #e2e8f0; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1.1em; box-sizing: border-box; outline: none;">
+                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase;">Buy Now Price ($)</label>
+                        <input type="number" id="bn-price-input" oninput="window.updateSaleLogicUI()" placeholder="Zostaw puste dla licytacji" style="width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #e2e8f0; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 1.1em; box-sizing: border-box; outline: none;">
                     </div>
 
                     <div style="margin-bottom: 25px;">
-                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px;">AUCTION DURATION</label>
+                        <label style="display: block; font-size: 0.75em; font-weight: 800; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase;">Auction Duration</label>
                         <select id="auction-duration-select" style="width: 100%; padding: 15px; border-radius: 14px; border: 2px solid #e2e8f0; font-weight: 600; background: #fff; cursor: pointer;">
                             <option value="12">12 Hours</option>
                             <option value="24" selected>24 Hours</option>
@@ -187,8 +194,11 @@ window.confirmListing = (playerId) => {
     const buyNow = document.getElementById('bn-price-input').value;
     const duration = document.getElementById('auction-duration-select').value;
     
-    // Logika finalizacji (TBD: Supabase Update)
     console.log(`Action: List player ${playerId}. BN: ${buyNow || 'NONE'}, Dur: ${duration}h`);
     alert("Player has been listed on the market!");
     document.getElementById('sell-player-modal').remove();
+};
+
+window.showPlayerProfile = (playerId) => {
+    console.log("Opening Profile Hub for player:", playerId);
 };
