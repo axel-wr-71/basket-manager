@@ -15,7 +15,7 @@ function getPotentialLabel(pot) {
     if (p >= 68) return { label: 'Reliable Bench', color: '#64748b' };
     if (p >= 60) return { label: 'Role Player', color: '#94a3b8' };
     if (p >= 50) return { label: 'Deep Bench', color: '#cbd5e1' };
-    return { label: 'Project Player', color: '#e2e8f0' };
+    return { label: 'Project Player', color: '#94a3b8' };
 }
 
 /**
@@ -28,9 +28,9 @@ function getSkillColor(val) {
     if (v >= 15) return '#10b981'; // Zielony (Great)
     if (v >= 13) return '#06b6d4'; // Morski (Good)
     if (v >= 11) return '#3b82f6'; // Niebieski (Solid)
-    if (v >= 9)  return '#94a3b8'; // Stalowy (Average)
-    if (v >= 7)  return '#cbd5e1'; // Jasnoszary (Raw)
-    if (v >= 5)  return '#fbbf24'; // Żółty (Weak)
+    if (v >= 9)  return '#64748b'; // Stalowy (Average)
+    if (v >= 7)  return '#475569'; // CIEMNIEJSZY (Raw) - poprawione dla widoczności
+    if (v >= 5)  return '#f59e0b'; // Mocniejszy żółty (Weak)
     if (v >= 3)  return '#f97316'; // Pomarańczowy (Poor)
     return '#ef4444';             // Czerwony (Critical)
 }
@@ -105,8 +105,13 @@ function renderFeaturedPlayerCard(title, player) {
 }
 
 function renderPlayerRow(player) {
-    const pot = getPotentialLabel(player.potential);
+    const potLabel = getPotentialLabel(player.potential);
     const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}&backgroundColor=f0f2f5`;
+    
+    // Obliczanie paska postępu potencjału
+    const currentOvr = player.overall_rating || 0;
+    const maxPot = player.potential || 1;
+    const progressWidth = Math.min(Math.round((currentOvr / maxPot) * 100), 100);
 
     return `
         <tr style="border-bottom: 1px solid #f8f9fa; transition: 0.2s;" onmouseover="this.style.background='#fcfdfe'" onmouseout="this.style.background='transparent'">
@@ -155,7 +160,12 @@ function renderPlayerRow(player) {
                 $${(player.salary || 0).toLocaleString()}
             </td>
             <td style="padding: 15px;">
-                <span style="font-weight: 800; color: ${pot.color}; font-size: 0.85em;">${pot.label}</span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <span style="font-weight: 800; color: ${potLabel.color}; font-size: 0.8em; white-space: nowrap;">${potLabel.label}</span>
+                    <div style="width: 80px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                        <div style="width: ${progressWidth}%; height: 100%; background: ${potLabel.color};"></div>
+                    </div>
+                </div>
             </td>
             <td style="padding: 15px;">
                 <div style="width: 45px; height: 45px; border-radius: 12px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1em; border: 2px solid #c8e6c9;">
@@ -191,14 +201,11 @@ function renderSkillMini(name, val) {
 // Obsługa przycisków
 window.showPlayerProfile = (playerId) => {
     console.log("Opening Profile Hub for player:", playerId);
-    // Logika otwierania profilu
 };
 
 window.sellPlayer = (playerId) => {
-    // Prosty pop-up przed akcją
     const confirmSell = confirm("Czy na pewno chcesz wystawić tego zawodnika na listę transferową?");
     if (confirmSell) {
         console.log("Initiating sale for player:", playerId);
-        // Logika sprzedaży / pop-up handlowy
     }
 };
