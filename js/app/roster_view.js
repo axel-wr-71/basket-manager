@@ -32,6 +32,24 @@ export async function renderRosterView(teamData, players) {
         .filter(p => p.age <= 21)
         .sort((a, b) => (b.potential || 0) - (a.potential || 0))[0];
 
+    // --- KLUCZOWA ZMIANA: PRZYPISANIE FUNKCJI DO WINDOW ---
+    // Dzięki temu nieważne jak wygląda przycisk w player_list_component,
+    // jeśli ma onclick="sellPlayer(...)" - zadziała.
+    window.sellPlayer = (playerId) => {
+        console.log("Próba sprzedaży gracza ID:", playerId);
+        const player = safePlayers.find(p => String(p.id) === String(playerId));
+        if (player) {
+            openTransferModal(player);
+        } else {
+            console.error("Nie znaleziono zawodnika w lokalnej tablicy safePlayers dla ID:", playerId);
+        }
+    };
+
+    window.showPlayerProfile = (playerId) => {
+        console.log("Otwieranie profilu dla ID:", playerId);
+        // Tu dodasz logikę profilu
+    };
+
     container.innerHTML = `
         <div class="roster-container" style="padding: 30px; color: #333; font-family: 'Inter', sans-serif; background: #f4f7f6; min-height: 100vh;">
             <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
@@ -76,21 +94,13 @@ export async function renderRosterView(teamData, players) {
         </div>
     `;
 
-    // Obsługa kliknięć w przyciski (Delegacja zdarzeń)
+    // Zachowujemy też delegację jako backup dla nowocześniejszych komponentów
     const tableBody = document.getElementById('roster-table-body');
     tableBody.addEventListener('click', (e) => {
-        // Sprzedaż zawodnika (Otwiera Pop-up)
         const sellBtn = e.target.closest('.sell-btn');
-        if (sellBtn) {
+        if (sellBtn && !sellBtn.getAttribute('onclick')) { // Tylko jeśli nie ma onclicka
             const playerId = sellBtn.getAttribute('data-id');
-            const player = safePlayers.find(p => p.id == playerId);
-            if (player) openTransferModal(player);
-        }
-
-        // Profil zawodnika
-        const profileBtn = e.target.closest('.profile-btn');
-        if (profileBtn) {
-            console.log("Opening Profile for ID:", profileBtn.getAttribute('data-id'));
+            window.sellPlayer(playerId);
         }
     });
 }
