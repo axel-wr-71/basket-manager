@@ -1,13 +1,19 @@
 // js/app/roster_actions.js
 
-// --- FUNKCJE POMOCNICZE (Global Scope) ---
+// --- FUNKCJE POMOCNICZE (Global Scope dla onclick w HTML) ---
 
-// Logika potencjału wg założeń: G.O.A.T, Elite, High Prospect
 window.getPotentialData = (val) => {
-    if (val >= 95) return { label: 'G.O.A.T', color: '#ff4500', icon: '👑' };
-    if (val >= 88) return { label: 'ELITE', color: '#d4af37', icon: '⭐' };
-    if (val >= 80) return { label: 'HIGH PROSPECT', color: '#3b82f6', icon: '🚀' };
-    return { label: 'STANDARD', color: '#94a3b8', icon: '👤' };
+    const p = parseInt(val) || 0;
+    if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500', icon: '👑' };
+    if (p >= 92) return { label: 'All-Time Great', color: '#b8860b', icon: '🏆' };
+    if (p >= 88) return { label: 'Elite Franchise', color: '#d4af37', icon: '⭐' };
+    if (p >= 84) return { label: 'Star Performer', color: '#8b5cf6', icon: '🌟' };
+    if (p >= 79) return { label: 'High Prospect', color: '#10b981', icon: '🚀' };
+    if (p >= 74) return { label: 'Solid Starter', color: '#6366f1', icon: '🏀' };
+    if (p >= 68) return { label: 'Reliable Bench', color: '#64748b', icon: '📋' };
+    if (p >= 60) return { label: 'Role Player', color: '#94a3b8', icon: '👤' };
+    if (p >= 50) return { label: 'Deep Bench', color: '#cbd5e1', icon: '🪑' };
+    return { label: 'Project Player', color: '#94a3b8', icon: '🛠️' };
 };
 
 window.selectAuctionType = (type, el) => {
@@ -50,19 +56,17 @@ export const RosterActions = {
         if (modal) modal.remove();
     },
 
-    // 1. MODAL: PROFILE (Zaktualizowany o profilowanie statystyk i kategorię potencjału)
+    _renderProfileMetric: (label, val, color) => `
+        <div style="background:white; padding:15px; border-radius:15px; border:1px solid #e2e8f0; text-align:center;">
+            <small style="color:#94a3b8; font-weight:800; text-transform:uppercase; font-size:0.65em;">${label}</small>
+            <div style="color:${color}; font-size:1.3em; font-weight:900; margin-top:5px;">${val}</div>
+        </div>
+    `,
+
     showProfile: (player) => {
-        // Pobieramy dane potencjału na podstawie wartości z bazy
         const potData = window.getPotentialData(player.potential);
         const isRookie = player.age <= 19;
 
-        const trainingHistory = [
-            { date: '10.01', intensity: 85 }, { date: '11.01', intensity: 40 },
-            { date: '12.01', intensity: 95 }, { date: '13.01', intensity: 60 },
-            { date: '14.01', intensity: 75 }, { date: '15.01', intensity: 90 }
-        ];
-
-        // Grupowanie statystyk (Profilowanie skilli)
         const skillGroups = [
             {
                 name: 'Offensive Skillset',
@@ -98,8 +102,8 @@ export const RosterActions = {
                     <div style="padding:40px; display:grid; grid-template-columns: 1.2fr 0.8fr; gap:40px; overflow-y:auto;">
                         <div>
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:30px;">
-                                ${this._renderProfileMetric("Overall Rating", player.overall_rating, "#1a237e")}
-                                ${this._renderProfileMetric("Potential Ceiling", player.potential, potData.color)}
+                                ${RosterActions._renderProfileMetric("Overall Rating", player.overall_rating, "#1a237e")}
+                                ${RosterActions._renderProfileMetric("Potential Class", potData.label, potData.color)}
                             </div>
                             
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
@@ -119,17 +123,16 @@ export const RosterActions = {
 
                         <div style="display:flex; flex-direction:column; gap:30px;">
                             <div style="background:#f8f9fa; padding:25px; border-radius:30px; border:1px solid #e2e8f0;">
-                                <h3 style="color:#1a237e; font-size:0.8em; margin-bottom:20px; text-transform:uppercase;">⚡ Recent Intensity</h3>
-                                <div style="display:flex; align-items:flex-end; justify-content:space-between; height:100px;">
-                                    ${trainingHistory.map(h => `<div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;"><div style="width:50%; background:#3b82f6; height:${h.intensity}%; border-radius:3px;"></div></div>`).join('')}
-                                </div>
-                            </div>
-
-                            <div style="background:white; padding:25px; border-radius:30px; border:1px solid #e2e8f0;">
-                                <h3 style="color:#1a237e; font-size:0.8em; margin-bottom:15px; text-transform:uppercase;">🏆 Achievements</h3>
-                                <div style="display:flex; gap:15px;">
-                                    <div title="MVP Candidate" style="font-size:30px;">🥇</div>
-                                    <div title="Rookie" style="font-size:30px; ${isRookie ? '' : 'filter:grayscale(1); opacity:0.2;'}">💎</div>
+                                <h3 style="color:#1a237e; font-size:0.8em; margin-bottom:15px; text-transform:uppercase;">Contract Info</h3>
+                                <div style="display:flex; flex-direction:column; gap:10px;">
+                                    <div style="display:flex; justify-content:space-between;">
+                                        <span style="color:#64748b;">Annual Salary</span>
+                                        <b style="color:#2e7d32;">$${(player.salary || 0).toLocaleString()}</b>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between;">
+                                        <span style="color:#64748b;">Status</span>
+                                        <b style="color:#1a237e;">${isRookie ? 'Rookie Scale' : 'Veteran'}</b>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -140,23 +143,17 @@ export const RosterActions = {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
     },
 
-    _renderProfileMetric: (label, val, color) => `
-        <div style="background:white; padding:15px; border-radius:15px; border:1px solid #e2e8f0; text-align:center;">
-            <small style="color:#94a3b8; font-weight:800; text-transform:uppercase; font-size:0.65em;">${label}</small>
-            <div style="color:${color}; font-size:1.8em; font-weight:900; margin-top:5px;">${val}</div>
-        </div>
-    `,
-
     showTraining: (player) => {
         const modalHtml = `
             <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(10px);">
                 <div style="background:white; width:450px; border-radius:30px; padding:40px; text-align:center;">
                     <h2 style="color:#1a237e; margin-bottom:10px;">Training Focus</h2>
-                    <div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
-                        <button onclick="alert('Offensive Drill Set'); document.getElementById('roster-modal-overlay').remove()" style="padding:15px; background:#f8f9fa; border:1px solid #e2e8f0; border-radius:15px; cursor:pointer; font-weight:700;">🎯 Offensive Specialist</button>
-                        <button onclick="alert('Defensive Drill Set'); document.getElementById('roster-modal-overlay').remove()" style="padding:15px; background:#f8f9fa; border:1px solid #e2e8f0; border-radius:15px; cursor:pointer; font-weight:700;">🛡️ Defensive Wall</button>
+                    <p style="color:#64748b; margin-bottom:25px;">Set development priority for ${player.first_name}</p>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <button onclick="alert('Training set!'); RosterActions.closeModal()" style="padding:15px; background:#f8f9fa; border:1px solid #e2e8f0; border-radius:15px; cursor:pointer; font-weight:700; color:#1a237e;">🎯 Offensive Specialist</button>
+                        <button onclick="alert('Training set!'); RosterActions.closeModal()" style="padding:15px; background:#f8f9fa; border:1px solid #e2e8f0; border-radius:15px; cursor:pointer; font-weight:700; color:#1a237e;">🛡️ Defensive Wall</button>
                     </div>
-                    <button onclick="document.getElementById('roster-modal-overlay').remove()" style="margin-top:20px; color:#94a3b8; background:none; border:none; cursor:pointer;">Cancel</button>
+                    <button onclick="RosterActions.closeModal()" style="margin-top:20px; color:#94a3b8; background:none; border:none; cursor:pointer;">Cancel</button>
                 </div>
             </div>`;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
@@ -168,18 +165,14 @@ export const RosterActions = {
         const modalHtml = `
             <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(12px);">
                 <div style="background:white; width:550px; border-radius:40px; padding:0; position:relative; overflow:hidden; box-shadow:0 30px 70px rgba(0,0,0,0.6);">
-                    <button onclick="document.getElementById('roster-modal-overlay').remove()" style="position:absolute; top:25px; right:25px; background:#f1f5f9; border:none; width:40px; height:40px; border-radius:50%; font-size:22px; cursor:pointer; color:#64748b; z-index:10; display:flex; align-items:center; justify-content:center;">&times;</button>
+                    <button onclick="RosterActions.closeModal()" style="position:absolute; top:25px; right:25px; background:#f1f5f9; border:none; width:40px; height:40px; border-radius:50%; font-size:22px; cursor:pointer; color:#64748b; z-index:10; display:flex; align-items:center; justify-content:center;">&times;</button>
 
                     <div style="padding:40px 40px 20px 40px; text-align:center; background:linear-gradient(to bottom, #f8fafc, white);">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}" style="width:100px; height:100px; background:white; border-radius:50%; border:3px solid #1a237e; margin-bottom:15px;">
                         <h2 style="color:#1a237e; margin:0; font-size:1.8em;">${player.first_name} ${player.last_name}</h2>
-                        <div style="display:flex; justify-content:center; gap:10px; margin-top:8px; color:#64748b; font-weight:700; font-size:0.9em; text-transform:uppercase;">
-                            <span>${player.position}</span> • <span>${player.age} yrs</span> • <span>${player.height || '--'}cm</span>
-                        </div>
                     </div>
 
                     <div style="padding:0 40px 40px 40px;">
-                        <h3 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px;">1. Select Auction Type</h3>
                         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:25px;">
                             <div class="auction-type-card" onclick="window.selectAuctionType('standard', this)" style="cursor:pointer; padding:15px; border-radius:15px; border:2px solid #1a237e; text-align:center; background:#f8fafc;">
                                 <div style="font-size:1.5em; margin-bottom:5px;">🔨</div>
@@ -206,15 +199,7 @@ export const RosterActions = {
                             </div>
                         </div>
 
-                        <h3 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px;">2. Duration</h3>
-                        <div id="duration-container" data-selected-value="24" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:35px;">
-                            <div class="duration-card" onclick="window.selectDuration('12', this)" style="cursor:pointer; padding:12px; border-radius:12px; background:#f1f5f9; color:#64748b; font-weight:800; text-align:center; font-size:0.85em;">12h</div>
-                            <div class="duration-card" onclick="window.selectDuration('24', this)" style="cursor:pointer; padding:12px; border-radius:12px; background:#1a237e; color:white; font-weight:800; text-align:center; font-size:0.85em;">24h</div>
-                            <div class="duration-card" onclick="window.selectDuration('48', this)" style="cursor:pointer; padding:12px; border-radius:12px; background:#f1f5f9; color:#64748b; font-weight:800; text-align:center; font-size:0.85em;">48h</div>
-                            <div class="duration-card" onclick="window.selectDuration('72', this)" style="cursor:pointer; padding:12px; border-radius:12px; background:#f1f5f9; color:#64748b; font-weight:800; text-align:center; font-size:0.85em;">3d</div>
-                        </div>
-
-                        <button id="final-submit-listing" style="width:100%; padding:20px; background:#1a237e; color:white; border:none; border-radius:20px; font-weight:800; font-size:1.1em; cursor:pointer; box-shadow:0 10px 20px rgba(26,35,126,0.3);">LIST ON MARKET</button>
+                        <button id="final-submit-listing" style="width:100%; padding:20px; background:#1a237e; color:white; border:none; border-radius:20px; font-weight:800; font-size:1.1em; cursor:pointer;">LIST ON MARKET</button>
                     </div>
                 </div>
             </div>
@@ -223,14 +208,8 @@ export const RosterActions = {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
         document.getElementById('final-submit-listing').onclick = () => {
-            const type = document.getElementById('price-fields-container').dataset.selectedType || 'standard';
-            const priceBid = document.getElementById('market-price-bid').value;
-            const priceBuy = document.getElementById('market-price-buy').value;
-            const duration = document.getElementById('duration-container').dataset.selectedValue || '24';
-
-            console.log(`LISTING: ${player.first_name} | Type: ${type} | Bid: ${priceBid} | BuyNow: ${priceBuy} | Time: ${duration}h`);
             alert('Listed on Transfer Market!');
-            this.closeModal();
+            RosterActions.closeModal();
         };
     }
 };
