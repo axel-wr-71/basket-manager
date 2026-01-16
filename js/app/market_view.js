@@ -2,6 +2,10 @@
 import { supabaseClient } from '../auth.js';
 import { calculateMarketValue } from '../core/economy.js';
 
+let currentPage = 1;
+const pageSize = 20;
+let allMarketData = [];
+
 export async function renderMarketView(teamData) {
     const container = document.getElementById('market-container');
     if (!container) return;
@@ -16,20 +20,43 @@ export async function renderMarketView(teamData) {
                 <div class="market-filters">
                     <select id="f-pos">
                         <option value="">All Positions</option>
-                        <option value="PG">PG</option>
-                        <option value="SG">SG</option>
-                        <option value="SF">SF</option>
-                        <option value="PF">PF</option>
+                        <option value="PG">PG</option><option value="SG">SG</option>
+                        <option value="SF">SF</option><option value="PF">PF</option>
                         <option value="C">C</option>
                     </select>
-                    <button id="btn-search-market">REFRESH LIST</button>
+                    <button id="btn-search-market">REFRESH</button>
                 </div>
             </div>
+            
             <div id="market-listings" class="market-grid"></div>
+
+            <div class="market-pagination">
+                <button id="prev-page" class="pag-btn">← Previous</button>
+                <span id="page-info">Page 1</span>
+                <button id="next-page" class="pag-btn">Next →</button>
+            </div>
         </div>
     `;
 
-    document.getElementById('btn-search-market').onclick = () => loadMarketData();
+    document.getElementById('btn-search-market').onclick = () => {
+        currentPage = 1;
+        loadMarketData();
+    };
+
+    document.getElementById('prev-page').onclick = () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayCurrentPage();
+        }
+    };
+
+    document.getElementById('next-page').onclick = () => {
+        if (currentPage * pageSize < allMarketData.length) {
+            currentPage++;
+            displayCurrentPage();
+        }
+    };
+
     await loadMarketData();
 }
 
@@ -47,12 +74,27 @@ async function loadMarketData() {
         return;
     }
 
-    if (!data || data.length === 0) {
-        list.innerHTML = '<div class="no-results">No players currently on the market.</div>';
-        return;
+    allMarketData = data || [];
+    displayCurrentPage();
+}
+
+function displayCurrentPage() {
+    const list = document.getElementById('market-listings');
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageData = allMarketData.slice(start, end);
+
+    if (pageData.length === 0) {
+        list.innerHTML = '<div class="no-results">No players found.</div>';
+    } else {
+        list.innerHTML = pageData.map(item => renderPlayerCard(item)).join('');
     }
 
-    list.innerHTML = data.map(item => renderPlayerCard(item)).join('');
+    document.getElementById('page-info').innerText = `Page ${currentPage} of ${Math.ceil(allMarketData.length / pageSize) || 1}`;
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = end >= allMarketData.length;
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderPlayerCard(item) {
@@ -62,7 +104,6 @@ function renderPlayerCard(item) {
     const marketVal = calculateMarketValue(p);
     const accentColor = getPosColor(p.position);
 
-    // DOKŁADNE MAPOWANIE Z TWOJEJ BAZY (Prefix skill_)
     const scoutingReport = {
         attack: [
             { label: 'Jump Shot (2PT)', val: p.skill_2pt },
@@ -136,18 +177,10 @@ function renderPlayerCard(item) {
 }
 
 function getPosColor(pos) {
-    const colors = { 
-        'PG': '#3b82f6', 
-        'SG': '#60a5fa', 
-        'SF': '#f59e0b', 
-        'PF': '#fb923c', 
-        'C': '#10b981' 
-    };
+    const colors = { 'PG': '#3b82f6', 'SG': '#60a5fa', 'SF': '#f59e0b', 'PF': '#fb923c', 'C': '#10b981' };
     return colors[pos] || '#94a3b8';
 }
 
-// Globalna funkcja licytacji (do rozbudowy w kolejnym kroku)
 window.handleBid = async (marketId, currentPrice) => {
     console.log(`Bidding for ${marketId} at ${currentPrice}`);
-    // Tu dodamy logikę sprawdzania funduszy i zapytanie do Supabase
 };
