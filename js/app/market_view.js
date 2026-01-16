@@ -133,6 +133,15 @@ function renderPlayerCard(item) {
         </div>
     `).join('');
 
+    // Logika przycisków
+    let actionButtons = '';
+    if (item.type === 'auction' || item.type === 'both') {
+        actionButtons += `<button class="bid-btn" style="background: ${accentColor}" onclick="handleBid('${item.id}', ${item.current_price})">BID $${item.current_price.toLocaleString()}</button>`;
+    }
+    if (item.type === 'buy_now' || item.type === 'both') {
+        actionButtons += `<button class="bid-btn" style="background: #10b981" onclick="handleBuyNow('${item.id}', ${item.buy_now_price})">BUY $${item.buy_now_price.toLocaleString()}</button>`;
+    }
+
     return `
         <div class="player-card">
             <div class="card-side-accent" style="background: ${accentColor}"></div>
@@ -166,10 +175,11 @@ function renderPlayerCard(item) {
 
                 <div class="card-footer">
                     <div class="price-box">
-                        <span class="price-val">$${item.current_price.toLocaleString()}</span>
-                        <span class="price-est">Valuation: $${marketVal.toLocaleString()}</span>
+                        <span class="price-val">Est. Val: $${marketVal.toLocaleString()}</span>
                     </div>
-                    <button class="bid-btn" style="background: ${accentColor}" onclick="handleBid('${item.id}', ${item.current_price})">BID</button>
+                    <div class="action-container" style="display: flex; gap: 8px;">
+                        ${actionButtons}
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,6 +191,5 @@ function getPosColor(pos) {
     return colors[pos] || '#94a3b8';
 }
 
-window.handleBid = async (marketId, currentPrice) => {
-    console.log(`Bidding for ${marketId} at ${currentPrice}`);
-};
+window.handleBid = (id, price) => alert(`Bidding $${price + 1000} for auction ${id}`);
+window.handleBuyNow = (id, price) => alert(`Buying now for $${price} (ID: ${id})`);
