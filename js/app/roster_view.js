@@ -1,7 +1,7 @@
 // js/app/roster_view.js
 import { supabaseClient } from '../auth.js';
 
-// --- 1. TWOJE FUNKCJE RENDERUJĄCE (PRZENIESIONE TUTAJ DLA BEZPIECZEŃSTWA) ---
+// --- 1. TWOJE FUNKCJE RENDERUJĄCE ---
 
 function getSkillColor(val) {
     const v = parseInt(val) || 0;
@@ -46,7 +46,7 @@ function renderPlayerRowInternal(player, potLabel) {
     const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}&backgroundColor=f0f2f5`;
     const currentOvr = player.overall_rating || 0;
     const maxPot = player.potential || 1;
-    // Twoja logika belki: (OVR / POT) * 100
+    // Logika belki: (OVR / POT) * 100
     const progressWidth = Math.min(Math.round((currentOvr / maxPot) * 100), 100);
 
     return `
@@ -95,6 +95,7 @@ function renderPlayerRowInternal(player, potLabel) {
                     <div style="width: 80px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
                         <div style="width: ${progressWidth}%; height: 100%; background: ${potLabel.color};"></div>
                     </div>
+                    <span style="font-size: 9px; font-weight: 700; color: #94a3b8;">${progressWidth}% cap</span>
                 </div>
             </td>
             <td style="padding: 15px;"><div style="width: 45px; height: 45px; border-radius: 12px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1em; border: 2px solid #c8e6c9;">${player.overall_rating || 0}</div></td>
@@ -116,10 +117,8 @@ export async function renderRosterView(teamData, players) {
 
     const safePlayers = Array.isArray(players) ? players : [];
 
-    // Rejestracja funkcji globalnych, żeby przyciski działały
     window.sellPlayer = (playerId) => {
         console.log("Sprzedaż zawodnika:", playerId);
-        // Tu możesz dodać kod modala później
     };
 
     window.showPlayerProfile = (playerId) => {
