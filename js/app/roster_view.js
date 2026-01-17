@@ -19,6 +19,7 @@ function getSkillColor(val) {
 }
 
 function renderSkillMini(name, val) {
+    // Jeśli wartość to undefined/null, wyświetlamy '--'
     const v = (val !== undefined && val !== null) ? val : '--';
     const color = getSkillColor(v);
     return `
@@ -27,6 +28,15 @@ function renderSkillMini(name, val) {
             <span style="font-weight: 800; color: ${color};">${v}</span>
         </div>
     `;
+}
+
+// Pomocnik do przeliczania cm na stopy/cale
+function cmToFtIn(cm) {
+    if (!cm) return '--';
+    const realInches = cm * 0.393701;
+    const feet = Math.floor(realInches / 12);
+    const inches = Math.round(realInches % 12);
+    return `${feet}'${inches}"`;
 }
 
 function getPotentialLabel(pot) {
@@ -90,7 +100,12 @@ function renderPlayerRowInternal(player, potLabel) {
             </td>
             <td style="padding: 15px;"><div style="font-size: 0.85em; font-weight: 600; color: #444; background: #f0f2f5; display: inline-block; padding: 4px 12px; border-radius: 20px;">${player.position}</div></td>
             <td style="padding: 15px; color: #666; font-weight: 600;">${player.age}</td>
-            <td style="padding: 15px; color: #666; font-weight: 600;">${player.height || '--'} cm</td>
+            <td style="padding: 15px; color: #666; font-weight: 600;">
+                <div style="display:flex; flex-direction:column;">
+                    <span>${player.height || '--'} cm</span>
+                    <small style="font-size: 0.75em; color: #94a3b8;">${cmToFtIn(player.height)}</small>
+                </div>
+            </td>
             <td style="padding: 15px; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #2e7d32; font-size: 0.9em;">$${(player.salary || 0).toLocaleString()}</td>
             <td style="padding: 15px;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
