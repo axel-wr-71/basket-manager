@@ -2,6 +2,11 @@
 
 // --- FUNKCJE POMOCNICZE ---
 
+/**
+ * Zwraca dane o potencjale. 
+ * UWAGA: Ikony docelowo będą pobierane z bazy danych (panel admina).
+ * Obecnie są to emoji, które łatwo zastąpisz ścieżkami do plików JPG/PNG.
+ */
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
     if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500', icon: '👑' };
@@ -26,12 +31,24 @@ const getSkillColor = (val) => {
     return '#64748b';             
 };
 
+/**
+ * Przelicza centymetry na format stopy'cale
+ */
+function cmToFtIn(cm) {
+    if (!cm) return '--';
+    const inchesTotal = cm * 0.393701;
+    const feet = Math.floor(inchesTotal / 12);
+    const inches = Math.round(inchesTotal % 12);
+    return `${feet}'${inches}"`;
+}
+
 export const RosterActions = {
     closeModal: () => {
         const modal = document.getElementById('roster-modal-overlay');
         if (modal) modal.remove();
     },
 
+    // Naprawiona metoda renderowania karty (używamy static-like call)
     _renderProfileCard: (label, val, color, extraHtml = '') => `
         <div style="background:white; padding:20px; border-radius:20px; border:1px solid #e2e8f0; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100px;">
             <small style="color:#94a3b8; font-weight:800; text-transform:uppercase; font-size:0.7em; margin-bottom:8px; display:block;">${label}</small>
@@ -42,36 +59,39 @@ export const RosterActions = {
 
     showProfile: (player) => {
         const potData = window.getPotentialData(player.potential);
-        const isRookie = player.age <= 19;
         const progressWidth = Math.min(Math.round(((player.overall_rating || 0) / (player.potential || 1)) * 100), 100);
         
-        // Flaga narodowości
-        const countryCode = (player.nationality || 'pl').toLowerCase();
+        // Flaga (używamy pola country z bazy lub domyślnie pl)
+        const countryCode = (player.country || 'pl').toLowerCase();
         const flagUrl = `https://flagcdn.com/w40/${countryCode}.png`;
 
+        // Pełna lista 12 umiejętności podzielona na 3 grupy (zgodnie z bazą)
         const skillGroups = [
             {
                 name: 'Attack',
                 skills: [
-                    { name: '2PT Scoring', val: player.skill_2pt },
-                    { name: '3PT Scoring', val: player.skill_3pt },
+                    { name: 'Jump Shot', val: player.skill_2pt },
+                    { name: '3PT Range', val: player.skill_3pt },
+                    { name: 'Dunking', val: player.skill_dunk },
                     { name: 'Passing', val: player.skill_passing }
                 ]
             },
             {
                 name: 'Defense',
                 skills: [
-                    { name: '1v1 Defense', val: player.skill_1on1_def },
-                    { name: 'Rebounding', val: player.skill_rebound },
-                    { name: 'Shot Blocking', val: player.skill_block }
+                    { name: '1on1 Def', val: player.skill_1on1_def },
+                    { name: 'Rebound', val: player.skill_rebound },
+                    { name: 'Blocking', val: player.skill_block },
+                    { name: 'Stealing', val: player.skill_steal }
                 ]
             },
             {
-                name: 'Physical & Ovr',
+                name: 'General',
                 skills: [
+                    { name: 'Handling', val: player.skill_dribbling },
+                    { name: '1on1 Off', val: player.skill_1on1_off },
                     { name: 'Stamina', val: player.skill_stamina },
-                    { name: 'Dribbling', val: player.skill_dribbling },
-                    { name: 'Overall', val: player.overall_rating }
+                    { name: 'Free Throw', val: player.skill_ft }
                 ]
             }
         ];
@@ -87,10 +107,10 @@ export const RosterActions = {
                             <div style="display:flex; align-items:center; gap:15px;">
                                 <h1 style="margin:0; font-size:2.5em; font-weight:900;">${player.first_name} ${player.last_name}</h1>
                                 <img src="${flagUrl}" style="width:30px; height:20px; border-radius:4px; object-fit:cover; border:1px solid rgba(255,255,255,0.2);">
-                                ${isRookie ? `<span style="background:#ef4444; color:white; font-size:10px; padding:4px 10px; border-radius:6px; font-weight:900; letter-spacing:1px; cursor:default; border:1px solid rgba(255,255,255,0.3);">ROOKIE</span>` : ''}
+                                ${player.is_rookie ? `<span style="background:#ef4444; color:white; font-size:10px; padding:4px 10px; border-radius:6px; font-weight:900; letter-spacing:1px; cursor:default; border:1px solid rgba(255,255,255,0.3);">ROOKIE</span>` : ''}
                             </div>
                             <p style="margin:8px 0 0 0; opacity:0.8; font-size:1.1em; font-weight:500;">
-                                ${player.position} | ${player.height || '--'} cm | ${player.age} Years Old
+                                ${player.position} | ${player.height || '--'} cm (${cmToFtIn(player.height)}) | ${player.age} Years Old
                             </p>
                         </div>
 
@@ -107,7 +127,7 @@ export const RosterActions = {
                     <div style="padding:40px; overflow-y:auto;">
                         
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; margin-bottom:40px;">
-                            ${RosterActions._renderProfileCard("Potential Class", potData.label, potData.color, `
+                            ${RosterActions._renderProfileCard("Potential Class", `${potData.icon} ${potData.label}`, potData.color, `
                                 <div style="width: 200px; height: 6px; background: #e2e8f0; border-radius: 10px; margin-top: 15px; overflow: hidden;">
                                     <div style="width: ${progressWidth}%; height: 100%; background: ${potData.color};"></div>
                                 </div>
@@ -122,26 +142,4 @@ export const RosterActions = {
                                 <div style="background:#f8fafc; padding:20px; border-radius:25px; border:1px solid #f1f5f9;">
                                     <h4 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px; text-align:center;">${group.name}</h4>
                                     ${group.skills.map(s => `
-                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
-                                            <span style="font-size:0.85em; font-weight:700; color:#475569;">${s.name}</span>
-                                            <span style="color:${getSkillColor(s.val)}; font-weight:900; font-size:1.1em;">${s.val || '--'}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    },
-
-    showTraining: (player) => {
-        // ... (kod treningu bez zmian)
-    },
-
-    showSellConfirm: (player) => {
-        // ... (kod sprzedaży bez zmian)
-    }
-};
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px;
