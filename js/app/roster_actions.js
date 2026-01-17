@@ -1,6 +1,6 @@
 // js/app/roster_actions.js
 
-// --- FUNKCJE POMOCNICZE (Global Scope) ---
+// --- FUNKCJE POMOCNICZE ---
 
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
@@ -16,7 +16,6 @@ window.getPotentialData = (val) => {
     return { label: 'Project Player', color: '#94a3b8', icon: '🛠️' };
 };
 
-// Pomocnik do kolorowania skilli w profilu (spójny z roster_view)
 const getSkillColor = (val) => {
     const v = parseInt(val) || 0;
     if (v >= 19) return '#d4af37'; 
@@ -27,36 +26,29 @@ const getSkillColor = (val) => {
     return '#64748b';             
 };
 
-window.selectAuctionType = (type, el) => {
-    document.querySelectorAll('.auction-type-card').forEach(c => {
-        c.style.borderColor = '#f1f5f9';
-        c.style.background = 'white';
-    });
-    el.style.borderColor = '#1a237e';
-    el.style.background = '#f8fafc';
-    document.getElementById('bid-field').style.display = (type === 'instant') ? 'none' : 'block';
-    document.getElementById('buy-field').style.display = (type === 'standard') ? 'none' : 'block';
-    document.getElementById('price-fields-container').dataset.selectedType = type;
-};
-
 export const RosterActions = {
     closeModal: () => {
         const modal = document.getElementById('roster-modal-overlay');
         if (modal) modal.remove();
     },
 
-    _renderProfileMetric: (label, val, color) => `
-        <div style="background:white; padding:15px; border-radius:15px; border:1px solid #e2e8f0; text-align:center;">
-            <small style="color:#94a3b8; font-weight:800; text-transform:uppercase; font-size:0.65em;">${label}</small>
-            <div style="color:${color}; font-size:1.3em; font-weight:900; margin-top:5px;">${val}</div>
+    _renderProfileCard: (label, val, color, extraHtml = '') => `
+        <div style="background:white; padding:20px; border-radius:20px; border:1px solid #e2e8f0; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100px;">
+            <small style="color:#94a3b8; font-weight:800; text-transform:uppercase; font-size:0.7em; margin-bottom:8px; display:block;">${label}</small>
+            <div style="color:${color}; font-size:1.4em; font-weight:900;">${val}</div>
+            ${extraHtml}
         </div>
     `,
 
     showProfile: (player) => {
         const potData = window.getPotentialData(player.potential);
         const isRookie = player.age <= 19;
+        const progressWidth = Math.min(Math.round(((player.overall_rating || 0) / (player.potential || 1)) * 100), 100);
+        
+        // Flaga narodowości
+        const countryCode = (player.nationality || 'pl').toLowerCase();
+        const flagUrl = `https://flagcdn.com/w40/${countryCode}.png`;
 
-        // DOKŁADNE MAPOWANIE UMIEJĘTNOŚCI Z BAZY (9 skilli)
         const skillGroups = [
             {
                 name: 'Attack',
@@ -75,64 +67,68 @@ export const RosterActions = {
                 ]
             },
             {
-                name: 'Physical',
+                name: 'Physical & Ovr',
                 skills: [
                     { name: 'Stamina', val: player.skill_stamina },
                     { name: 'Dribbling', val: player.skill_dribbling },
-                    { name: 'Ovr Skill', val: player.overall_rating }
+                    { name: 'Overall', val: player.overall_rating }
                 ]
             }
         ];
 
         const modalHtml = `
-            <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.9); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(15px);">
-                <div style="background:white; width:950px; max-height:90vh; border-radius:35px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.5);">
-                    <div style="background:#1a237e; color:white; padding:40px; display:flex; align-items:center; gap:30px; position:relative;">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}" style="width:130px; height:130px; background:white; border-radius:25px; padding:5px; border:4px solid #3b82f6;">
-                        <div style="text-align:left;">
-                            <h1 style="margin:0; font-size:2.8em; font-weight:900;">${player.first_name} ${player.last_name}</h1>
-                            <p style="margin:5px 0; opacity:0.8; font-size:1.1em;">${player.position} | ${player.height || '--'} cm | ${player.age} Years Old ${isRookie ? '<b style="color:#00f2ff; margin-left:10px;">[ROOKIE]</b>' : ''}</p>
-                            <div style="display:inline-block; background:${potData.color}; padding:6px 16px; border-radius:12px; font-weight:900; font-size:0.85em; margin-top:10px;">${potData.icon} ${potData.label}</div>
+            <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.8); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(10px);">
+                <div style="background:white; width:1000px; max-height:95vh; border-radius:40px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 40px 80px rgba(0,0,0,0.4);">
+                    
+                    <div style="background:#1a237e; color:white; padding:40px 50px; display:flex; align-items:center; position:relative;">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}" style="width:120px; height:120px; background:white; border-radius:30px; padding:5px; border:4px solid #3b82f6;">
+                        
+                        <div style="margin-left:30px; flex-grow:1;">
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                <h1 style="margin:0; font-size:2.5em; font-weight:900;">${player.first_name} ${player.last_name}</h1>
+                                <img src="${flagUrl}" style="width:30px; height:20px; border-radius:4px; object-fit:cover; border:1px solid rgba(255,255,255,0.2);">
+                                ${isRookie ? `<span style="background:#ef4444; color:white; font-size:10px; padding:4px 10px; border-radius:6px; font-weight:900; letter-spacing:1px; cursor:default; border:1px solid rgba(255,255,255,0.3);">ROOKIE</span>` : ''}
+                            </div>
+                            <p style="margin:8px 0 0 0; opacity:0.8; font-size:1.1em; font-weight:500;">
+                                ${player.position} | ${player.height || '--'} cm | ${player.age} Years Old
+                            </p>
                         </div>
-                        <button onclick="RosterActions.closeModal()" style="position:absolute; top:30px; right:30px; background:none; border:none; color:white; font-size:35px; cursor:pointer;">&times;</button>
+
+                        <div style="text-align:center; margin-right:60px;">
+                            <div style="width:80px; height:80px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;">
+                                <span style="color:#1a237e; font-size:2.2em; font-weight:900;">${player.overall_rating}</span>
+                            </div>
+                            <span style="font-size:0.7em; font-weight:800; text-transform:uppercase; letter-spacing:1px; opacity:0.9;">Overall Rating</span>
+                        </div>
+
+                        <button onclick="RosterActions.closeModal()" style="position:absolute; top:30px; right:30px; background:rgba(255,255,255,0.1); border:none; color:white; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
                     </div>
 
-                    <div style="padding:40px; display:grid; grid-template-columns: 1.3fr 0.7fr; gap:40px; overflow-y:auto;">
-                        <div>
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:30px;">
-                                ${RosterActions._renderProfileMetric("Overall Rating", player.overall_rating, "#1a237e")}
-                                ${RosterActions._renderProfileMetric("Potential Class", potData.label, potData.color)}
-                            </div>
-                            
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
-                                ${skillGroups.map(group => `
-                                    <div style="margin-bottom:10px;">
-                                        <h3 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid #f0f2f5; padding-bottom:5px; margin-bottom:12px;">${group.name}</h3>
-                                        ${group.skills.map(s => `
-                                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; background:#f8fafc; padding:10px 14px; border-radius:10px;">
-                                                <span style="font-size:0.85em; font-weight:600; color:#475569;">${s.name}</span>
-                                                <b style="color:${getSkillColor(s.val)}; font-weight:900;">${s.val || '--'}</b>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                `).join('')}
-                            </div>
+                    <div style="padding:40px; overflow-y:auto;">
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; margin-bottom:40px;">
+                            ${RosterActions._renderProfileCard("Potential Class", potData.label, potData.color, `
+                                <div style="width: 200px; height: 6px; background: #e2e8f0; border-radius: 10px; margin-top: 15px; overflow: hidden;">
+                                    <div style="width: ${progressWidth}%; height: 100%; background: ${potData.color};"></div>
+                                </div>
+                                <span style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-top: 8px;">${progressWidth}% of potential reached</span>
+                            `)}
+                            ${RosterActions._renderProfileCard("Annual Salary", `$${(player.salary || 0).toLocaleString()}`, "#2e7d32")}
                         </div>
 
-                        <div style="display:flex; flex-direction:column; gap:25px;">
-                            <div style="background:#f8f9fa; padding:25px; border-radius:30px; border:1px solid #e2e8f0;">
-                                <h3 style="color:#1a237e; font-size:0.8em; margin-bottom:15px; text-transform:uppercase;">Contract Details</h3>
-                                <div style="display:flex; flex-direction:column; gap:12px;">
-                                    <div style="display:flex; justify-content:space-between; font-size:0.95em;">
-                                        <span style="color:#64748b;">Salary</span>
-                                        <b style="color:#2e7d32;">$${(player.salary || 0).toLocaleString()}</b>
-                                    </div>
-                                    <div style="display:flex; justify-content:space-between; font-size:0.95em;">
-                                        <span style="color:#64748b;">Nationality</span>
-                                        <b style="color:#1a237e;">${player.nationality || 'Poland'}</b>
-                                    </div>
+                        <h3 style="color:#1a237e; font-size:0.9em; text-transform:uppercase; letter-spacing:2px; margin-bottom:20px; border-left:4px solid #1a237e; padding-left:15px;">Technical Evaluation</h3>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:30px;">
+                            ${skillGroups.map(group => `
+                                <div style="background:#f8fafc; padding:20px; border-radius:25px; border:1px solid #f1f5f9;">
+                                    <h4 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px; text-align:center;">${group.name}</h4>
+                                    ${group.skills.map(s => `
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px; border-radius:12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+                                            <span style="font-size:0.85em; font-weight:700; color:#475569;">${s.name}</span>
+                                            <span style="color:${getSkillColor(s.val)}; font-weight:900; font-size:1.1em;">${s.val || '--'}</span>
+                                        </div>
+                                    `).join('')}
                                 </div>
-                            </div>
+                            `).join('')}
                         </div>
                     </div>
                 </div>
@@ -141,6 +137,11 @@ export const RosterActions = {
         document.body.insertAdjacentHTML('beforeend', modalHtml);
     },
 
-    showTraining: (player) => { /* Jak wcześniej */ },
-    showSellConfirm: (player) => { /* Jak wcześniej */ }
+    showTraining: (player) => {
+        // ... (kod treningu bez zmian)
+    },
+
+    showSellConfirm: (player) => {
+        // ... (kod sprzedaży bez zmian)
+    }
 };
