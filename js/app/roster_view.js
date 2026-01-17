@@ -29,7 +29,6 @@ function renderSkillMini(name, val) {
     `;
 }
 
-// Pełna lista 10 kategorii potencjału (zgodnie z wymaganiami)
 function getPotentialLabel(pot) {
     const p = parseInt(pot) || 0;
     if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500' };
@@ -62,24 +61,28 @@ function renderPlayerRowInternal(player, potLabel) {
                     </div>
                     <div style="display: flex; align-items: flex-start; gap: 20px;">
                         <img src="${avatarUrl}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid #e0e0e0; background: #fff;">
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #f0f0f0; flex-grow: 1; max-width: 400px;">
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #f0f0f0; flex-grow: 1; min-width: 450px;">
                             <div>
-                                <div style="font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">Attack</div>
-                                ${renderSkillMini('2PT', player.skill_2pt)}
-                                ${renderSkillMini('3PT', player.skill_3pt)}
-                                ${renderSkillMini('Pass', player.skill_passing)}
+                                <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">Attack</div>
+                                ${renderSkillMini('JumpShot', player.skill_jump_shot)}
+                                ${renderSkillMini('3PT Range', player.skill_3pt_range)}
+                                ${renderSkillMini('Dunking', player.skill_dunking)}
+                                ${renderSkillMini('Passing', player.skill_passing)}
                             </div>
                             <div>
-                                <div style="font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">Defense</div>
-                                ${renderSkillMini('1v1 Def', player.skill_1on1_def)}
-                                ${renderSkillMini('Reb', player.skill_rebound)}
-                                ${renderSkillMini('Block', player.skill_block)}
+                                <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">Defense</div>
+                                ${renderSkillMini('1on1 Def', player.skill_1on1_def)}
+                                ${renderSkillMini('Rebound', player.skill_rebound)}
+                                ${renderSkillMini('Blocking', player.skill_block)}
+                                ${renderSkillMini('Stealing', player.skill_stealing)}
                             </div>
                             <div>
-                                <div style="font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px;">Physical</div>
+                                <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">General</div>
+                                ${renderSkillMini('Handling', player.skill_handling)}
+                                ${renderSkillMini('1on1 Off', player.skill_1on1_off)}
                                 ${renderSkillMini('Stamina', player.skill_stamina)}
-                                ${renderSkillMini('Dribble', player.skill_dribbling)}
-                                ${renderSkillMini('Ovr', player.overall_rating)}
+                                ${renderSkillMini('FreeThrow', player.skill_free_throw)}
                             </div>
                         </div>
                     </div>
@@ -118,25 +121,17 @@ export async function renderRosterView(teamData, players) {
 
     const safePlayers = Array.isArray(players) ? players : [];
 
-    // Podpięcie handlera akcji pod obiekt window
     window.rosterAction = (type, playerId) => {
         const player = safePlayers.find(p => String(p.id) === String(playerId));
         if (!player) return;
-
-        if (type === 'profile') {
-            // Przekazujemy tylko player - profil sam wyliczy kategorię
-            RosterActions.showProfile(player);
-        } else if (type === 'sell') {
-            RosterActions.showSellConfirm(player);
-        } else if (type === 'training') {
-            RosterActions.showTraining(player);
-        }
+        if (type === 'profile') RosterActions.showProfile(player);
+        else if (type === 'sell') RosterActions.showSellConfirm(player);
+        else if (type === 'training') RosterActions.showTraining(player);
     };
 
     container.innerHTML = `
         <div style="padding: 30px; background: #f4f7f6; min-height: 100vh; font-family: 'Inter', sans-serif;">
             <h1 style="color: #1a237e; font-weight: 800; margin-bottom: 20px;">ROSTER MANAGEMENT</h1>
-            
             <div style="background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead style="background: #f8f9fa; color: #94a3b8; font-size: 0.75em; text-transform: uppercase;">
