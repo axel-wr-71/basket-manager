@@ -49,11 +49,24 @@ async function signUp() {
 
 async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
+    
     if (user) {
+        // POBIERANIE ROLI Z BAZY
+        const { data: profile, error } = await _supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (error || !profile) {
+            console.error("Błąd pobierania roli, ustawiam domyślną: manager");
+            window.setupUI('manager');
+        } else {
+            console.log("Zalogowano jako:", profile.role);
+            window.setupUI(profile.role); // Tutaj przekaże 'admin', 'moderator' lub 'manager'
+        }
+        
         await fetchPotentialDefinitions();
-        const isAdmin = (user.email === 'strubbe23@gmail.com' || user.email === 'strubbe23@icloud.com');
-        const role = isAdmin ? 'admin' : 'manager';
-        if (typeof window.setupUI === 'function') window.setupUI(role);
     } else {
         document.getElementById('landing-page').style.display = 'block';
         document.getElementById('game-app').style.display = 'none';
