@@ -29,13 +29,15 @@ function renderSkillMini(name, val) {
     `;
 }
 
-// Przelicznik cm na stopy/cale (np. 211cm -> 6'11")
+/**
+ * Przelicza centymetry na format stopy'cale (np. 211cm -> 6'11")
+ */
 function cmToFtIn(cm) {
     if (!cm) return '--';
-    const inches = cm * 0.393701;
-    const feet = Math.floor(inches / 12);
-    const remainingInches = Math.round(inches % 12);
-    return `${feet}'${remainingInches}"`;
+    const inchesTotal = cm * 0.393701;
+    const feet = Math.floor(inchesTotal / 12);
+    const inches = Math.round(inchesTotal % 12);
+    return `${feet}'${inches}"`;
 }
 
 function getPotentialLabel(pot) {
@@ -100,7 +102,7 @@ function renderPlayerRowInternal(player, potLabel) {
             <td style="padding: 15px;"><div style="font-size: 0.85em; font-weight: 600; color: #444; background: #f0f2f5; display: inline-block; padding: 4px 12px; border-radius: 20px;">${player.position}</div></td>
             <td style="padding: 15px; color: #666; font-weight: 600;">${player.age}</td>
             <td style="padding: 15px; color: #666; font-weight: 600;">
-                <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
                     <span>${player.height || '--'} cm</span>
                     <span style="font-size: 0.75em; color: #94a3b8; font-weight: 400;">${cmToFtIn(player.height)}</span>
                 </div>
