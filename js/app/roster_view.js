@@ -4,32 +4,25 @@
  * Funkcja pomocnicza do aktualizacji górnego paska nawigacji (prawy róg)
  */
 function updateGlobalHeader(teamName, leagueName) {
-    // Szukamy kontenerów w górnym pasku po strukturze ze screena
-    const headerTeamName = document.querySelector('header b, .team-info b, #global-team-name');
-    const headerLeagueName = document.querySelector('header span[style*="color: #ff4500"], #global-league-name');
+    const headerTeamName = document.querySelector('.team-info b, #global-team-name');
+    const headerLeagueName = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
 
-    // Jeśli znajdziemy elementy, podmieniamy tekst
     if (headerTeamName) headerTeamName.textContent = teamName;
-    
-    // Szukamy specyficznego kontenera z Twojego screena (klasa lub styl)
-    const teamDisplay = document.evaluate("//div[contains(text(), 'Twoja Drużyna')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-    if (teamDisplay) teamDisplay.textContent = teamName;
-
-    const leagueDisplay = document.evaluate("//div[contains(text(), 'Super League')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-    if (leagueDisplay) leagueDisplay.textContent = leagueName;
+    if (headerLeagueName) headerLeagueName.textContent = leagueName;
 }
 
 export function renderRosterView(team, players) {
     const container = document.getElementById('roster-view-container');
     if (!container) return;
 
-    // Próba wyciągnięcia nazwy z różnych struktur
-    const teamName = team?.team_name || team?.name || team?.displayName || 'Twoja Drużyna';
-    const leagueName = team?.league_name || team?.leagueName || 'Super League';
+    // Pobieranie danych zespołu
+    const teamName = team?.team_name || team?.name || 'Twoja Drużyna';
+    const leagueName = team?.league_name || 'Super League';
 
-    // AKTUALIZACJA GÓRNEGO ROGU
+    // Aktualizacja nagłówka globalnego
     updateGlobalHeader(teamName, leagueName);
 
+    // Wybór dwóch najlepszych zawodników (Gwiazdy)
     const topStars = [...players].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0)).slice(0, 2);
 
     let html = `
@@ -47,7 +40,7 @@ export function renderRosterView(team, players) {
             ${topStars.map((star, idx) => {
                 const potData = window.getPotentialData ? window.getPotentialData(star.potential) : { label: 'Prospect', icon: '', color: '#3b82f6' };
                 return `
-                <div style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); border-radius: 15px; padding: 25px; display: flex; align-items: center; gap: 20px; color: white; box-shadow: 0 10px 20px rgba(26,35,126,0.2);">
+                <div style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); border-radius: 15px; padding: 25px; display: flex; align-items: center; gap: 20px; color: white; box-shadow: 0 10px 20px rgba(26,35,126,0.1);">
                     <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}" 
                          style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2); object-fit: cover;">
                     <div>
@@ -75,7 +68,7 @@ export function renderRosterView(team, players) {
                         <th style="padding: 20px 25px; text-align: right;">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="roster-list-body">
                     ${players.map(p => renderPlayerRow(p)).join('')}
                 </tbody>
             </table>
@@ -84,40 +77,32 @@ export function renderRosterView(team, players) {
 
     container.innerHTML = html;
 
-    // --- OBSŁUGA KLIKNIĘĆ (PODPIĘCIE POD ROSTER ACTIONS) ---
-    
-    // 1. PROFILE
-    container.querySelectorAll('.btn-profile-trigger').forEach((btn) => {
-        btn.onclick = () => {
-            const playerId = btn.getAttribute('data-id');
-            const player = players.find(pl => String(pl.id) === String(playerId));
-            if (player && window.RosterActions) window.RosterActions.showProfile(player);
-        };
-    });
+    // --- DELEGACJA ZDARZEŃ (Naprawa Safari / MacBook) ---
+    // Zamiast pętli, jeden słuchacz na cały kontener
+    container.onclick = (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
 
-    // 2. TRAIN
-    container.querySelectorAll('.btn-train-trigger').forEach((btn) => {
-        btn.onclick = () => {
-            const playerId = btn.getAttribute('data-id');
-            const player = players.find(pl => String(pl.id) === String(playerId));
-            if (player && window.RosterActions) window.RosterActions.showTraining(player);
-        };
-    });
+        const playerId = btn.getAttribute('data-id');
+        const player = players.find(pl => String(pl.id) === String(playerId));
+        
+        if (!player || !window.RosterActions) return;
 
-    // 3. SELL
-    container.querySelectorAll('.btn-sell-trigger').forEach((btn) => {
-        btn.onclick = () => {
-            const playerId = btn.getAttribute('data-id');
-            const player = players.find(pl => String(pl.id) === String(playerId));
-            if (player && window.RosterActions) window.RosterActions.sellPlayer(player);
-        };
-    });
+        if (btn.classList.contains('btn-profile-trigger')) {
+            window.RosterActions.showProfile(player);
+        } else if (btn.classList.contains('btn-train-trigger')) {
+            window.RosterActions.showTraining(player);
+        } else if (btn.classList.contains('btn-sell-trigger')) {
+            window.RosterActions.sellPlayer(player);
+        }
+    };
 }
 
 function renderPlayerRow(p) {
     const isRookie = p.is_rookie || p.age <= 19;
     const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Prospect', color: '#3b82f6' };
     
+    // Konwersja wzrostu
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
     const ft = Math.floor(inchesTotal / 12);
@@ -138,47 +123,47 @@ function renderPlayerRow(p) {
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 10px; border-radius: 10px; font-size: 0.65rem; border: 1px solid #edf2f7; min-width: 320px;">
                             <div>
                                 <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Attack</div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>Inside</span> <strong>${p.skill_2pt ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>3PT</span> <strong>${p.skill_3pt ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>Dunk</span> <strong>${p.skill_dunk ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Inside</span> <strong>${p.skill_2pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>3PT</span> <strong>${p.skill_3pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Dunk</span> <strong>${p.skill_dunk ?? '-'}</strong></div>
                             </div>
                             <div>
                                 <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Defense</div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>1v1 D</span> <strong>${p.skill_1on1_def ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>Block</span> <strong>${p.skill_block ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>Steal</span> <strong>${p.skill_steal ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>1v1 D</span> <strong>${p.skill_1on1_def ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Block</span> <strong>${p.skill_block ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Steal</span> <strong>${p.skill_steal ?? '-'}</strong></div>
                             </div>
                             <div>
                                 <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">General</div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>Reb</span> <strong>${p.skill_rebound ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>Stam</span> <strong>${p.skill_stamina ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between; margin:1px 0;"><span>FT</span> <strong>${p.skill_ft ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Reb</span> <strong>${p.skill_rebound ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Stam</span> <strong>${p.skill_stamina ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>FT</span> <strong>${p.skill_ft ?? '-'}</strong></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </td>
-            <td style="padding: 20px 10px; font-weight: 700; color: #64748b; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">${p.position}</td>
-            <td style="padding: 20px 10px; font-weight: 500; color: #64748b; font-size: 0.8rem; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 20px 10px; font-weight: 700; color: #64748b;">${p.position}</td>
+            <td style="padding: 20px 10px; font-weight: 500; color: #64748b; font-size: 0.8rem;">
                 ${heightCm} cm<br><span style="font-size: 0.7rem; opacity: 0.6;">${heightInFt}</span>
             </td>
-            <td style="padding: 20px 10px; font-weight: 700; color: #64748b; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">${p.age}</td>
-            <td style="padding: 20px 10px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
-                <div style="border-bottom: 3px solid ${potData.color}; display: inline-block; padding-bottom: 2px;">
+            <td style="padding: 20px 10px; font-weight: 700; color: #64748b;">${p.age}</td>
+            <td style="padding: 20px 10px;">
+                <div style="border-bottom: 3px solid ${potData.color}; display: inline-block;">
                     <span style="font-weight: 800; color: #1e293b; font-size: 0.85rem;">${potData.label}</span>
                 </div>
             </td>
-            <td style="padding: 20px 10px; font-weight: 800; color: #059669; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">$${(p.salary || 0).toLocaleString()}</td>
-            <td style="padding: 20px 10px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 20px 10px; font-weight: 800; color: #059669;">$${(p.salary || 0).toLocaleString()}</td>
+            <td style="padding: 20px 10px;">
                 <div style="width: 40px; height: 40px; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #166534; font-size: 1.1rem;">
                     ${p.overall_rating || '??'}
                 </div>
             </td>
             <td style="padding: 20px 25px; text-align: right; border-radius: 0 15px 15px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9;">
                 <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                    <button class="btn-profile-trigger" data-id="${p.id}" style="background: #1a237e; color: white; border: none; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Profile</button>
-                    <button class="btn-train-trigger" data-id="${p.id}" style="background: #f1f5f9; color: #1a237e; border: 1px solid #e2e8f0; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Train</button>
-                    <button class="btn-sell-trigger" data-id="${p.id}" style="background: white; color: #ef4444; border: 1px solid #fee2e2; padding: 8px 10px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.6rem; min-width: 60px;">Sell</button>
+                    <button class="btn-profile-trigger" data-id="${p.id}" style="background: #1a237e; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.65rem;">Profile</button>
+                    <button class="btn-train-trigger" data-id="${p.id}" style="background: #f1f5f9; color: #1a237e; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.65rem;">Train</button>
+                    <button class="btn-sell-trigger" data-id="${p.id}" style="background: white; color: #ef4444; border: 1px solid #fee2e2; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.65rem;">Sell</button>
                 </div>
             </td>
         </tr>
