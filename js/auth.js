@@ -7,6 +7,7 @@ export const supabaseClient = _supabase;
 window.supabase = _supabase;
 
 // Importujemy inicjalizację aplikacji dla Managera
+// Ścieżka relatywna: jesteśmy w /js/, idziemy do /js/app/app.js
 import { initApp } from './app/app.js';
 
 window.POTENTIAL_MAP = [];
@@ -55,16 +56,19 @@ window.setupUI = async (role) => {
     if (role === 'admin' || role === 'moderator') {
         if (adminNav) adminNav.style.display = 'flex';
         if (managerNav) managerNav.style.display = 'none';
-        // Domyślna zakładka dla admina (obsługa przez index.html switchTab)
         if (typeof window.switchTab === 'function') window.switchTab('admin-tab-gen');
     } else {
         // ROLA: MANAGER
         if (adminNav) adminNav.style.display = 'none';
         if (managerNav) managerNav.style.display = 'flex';
         
-        // URUCHOMIENIE NOWEGO SILNIKA APP (Kragujevac Hoops)
-        await initApp();
-        if (typeof window.switchTab === 'function') window.switchTab('m-roster');
+        // URUCHOMIENIE SILNIKA APP
+        try {
+            await initApp();
+            if (typeof window.switchTab === 'function') window.switchTab('m-roster');
+        } catch (e) {
+            console.error("Błąd inicjalizacji aplikacji managera:", e);
+        }
     }
 };
 
@@ -81,7 +85,7 @@ async function signIn() {
     
     const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
     if (error) alert("Błąd logowania: " + error.message);
-    else window.checkUser();
+    else await window.checkUser();
 }
 
 async function signUp() {
@@ -104,14 +108,12 @@ async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     
     if (user) {
-        // Pobieranie profilu i roli
         let { data: profile, error } = await _supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single();
 
-        // Jeśli użytkownik istnieje w Auth, ale nie ma rekordu w Profiles
         if (error || !profile) {
             console.warn("Profil nie istnieje, tworzę domyślny...");
             const { data: newProfile } = await _supabase
@@ -123,10 +125,8 @@ async function checkUser() {
         }
 
         await fetchPotentialDefinitions();
-        
-        // Ustawiamy UI na podstawie roli z profilu
         const userRole = profile?.role || 'manager';
-        window.setupUI(userRole);
+        await window.setupUI(userRole);
 
     } else {
         const landing = document.getElementById('landing-page');
@@ -141,13 +141,13 @@ async function logout() {
     location.reload();
 }
 
-// EKSPORT FUNKCJI DO OKNA GLOBALNEGO (Aby HTML je widział)
+// EKSPORT FUNKCJI DO OKNA GLOBALNEGO
 window.signIn = signIn;
 window.signUp = signUp;
 window.logout = logout;
 window.checkUser = checkUser;
 
-// Inicjalizacja przy starcie strony
+// Start systemu
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => window.checkUser());
 } else {
