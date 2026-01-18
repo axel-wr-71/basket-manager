@@ -6,7 +6,7 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 export const supabaseClient = _supabase;
 window.supabase = _supabase;
 
-import { initApp } from './app/app.js';
+import { initApp, switchTab } from './app/app.js';
 
 window.POTENTIAL_MAP = [];
 
@@ -25,33 +25,29 @@ async function fetchPotentialDefinitions() {
     }
 }
 
-window.setupUI = async (role) => {
+export const setupUI = async (role) => {
+    console.log("[AUTH] setupUI dla roli:", role);
     const landingPage = document.getElementById('landing-page');
     const gameApp = document.getElementById('game-app');
-    const adminNav = document.getElementById('admin-nav');
     const managerNav = document.getElementById('manager-nav');
 
     if (landingPage) landingPage.style.display = 'none';
     if (gameApp) gameApp.style.display = 'block';
 
-    if (role === 'admin' || role === 'moderator') {
-        if (adminNav) adminNav.style.display = 'flex';
-        if (managerNav) managerNav.style.display = 'none';
-        if (typeof window.switchTab === 'function') window.switchTab('admin-tab-gen');
-    } else {
-        if (adminNav) adminNav.style.display = 'none';
+    if (role === 'manager') {
         if (managerNav) managerNav.style.display = 'flex';
-        
+        // Inicjalizacja danych aplikacji
         await initApp();
-        if (typeof window.switchTab === 'function') window.switchTab('m-roster');
+        // Przełączenie na pierwszą zakładkę
+        await switchTab('m-roster');
     }
 };
+window.setupUI = setupUI;
 
-async function checkUser() {
+export async function checkUser() {
     const { data: { user } } = await _supabase.auth.getUser();
     
     if (user) {
-        // Najpierw potencjały, potem UI
         await fetchPotentialDefinitions();
         
         let { data: profile } = await _supabase
@@ -68,22 +64,41 @@ async function checkUser() {
             profile = newProfile;
         }
 
-        await window.setupUI(profile?.role || 'manager');
+        await setupUI(profile?.role || 'manager');
     } else {
         if (document.getElementById('landing-page')) document.getElementById('landing-page').style.display = 'block';
         if (document.getElementById('game-app')) document.getElementById('game-app').style.display = 'none';
     }
 }
-
-// Globalne funkcje logowania
-window.signIn = async () => {
-    const e = document.getElementById('email')?.value;
-    const p = document.getElementById('password')?.value;
-    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
-    if (error) alert("Błąd: " + error.message);
-    else await checkUser();
-};
-window.logout = async () => { await _supabase.auth.signOut(); location.reload(); };
 window.checkUser = checkUser;
 
+export const signIn = async () => {
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
+    console.log("[AUTH] Logowanie...");
+    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
+    if (error) {
+        alert("Błąd: " + error.message);
+    } else {
+        await checkUser();
+    }
+};
+window.signIn = signIn;
+
+export const signUp = async () => {
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
+    const { error } = await _supabase.auth.signUp({ email: e, password: p });
+    if (error) alert("Błąd rejestracji: " + error.message);
+    else alert("Konto założone! Możesz się zalogować.");
+};
+window.signUp = signUp;
+
+export const logout = async () => { 
+    await _supabase.auth.signOut(); 
+    location.reload(); 
+};
+window.logout = logout;
+
+// Start przy ładowaniu strony
 document.addEventListener('DOMContentLoaded', () => checkUser());
