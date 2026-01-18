@@ -37,18 +37,17 @@ export async function initApp(forceRefresh = false) {
             .from('teams').select('*').eq('id', profile.team_id).single();
 
         // KLUCZOWE: Zapytanie dopasowane do Twojego wyniku SQL
-        const { data: players, error: plErr } = await supabaseClient
-            .from('players')
-            .select(`
-                *,
-                potential_definitions (
-                    label,
-                    color_hex,
-                    icon_url,
-                    min_value
-                )
-            `)
-            .eq('team_id', team.id);
+        const { data, error } = await supabase
+    .from('players')
+    .select(`
+        *,
+        potential_definitions!fk_potential_definition (
+            label,
+            color_hex,
+            emoji
+        )
+    `)
+    .eq('team_id', myTeamId);
 
         if (plErr) throw plErr;
 
