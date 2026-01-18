@@ -6,60 +6,43 @@ import { renderRosterView } from './roster_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 
-let cachedTeam = null;
-let cachedPlayers = null;
-let cachedProfile = null;
-
 /**
- * Stabilizacja sesji dla Safari na MacBooku.
+ * Pobieranie sesji z wymuszonym odświeżeniem dla Safari
  */
 async function getAuthenticatedUser() {
-    let { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session?.user) return session.user;
-        
-        // Polling dla Safari
-        for (let i = 0; i < 5; i++) {
-            await new Promise(res => setTimeout(res, 500));
-            const retry = await supabaseClient.auth.getUser();
-            if (retry.data.user) return retry.data.user;
-        }
-    }
-    return user;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (user) return user;
+    
+    // Drugi stopień - sesja z cookie
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    return session?.user || null;
 }
 
 /**
- * GŁÓWNA INICJALIZACJA - Pobiera dane i trzyma je w cache
+ * GŁÓWNA INICJALIZACJA
  */
-export async function initApp(force = false) {
-    if (!force && cachedTeam && cachedPlayers && cachedProfile) {
-        return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
-    }
-
+export async function initApp() {
     try {
         console.log("[APP] Start inicjalizacji...");
         await checkLeagueEvents();
-        const user = await getAuthenticatedUser();
         
+        const user = await getAuthenticatedUser();
         if (!user) {
-            console.error("[APP] Krytyczny błąd: Brak sesji użytkownika.");
+            console.error("[APP] Błąd: Brak sesji.");
             return null;
         }
 
         // 1. Profil
-        const { data: profile, error: profErr } = await supabaseClient
+        const { data: profile } = await supabaseClient
             .from('profiles').select('*').eq('id', user.id).single();
-        if (profErr) throw profErr;
 
         // 2. Drużyna
-        const { data: team, error: teamErr } = await supabaseClient
+        const { data: team } = await supabaseClient
             .from('teams').select('*').eq('id', profile.team_id).single();
-        if (teamErr) throw teamErr;
 
-        // 3. Zawodnicy (Z jawny wskazaniem klucza obcego)
-        console.log(`[APP] Pobieranie zawodników dla zespołu: ${team.name}`);
-        const { data: players, error: playersError } = await supabaseClient
+        // 3. Zawodnicy - Tu jest Twoje 12 osób z logów
+        console.log(`[APP] Pobieranie zawodników dla: ${team?.name}`);
+        const { data: players, error: plErr } = await supabaseClient
             .from('players')
             .select(`
                 *,
@@ -69,25 +52,16 @@ export async function initApp(force = false) {
             `)
             .eq('team_id', team.id);
 
-        if (playersError) {
-            console.warn("[APP] Błąd relacji, fallback na dane proste.");
-            const { data: simplePlayers } = await supabaseClient
-                .from('players').select('*').eq('team_id', team.id);
-            cachedPlayers = simplePlayers || [];
-        } else {
-            cachedPlayers = players;
-        }
+        if (plErr) throw plErr;
 
-        cachedProfile = profile; 
-        cachedTeam = team; 
-
+        // Globalne przypisania dla akcji w widokach
         window.userTeamId = team.id;
         window.currentManager = profile;
 
         updateUIHeader(profile);
-        console.log(`[APP] System gotowy. Liczba zawodników: ${cachedPlayers.length}`);
         
-        return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
+        // KLUCZOWE: Zwracamy obiekt z danymi bezpośrednio
+        return { team, players, profile };
 
     } catch (err) {
         console.error("[APP INIT ERROR]", err.message);
@@ -102,37 +76,27 @@ function updateUIHeader(profile) {
     if (lName) lName.innerText = profile.league_name || "Serbia Super League";
 }
 
-function clearAllContainers() {
-    const ids = ['roster-view-container', 'market-container', 'finances-container', 'training-container', 'app-main-view'];
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = '';
-    });
-}
-
-/**
- * Punkt wejścia do Rostera - Tu naprawiłem logikę przekazywania danych
- */
-window.showRoster = async (force = false) => {
-    const data = await initApp(force);
+window.showRoster = async () => {
+    console.log("[UI] Próba wyświetlenia rostera...");
+    const data = await initApp();
     
-    // Kluczowa zmiana: Sprawdzamy czy data istnieje i czy ma zawodników
+    // Sprawdzamy czy data i players fizycznie istnieją
     if (data && data.players && data.players.length > 0) {
-        console.log("[UI] Wywołuję renderRosterView dla", data.players.length, "osób.");
-        clearAllContainers();
+        console.log(`[UI] Renderowanie ${data.players.length} zawodników.`);
+        
+        // Czyścimy kontenery przed renderem
+        const container = document.getElementById('roster-view-container');
+        if (container) container.innerHTML = ''; 
+        
         renderRosterView(data.team, data.players);
     } else {
-        console.error("[UI] Błąd: Brak danych zawodników do wyświetlenia mimo inicjalizacji.");
-        const container = document.getElementById('roster-view-container');
-        if (container) container.innerHTML = '<div class="p-4 text-white">Błąd ładowania zawodników. Odśwież stronę (Cmd+R).</div>';
+        console.error("[UI] Błąd: initApp zwrócił puste dane zawodników.");
     }
 };
 
 window.switchTab = async (tabName) => {
     const data = await initApp();
     if (!data) return;
-
-    clearAllContainers();
 
     if (tabName.includes('roster')) renderRosterView(data.team, data.players);
     else if (tabName.includes('market')) renderMarketView(data.team, data.players);
