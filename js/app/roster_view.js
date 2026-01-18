@@ -1,178 +1,88 @@
 // js/app/roster_view.js
-import { supabaseClient } from '../auth.js';
 import { RosterActions } from './roster_actions.js';
-
-// --- 1. FUNKCJE POMOCNICZE ---
 
 function getSkillColor(val) {
     const v = parseInt(val) || 0;
-    if (v >= 19) return '#d4af37'; // GOAT / Gold
-    if (v >= 17) return '#8b5cf6'; // Elite / Purple
-    if (v >= 15) return '#10b981'; // Great / Green
-    if (v >= 13) return '#06b6d4'; // Good / Cyan
-    if (v >= 11) return '#3b82f6'; // Solid / Blue
-    if (v >= 9)  return '#64748b'; // Average
-    if (v >= 7)  return '#475569'; // Below Avg
-    if (v >= 5)  return '#f59e0b'; // Poor
-    if (v >= 3)  return '#f97316'; // Weak
-    return '#ef4444';             // Awful
+    if (v >= 20) return '#ff4500'; // G.O.A.T. (z Twojego SQL)
+    if (v === 19) return '#b8860b'; // All-Time Great
+    if (v === 18) return '#d4af37'; // Elite Franchise
+    if (v === 17) return '#8b5cf6'; // Star Performer
+    if (v === 16) return '#10b981'; // High Prospect
+    if (v === 15) return '#6366f1'; // Solid Starter
+    if (v === 14) return '#64748b'; // Reliable Bench
+    if (v === 13) return '#94a3b8'; // Role Player
+    if (v >= 11)  return '#cbd5e1'; // Deep Bench
+    return '#94a3b8';               // Project Player / Reszta
 }
 
 function renderSkillMini(name, val) {
-    const v = (val !== undefined && val !== null) ? val : '--';
-    const color = getSkillColor(v);
-    return `
-        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; border-bottom: 1px solid rgba(0,0,0,0.03);">
-            <span style="color: #64748b; font-weight: 500;">${name}</span>
-            <span style="font-weight: 800; color: ${color};">${v}</span>
-        </div>
-    `;
+    return `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;border-bottom:1px solid rgba(0,0,0,0.03);">
+            <span style="color:#64748b;">${name}</span><span style="font-weight:800;color:${getSkillColor(val)};">${val || '--'}</span></div>`;
 }
 
-function cmToFtIn(cm) {
-    if (!cm) return '--';
-    const inchesTotal = cm * 0.393701;
-    const feet = Math.floor(inchesTotal / 12);
-    const inches = Math.round(inchesTotal % 12);
-    return `${feet}'${inches}"`;
-}
+export async function renderRosterView(teamData, players) {
+    const container = document.getElementById('roster-view-container');
+    if (!container) return;
 
-// --- 2. WEWNĘTRZNY RENDER WIERSZA (PEŁNY UI) ---
+    window.rosterAction = (type, id) => {
+        const p = players.find(x => String(x.id) === String(id));
+        if (p && RosterActions[type]) RosterActions[type](p);
+    };
 
-function renderPlayerRowInternal(player, potData) {
-    const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.last_name}&backgroundColor=f0f2f5`;
-    const currentOvr = player.overall_rating || 0;
-    
-    // Obliczanie postępu względem potencjału liczbowego
-    const maxPot = parseInt(player.potential) || 100;
-    const progressWidth = Math.min(Math.round((currentOvr / maxPot) * 100), 100);
+    let rowsHtml = players.map(p => {
+        const pot = p.potential_definitions || { label: 'Scouting...', color_hex: '#94a3b8', icon_url: null };
+        const progressWidth = Math.min(Math.round(((p.overall_rating || 0) / (p.potential || 100)) * 100), 100);
 
-    return `
-        <tr style="border-bottom: 1px solid #f8f9fa; transition: 0.2s;" onmouseover="this.style.background='#fcfdfe'" onmouseout="this.style.background='transparent'">
-            <td style="padding: 20px 25px;">
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-weight: 800; color: #1a237e; font-size: 1.1em;">${player.first_name} ${player.last_name}</span>
-                        ${player.is_rookie ? '<span style="background:#ef4444; color:white; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:900;">ROOKIE</span>' : ''}
+        // Wyświetlanie ikony z bazy lub stylowego placeholdera
+        const iconHtml = pot.icon_url 
+            ? `<img src="${pot.icon_url}" style="width:16px;height:16px;border-radius:2px;">`
+            : `<div style="width:16px;height:16px;background:${pot.color_hex};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:900;">${pot.label[0]}</div>`;
+
+        return `
+        <tr style="border-bottom:1px solid #f8f9fa;">
+            <td style="padding:20px 25px;">
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-weight:800;color:#1a237e;font-size:1.1em;">${p.first_name} ${p.last_name}</span>
+                        ${p.is_rookie ? '<span style="background:#ef4444;color:white;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:900;">ROOKIE</span>' : ''}
                     </div>
-                    <div style="display: flex; align-items: flex-start; gap: 20px;">
-                        <img src="${avatarUrl}" style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid #e0e0e0; background: #fff;">
-                        
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8f9fa; padding: 12px; border-radius: 12px; border: 1px solid #f0f0f0; flex-grow: 1; min-width: 450px;">
-                            <div>
-                                <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">Attack</div>
-                                ${renderSkillMini('Jump Shot', player.skill_2pt)}
-                                ${renderSkillMini('3PT Range', player.skill_3pt)}
-                                ${renderSkillMini('Dunking', player.skill_dunk)}
-                                ${renderSkillMini('Passing', player.skill_passing)}
-                            </div>
-                            <div>
-                                <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">Defense</div>
-                                ${renderSkillMini('1on1 Def', player.skill_1on1_def)}
-                                ${renderSkillMini('Rebound', player.skill_rebound)}
-                                ${renderSkillMini('Blocking', player.skill_block)}
-                                ${renderSkillMini('Stealing', player.skill_steal)}
-                            </div>
-                            <div>
-                                <div style="font-size: 8px; font-weight: 900; color: #1a237e; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0;">General</div>
-                                ${renderSkillMini('Handling', player.skill_dribbling)}
-                                ${renderSkillMini('1on1 Off', player.skill_1on1_off)}
-                                ${renderSkillMini('Stamina', player.skill_stamina)}
-                                ${renderSkillMini('Free Throw', player.skill_ft)}
-                            </div>
+                    <div style="display:flex;gap:20px;">
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;background:#f8f9fa;padding:12px;border-radius:12px;min-width:450px;border:1px solid #eee;">
+                            <div>${renderSkillMini('2PT', p.skill_2pt)}${renderSkillMini('3PT', p.skill_3pt)}${renderSkillMini('Dunk', p.skill_dunk)}${renderSkillMini('Pass', p.skill_passing)}</div>
+                            <div>${renderSkillMini('Def', p.skill_1on1_def)}${renderSkillMini('Reb', p.skill_rebound)}${renderSkillMini('Blk', p.skill_block)}${renderSkillMini('Stl', p.skill_steal)}</div>
+                            <div>${renderSkillMini('Hnd', p.skill_dribbling)}${renderSkillMini('Off', p.skill_1on1_off)}${renderSkillMini('Sta', p.skill_stamina)}${renderSkillMini('FT', p.skill_ft)}</div>
                         </div>
                     </div>
                 </div>
             </td>
-            <td style="padding: 15px;"><div style="font-size: 0.85em; font-weight: 600; color: #444; background: #f0f2f5; display: inline-block; padding: 4px 12px; border-radius: 20px;">${player.position}</div></td>
-            <td style="padding: 15px; color: #666; font-weight: 600;">${player.age}</td>
-            <td style="padding: 15px; color: #666; font-weight: 600;">
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span>${player.height || '--'} cm</span>
-                    <span style="font-size: 0.75em; color: #94a3b8; font-weight: 400;">${cmToFtIn(player.height)}</span>
+            <td style="padding:15px;font-weight:600;">${p.position}</td>
+            <td style="padding:15px;">${p.age}</td>
+            <td style="padding:15px;color:#2e7d32;font-weight:700;">$${(p.salary || 0).toLocaleString()}</td>
+            <td style="padding:15px;">
+                <div style="display:flex;align-items:center;gap:6px;color:${pot.color_hex};font-weight:800;font-size:0.8em;text-transform:uppercase;">
+                    ${iconHtml} ${pot.label}
+                </div>
+                <div style="width:80px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden;margin-top:4px;">
+                    <div style="width:${progressWidth}%;height:100%;background:${pot.color_hex};"></div>
                 </div>
             </td>
-            <td style="padding: 15px; font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #2e7d32; font-size: 0.9em;">$${(player.salary || 0).toLocaleString()}</td>
-            <td style="padding: 15px;">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <span style="font-weight: 800; color: ${potData.color}; font-size: 0.8em; white-space: nowrap;">
-                        ${potData.icon} ${potData.label}
-                    </span>
-                    <div style="width: 80px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
-                        <div style="width: ${progressWidth}%; height: 100%; background: ${potData.color};"></div>
-                    </div>
-                    <span style="font-size: 9px; font-weight: 700; color: #94a3b8;">${progressWidth}% cap</span>
-                </div>
+            <td style="padding:15px;"><div style="width:42px;height:42px;border-radius:10px;background:#e8f5e9;color:#2e7d32;display:flex;align-items:center;justify-content:center;font-weight:900;border:2px solid #c8e6c9;">${p.overall_rating}</div></td>
+            <td style="padding:15px;text-align:center;">
+                <button onclick="window.rosterAction('showProfile', '${p.id}')" style="background:white;border:1px solid #1a237e;padding:6px;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;">PROFILE</button>
             </td>
-            <td style="padding: 15px;"><div style="width: 45px; height: 45px; border-radius: 12px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1em; border: 2px solid #c8e6c9;">${player.overall_rating || 0}</div></td>
-            <td style="padding: 15px; text-align: center;">
-                <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
-                    <button onclick="window.rosterAction('training', '${player.id}')" style="width: 100px; background: #e0f2fe; border: 1px solid #0ea5e9; padding: 5px 0; border-radius: 8px; color: #0369a1; font-weight: 700; cursor: pointer; font-size: 0.7em;">TRAINING</button>
-                    <button onclick="window.rosterAction('profile', '${player.id}')" style="width: 100px; background: white; border: 1px solid #1a237e; padding: 5px 0; border-radius: 8px; color: #1a237e; font-weight: 700; cursor: pointer; font-size: 0.7em;">PROFILE</button>
-                    <button onclick="window.rosterAction('sell', '${player.id}')" style="width: 100px; background: #fee2e2; border: 1px solid #ef4444; padding: 5px 0; border-radius: 8px; color: #ef4444; font-weight: 700; cursor: pointer; font-size: 0.7em;">SELL</button>
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-// --- 3. GŁÓWNA FUNKCJA ---
-
-export async function renderRosterView(teamData, players) {
-    const container = document.getElementById('roster-view-container');
-    if (!container) {
-        console.error("Błąd: Nie znaleziono kontenera roster-view-container");
-        return;
-    }
-
-    const safePlayers = Array.isArray(players) ? players : [];
-
-    // Definiujemy akcje globalnie dla przycisków
-    window.rosterAction = (type, playerId) => {
-        const player = safePlayers.find(p => String(p.id) === String(playerId));
-        if (!player) return;
-
-        if (type === 'profile') RosterActions.showProfile(player);
-        else if (type === 'sell') RosterActions.showSellConfirm(player);
-        else if (type === 'training') RosterActions.showTraining(player);
-    };
-
-    // Budujemy wiersze tabeli
-    let rowsHtml = '';
-    safePlayers.forEach(p => {
-        // Zabezpieczenie Safari przed brakiem funkcji potencjału
-        const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Scouting...', color: '#94a3b8', icon: '?' };
-        rowsHtml += renderPlayerRowInternal(p, potData);
-    });
+        </tr>`;
+    }).join('');
 
     container.innerHTML = `
-        <div style="padding: 30px; background: #f4f7f6; min-height: 100vh; font-family: 'Inter', sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h1 style="color: #1a237e; font-weight: 800; margin: 0;">ROSTER MANAGEMENT</h1>
-                <div style="background: white; padding: 10px 20px; border-radius: 12px; border: 1px solid #e2e8f0; font-weight: 700; color: #64748b;">
-                    Squad Size: <span style="color: #1a237e;">${safePlayers.length} / 12</span>
-                </div>
-            </div>
-            
-            <div style="background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow: hidden;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead style="background: #f8f9fa; color: #94a3b8; font-size: 0.75em; text-transform: uppercase;">
-                        <tr>
-                            <th style="padding: 15px 25px;">Player & Scouting Report</th>
-                            <th style="padding: 15px;">Pos</th>
-                            <th style="padding: 15px;">Age</th>
-                            <th style="padding: 15px;">Height</th>
-                            <th style="padding: 15px;">Salary</th>
-                            <th style="padding: 15px;">Potential</th>
-                            <th style="padding: 15px;">OVR</th>
-                            <th style="padding: 15px; text-align: center;">Actions</th>
-                        </tr>
+        <div style="padding:30px;font-family:'Inter',sans-serif;background:#f4f7f6;min-height:100vh;">
+            <h1 style="color:#1a237e;font-weight:800;">ROSTER MANAGEMENT</h1>
+            <div style="background:white;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+                <table style="width:100%;border-collapse:collapse;text-align:left;">
+                    <thead style="background:#f8f9fa;color:#94a3b8;font-size:0.75em;">
+                        <tr><th style="padding:15px 25px;">Player & Skills</th><th>Pos</th><th>Age</th><th>Salary</th><th>Potential</th><th>OVR</th><th>Actions</th></tr>
                     </thead>
-                    <tbody>
-                        ${rowsHtml || '<tr><td colspan="8" style="padding: 40px; text-align: center; color: #94a3b8;">No players found in your roster.</td></tr>'}
-                    </tbody>
+                    <tbody>${rowsHtml}</tbody>
                 </table>
             </div>
-        </div>
-    `;
+        </div>`;
 }
