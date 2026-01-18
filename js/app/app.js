@@ -10,6 +10,9 @@ let cachedTeam = null;
 let cachedPlayers = null;
 let cachedProfile = null;
 
+/**
+ * Pobiera zalogowanego użytkownika z obsługą retry dla Safari
+ */
 async function getAuthenticatedUser() {
     let { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
@@ -20,71 +23,63 @@ async function getAuthenticatedUser() {
     return user;
 }
 
-// js/app/app.js
-
-// ... wewnątrz funkcji initApp lub tam gdzie pobierasz graczy:
-const { data: playersData, error: playersError } = await supabase
-    .from('players')
-    .select(`
-        *,
-        potential_definitions (
-            id,
-            label,
-            color_hex,
-            emoji,
-            min_value
-        )
-    `)
-    .eq('team_id', myTeamId);
-
-// Sprawdź czy nie masz tu gdzieś zmiennej "plErr" - jeśli tak, zmień na playersError
-if (playersError) {
-    console.error("Błąd zawodników:", playersError);
-    return;
-}
+/**
+ * Główna funkcja inicjalizująca aplikację
+ */
+async function initApp(force = false) {
+    if (!force && cachedTeam && cachedPlayers) {
+        return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
+    }
 
     try {
         await checkLeagueEvents();
         const user = await getAuthenticatedUser();
         if (!user) throw new Error("Błąd autoryzacji");
 
-        const { data: profile } = await supabaseClient
-            .from('profiles').select('*').eq('id', user.id).single();
+        // 1. Pobierz profil managera
+        const { data: profile, error: profErr } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+        if (profErr) throw profErr;
 
-        const { data: team } = await supabaseClient
-            .from('teams').select('*').eq('id', profile.team_id).single();
+        // 2. Pobierz dane drużyny
+        const { data: team, error: teamErr } = await supabaseClient
+            .from('teams')
+            .select('*')
+            .eq('id', profile.team_id)
+            .single();
+        if (teamErr) throw teamErr;
 
-        // KLUCZOWE: Zapytanie dopasowane do Twojego wyniku SQL
-       // js/app/app.js - KLUCZOWA POPRAWKA
-async function fetchPlayerData(myTeamId) {
-    const { data, error } = await supabase
-        .from('players')
-        .select(`
-            *,
-            potential_definitions:potential (
-                id,
-                label,
-                color_hex,
-                emoji,
-                min_value
-            )
-        `)
-        .eq('team_id', myTeamId);
+        // 3. Pobierz zawodników z relacją potencjału (NAPRAWIONE)
+        const { data: players, error: playersError } = await supabaseClient
+            .from('players')
+            .select(`
+                *,
+                potential_definitions:potential (
+                    id,
+                    label,
+                    color_hex,
+                    emoji,
+                    min_value
+                )
+            `)
+            .eq('team_id', team.id);
 
-    if (error) {
-        console.error("Błąd pobierania:", error);
-        return [];
-    }
-    return data;
-}
-        if (plErr) throw plErr;
+        if (playersError) throw playersError;
 
-        cachedProfile = profile; cachedTeam = team; cachedPlayers = players;
+        // Kaching danych
+        cachedProfile = profile;
+        cachedTeam = team;
+        cachedPlayers = players;
+        
         window.userTeamId = team.id;
         window.currentManager = profile;
 
         updateUIHeader(profile);
         return { team, players, profile };
+
     } catch (err) {
         console.error("[APP INIT ERROR]", err.message);
         return null;
@@ -105,6 +100,9 @@ function clearAllContainers() {
     });
 }
 
+/**
+ * Globalne funkcje nawigacji
+ */
 window.showRoster = async (force = false) => {
     const data = await initApp(force);
     if (data) {
@@ -114,8 +112,16 @@ window.showRoster = async (force = false) => {
 };
 
 window.switchTab = async (tabName) => {
-    if (tabName.includes('roster')) await window.showRoster();
-    // ... reszta logiki switchTab pozostaje bez zmian
+    // Prosta nawigacja między modułami
+    if (tabName.includes('roster')) {
+        await window.showRoster();
+    } else if (tabName.includes('training')) {
+        const data = await initApp();
+        clearAllContainers();
+        renderTrainingDashboard(data.players);
+    }
+    // Tutaj możesz dodać kolejne taby (market, finances)
 };
 
+// Start aplikacji po załadowaniu DOM
 document.addEventListener('DOMContentLoaded', () => window.showRoster());
