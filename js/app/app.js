@@ -11,20 +11,20 @@ let cachedPlayers = null;
 let cachedProfile = null;
 
 /**
- * EKSPERCKA FUNKCJA SESJI (Safari Optimized)
- * Czeka do 3 sekund na zainicjowanie sesji, sprawdzając ją co 200ms.
+ * EKSPERCKA OBSŁUGA SESJI DLA SAFARI
+ * Czeka na usera, dopóki Supabase nie zwróci poprawnej sesji.
  */
-async function waitForSession() {
-    for (let i = 0; i < 15; i++) {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user) return session.user;
-        await new Promise(res => setTimeout(res, 200));
+async function getStableUser() {
+    for (let i = 0; i < 10; i++) {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) return user;
+        await new Promise(r => setTimeout(r, 300)); // Polling co 300ms
     }
     return null;
 }
 
 /**
- * GŁÓWNA INICJALIZACJA APLIKACJI
+ * GŁÓWNA FUNKCJA INICJALIZUJĄCA
  */
 export async function initApp(force = false) {
     if (!force && cachedTeam && cachedPlayers && cachedProfile) {
@@ -32,28 +32,33 @@ export async function initApp(force = false) {
     }
 
     try {
-        console.log("[SYSTEM] Inicjalizacja danych...");
+        console.log("[APP] Start inicjalizacji...");
         await checkLeagueEvents();
-
-        // Kluczowa zmiana: czekamy na stabilną sesję
-        const user = await waitForSession();
         
+        const user = await getStableUser();
         if (!user) {
-            console.error("[AUTH ERROR] Nie udało się uzyskać sesji po 3s prób.");
+            console.error("[APP] Krytyczny błąd: Brak sesji użytkownika po próbach.");
             return null;
         }
 
-        // 1. Pobieranie profilu i team_id
+        // 1. Pobieranie profilu
         const { data: profile, error: profErr } = await supabaseClient
             .from('profiles').select('*').eq('id', user.id).single();
         if (profErr) throw profErr;
 
-        // 2. Pobieranie danych drużyny
+        // 2. Pobieranie drużyny (Sprawdzamy team_id z profilu)
+        if (!profile.team_id) {
+            console.error("[APP] Profil nie ma przypisanego team_id.");
+            return null;
+        }
+
         const { data: team, error: teamErr } = await supabaseClient
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Pobieranie zawodników z relacją potencjału (jawny FK)
+        // 3. Pobieranie zawodników - Jawny JOIN z kategorią potencjału
+        console.log("[APP] Pobieranie zawodników dla zespołu:", team.name || team.team_name);
+        
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
@@ -65,27 +70,28 @@ export async function initApp(force = false) {
             .eq('team_id', team.id);
 
         if (playersError) {
-            console.warn("[DB WARNING] Relacja FK zawiodła, stosuję fallback:", playersError.message);
-            // Fallback: pobieramy tylko graczy bez definicji, żeby nie blokować UI
+            console.warn("[APP] Błąd relacji potencjału, ładuję dane bez definicji:", playersError.message);
             const { data: fallbackPlayers } = await supabaseClient
                 .from('players').select('*').eq('team_id', team.id);
-            cachedPlayers = fallbackPlayers;
+            cachedPlayers = fallbackPlayers || [];
         } else {
             cachedPlayers = players;
         }
 
+        // Cache'owanie danych
         cachedProfile = profile; 
         cachedTeam = team; 
 
+        // Globalne zmienne pomocnicze
         window.userTeamId = team.id;
         window.currentManager = profile;
 
         updateUIHeader(profile);
-        console.log("[SYSTEM] Dane załadowane pomyślnie.");
-        return { team, players: cachedPlayers, profile };
+        console.log("[APP] System gotowy. Liczba zawodników:", cachedPlayers.length);
+        return { team: cachedTeam, players: cachedPlayers, profile: cachedProfile };
 
     } catch (err) {
-        console.error("[CRITICAL ERROR]", err.message);
+        console.error("[APP CRITICAL ERROR]", err.message);
         return null;
     }
 }
@@ -94,7 +100,7 @@ function updateUIHeader(profile) {
     const tName = document.getElementById('display-team-name');
     const lName = document.getElementById('display-league-name');
     if (tName) tName.innerText = profile.team_name || "Manager";
-    if (lName) lName.innerText = profile.league_name || "Serbian Super League";
+    if (lName) lName.innerText = profile.league_name || "EBL Professional";
 }
 
 function clearAllContainers() {
@@ -110,6 +116,8 @@ window.showRoster = async (force = false) => {
     if (data && data.players) {
         clearAllContainers();
         renderRosterView(data.team, data.players);
+    } else {
+        console.warn("[UI] Brak danych do wyświetlenia rostera.");
     }
 };
 
@@ -123,7 +131,7 @@ window.switchTab = async (tabName) => {
     else if (tabName.includes('training')) renderTrainingDashboard(data.players);
 };
 
-// Start aplikacji
+// Start aplikacji przy załadowaniu DOM
 document.addEventListener('DOMContentLoaded', () => {
     window.showRoster();
 });
