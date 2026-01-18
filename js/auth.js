@@ -55,8 +55,8 @@ window.setupUI = async (role) => {
     if (role === 'admin' || role === 'moderator') {
         if (adminNav) adminNav.style.display = 'flex';
         if (managerNav) managerNav.style.display = 'none';
-        // Domyślna zakładka dla admina
-        if (window.showAdminTab) window.showAdminTab('admin-tab-gen');
+        // Domyślna zakładka dla admina (obsługa przez index.html switchTab)
+        if (typeof window.switchTab === 'function') window.switchTab('admin-tab-gen');
     } else {
         // ROLA: MANAGER
         if (adminNav) adminNav.style.display = 'none';
@@ -64,12 +64,19 @@ window.setupUI = async (role) => {
         
         // URUCHOMIENIE NOWEGO SILNIKA APP (Kragujevac Hoops)
         await initApp();
+        if (typeof window.switchTab === 'function') window.switchTab('m-roster');
     }
 };
 
 async function signIn() {
-    const e = document.getElementById('email').value;
-    const p = document.getElementById('password').value;
+    const emailField = document.getElementById('email');
+    const passwordField = document.getElementById('password');
+    
+    if (!emailField || !passwordField) return;
+
+    const e = emailField.value;
+    const p = passwordField.value;
+    
     if (!e || !p) return alert("Wypełnij pola!");
     
     const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
@@ -78,8 +85,14 @@ async function signIn() {
 }
 
 async function signUp() {
-    const e = document.getElementById('email').value;
-    const p = document.getElementById('password').value;
+    const emailField = document.getElementById('email');
+    const passwordField = document.getElementById('password');
+    
+    if (!emailField || !passwordField) return;
+
+    const e = emailField.value;
+    const p = passwordField.value;
+    
     if (!e || !p) return alert("Wypełnij pola!");
     
     const { error } = await _supabase.auth.signUp({ email: e, password: p });
@@ -98,7 +111,7 @@ async function checkUser() {
             .eq('id', user.id)
             .single();
 
-        // Jeśli użytkownik istnieje w Auth, ale nie ma rekordu w Profiles (np. błąd przy rejestracji)
+        // Jeśli użytkownik istnieje w Auth, ale nie ma rekordu w Profiles
         if (error || !profile) {
             console.warn("Profil nie istnieje, tworzę domyślny...");
             const { data: newProfile } = await _supabase
@@ -116,8 +129,10 @@ async function checkUser() {
         window.setupUI(userRole);
 
     } else {
-        if (document.getElementById('landing-page')) document.getElementById('landing-page').style.display = 'block';
-        if (document.getElementById('game-app')) document.getElementById('game-app').style.display = 'none';
+        const landing = document.getElementById('landing-page');
+        const app = document.getElementById('game-app');
+        if (landing) landing.style.display = 'block';
+        if (app) app.style.display = 'none';
     }
 }
 
@@ -126,12 +141,15 @@ async function logout() {
     location.reload();
 }
 
-// Ekspozycja funkcji do okna globalnego (dla przycisków HTML)
+// EKSPORT FUNKCJI DO OKNA GLOBALNEGO (Aby HTML je widział)
 window.signIn = signIn;
 window.signUp = signUp;
 window.logout = logout;
 window.checkUser = checkUser;
 
-document.addEventListener('DOMContentLoaded', () => {
+// Inicjalizacja przy starcie strony
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.checkUser());
+} else {
     window.checkUser();
-});
+}
