@@ -12,12 +12,11 @@ let cachedProfile = null;
 
 /**
  * Pobiera zalogowanego użytkownika z obsługą retry dla Safari na MacBooku.
- * Zwiększono stabilność dla silnika WebKit.
  */
 async function getAuthenticatedUser() {
     let { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
-        // Safari potrzebuje czasem więcej czasu na zainicjowanie sesji z cookie
+        // Safari potrzebuje chwili na odczyt ciasteczek sesyjnych
         await new Promise(res => setTimeout(res, 500));
         const retry = await supabaseClient.auth.getUser();
         user = retry.data.user;
@@ -26,8 +25,8 @@ async function getAuthenticatedUser() {
 }
 
 /**
- * GŁÓWNA FUNKCJA INICJALIZUJĄCA - EXPORT JEST NIEZBĘDNY DLA MODUŁU LOGOWANIA
- * Naprawiono obsługę błędów i spójność zmiennych.
+ * GŁÓWNA FUNKCJA INICJALIZUJĄCA - EXPORT JEST NIEZBĘDNY DLA EKRANU LOGOWANIA
+ * Rozwiązuje błędy: SyntaxError, Błąd autoryzacji oraz literówki w zmiennych.
  */
 export async function initApp(force = false) {
     if (!force && cachedTeam && cachedPlayers && cachedProfile) {
@@ -62,7 +61,7 @@ export async function initApp(force = false) {
         if (teamErr) throw teamErr;
 
         // 3. Pobieranie zawodników z relacją potencjału
-        // Używamy jawnego wskazania relacji fk_potential_definition, aby uniknąć niejednoznaczności
+        // Używamy JAWNEGO wskazania relacji fk_potential_definition
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
@@ -77,18 +76,18 @@ export async function initApp(force = false) {
             `)
             .eq('team_id', team.id);
 
-        // Krytyczna poprawka: upewnienie się, że obsługujemy poprawną zmienną błędu
+        // NAPRAWA BŁĘDU: Używamy playersError zamiast nieistniejącego plErr
         if (playersError) {
             console.error("[DATABASE ERROR] Błąd pobierania zawodników:", playersError.message);
             throw playersError;
         }
 
-        // Cache'owanie danych dla wydajności aplikacji
+        // Cache'owanie danych dla wydajności
         cachedProfile = profile; 
         cachedTeam = team; 
         cachedPlayers = players;
 
-        // Przypisanie do window dla dostępności w innych modułach (legacy/actions)
+        // Globalne zmienne dla akcji i innych komponentów
         window.userTeamId = team.id;
         window.currentManager = profile;
 
@@ -112,7 +111,7 @@ function updateUIHeader(profile) {
 }
 
 /**
- * Czyszczenie kontenerów widoków przed renderowaniem, aby uniknąć duplikacji UI
+ * Czyszczenie kontenerów widoków przed renderowaniem
  */
 function clearAllContainers() {
     const ids = [
@@ -137,12 +136,12 @@ window.showRoster = async (force = false) => {
         clearAllContainers();
         renderRosterView(data.team, data.players);
     } else {
-        console.warn("[UI] Nie można załadować rostera: brak danych lub błąd autoryzacji.");
+        console.warn("[UI] Nie można załadować rostera: brak danych.");
     }
 };
 
 /**
- * Główny router zakładek aplikacji
+ * Router zakładek aplikacji
  */
 window.switchTab = async (tabName) => {
     const data = await initApp();
@@ -161,8 +160,8 @@ window.switchTab = async (tabName) => {
     }
 };
 
-// Inicjalizacja przy załadowaniu strony
+// Start aplikacji po załadowaniu drzewa DOM
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("[APP] Uruchamianie aplikacji...");
+    console.log("[APP] System gotowy.");
     window.showRoster();
 });
