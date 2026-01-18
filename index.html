@@ -255,11 +255,58 @@
                 else if (tabId === 'm-finances') await showFinances();
             } catch (e) { console.error("Błąd ładowania modułu managera:", e); }
         }
+        
+        if (currentUserRole === 'admin' || currentUserRole === 'moderator') {
+            const runAdminTab = () => {
+                if (window.switchAdminTab) {
+                    if (tabId === 'admin-tab-players') window.switchAdminTab('players');
+                    if (tabId === 'admin-tab-config') window.switchAdminTab('leagues');
+                    if (tabId === 'admin-tab-media') window.switchAdminTab('media');
+                    if (tabId === 'admin-tab-gen') window.switchAdminTab('dashboard');
+                }
+            };
+            if (!window.switchAdminTab) setTimeout(runAdminTab, 200); else runAdminTab();
+        }
     }
 
     function openNavSettings() {
         alert("Tu otworzy się panel konfiguracji nawigacji (JSONB Config)");
     }
+
+    // Nowa funkcja setupUI zintegrowana z app.js i wymogami komponentów
+    window.setupUI = async function(userRole) {
+        currentUserRole = userRole;
+        const lp = document.getElementById('landing-page');
+        const app = document.getElementById('game-app');
+        if (lp) lp.style.display = 'none';
+        if (app) app.style.display = 'block';
+
+        const adminNav = document.getElementById('admin-nav');
+        const managerNav = document.getElementById('manager-nav');
+
+        if (userRole === 'admin' || userRole === 'moderator') {
+            if (adminNav) adminNav.style.display = 'flex';
+            if (managerNav) managerNav.style.display = 'none';
+            
+            if (userRole === 'moderator') {
+                const configBtn = document.querySelector('[onclick="switchTab(\'admin-tab-config\')"]');
+                if (configBtn) configBtn.style.display = 'none';
+            }
+            switchTab('admin-tab-gen');
+        } else {
+            // ROLA: MANAGER
+            if (adminNav) adminNav.style.display = 'none';
+            if (managerNav) managerNav.style.display = 'flex';
+            
+            try {
+                const { initApp } = await import('./js/app/app.js');
+                await initApp();
+                switchTab('m-roster');
+            } catch (e) {
+                console.error("Critical: initApp failed", e);
+            }
+        }
+    };
 </script>
 
 </body>
