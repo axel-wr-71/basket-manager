@@ -12,7 +12,7 @@ let cachedPlayers = null;
 let cachedProfile = null;
 
 /**
- * Główna funkcja inicjująca dane - ZAKTUALIZOWANA
+ * Główna funkcja inicjująca dane
  */
 export async function initApp(forceRefresh = false) {
     if (!forceRefresh && cachedTeam && cachedPlayers && cachedProfile) {
@@ -20,11 +20,13 @@ export async function initApp(forceRefresh = false) {
     }
 
     try {
+        // Sprawdzamy eventy ligowe (np. starzenie się zawodników)
         await checkLeagueEvents();
+
         const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
         if (authError || !user) throw new Error("Błąd autoryzacji");
 
-        // 1. Pobieramy profil, aby wyciągnąć team_id (Kragujevac Hoops)
+        // 1. Pobieramy profil managera
         const { data: profile, error: profileError } = await supabaseClient
             .from('profiles')
             .select('*')
@@ -32,18 +34,18 @@ export async function initApp(forceRefresh = false) {
             .single();
 
         if (profileError || !profile) throw new Error("Nie znaleziono profilu użytkownika.");
-        if (!profile.team_id) throw new Error("Twoje konto nie ma przypisanej drużyny w profilu.");
+        if (!profile.team_id) throw new Error("Twoje konto nie ma przypisanej drużyny.");
 
-        // 2. Pobieramy dane zespołu na podstawie team_id z profilu
+        // 2. Pobieramy dane zespołu
         const { data: team, error: teamError } = await supabaseClient
             .from('teams')
             .select('*')
             .eq('id', profile.team_id)
             .single();
 
-        if (teamError || !team) throw new Error("Nie można załadować danych drużyny z tabeli teams.");
+        if (teamError || !team) throw new Error("Nie można załadować danych drużyny.");
 
-        // 3. Pobieramy zawodników tego zespołu
+        // 3. Pobieramy zawodników
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select('*')
@@ -51,14 +53,15 @@ export async function initApp(forceRefresh = false) {
 
         if (playersError) throw playersError;
 
-        // Aktualizacja cache i globalnych zmiennych
+        // Aktualizacja cache
         cachedProfile = profile;
         cachedTeam = team;
         cachedPlayers = players;
+        
+        // Zmienne globalne pomocne przy debugowaniu w Safari
         window.userTeamId = team.id;
         window.currentManager = profile;
 
-        // Aktualizacja UI nagłówka
         updateUIHeader(profile);
 
         return { team, players, profile };
@@ -70,21 +73,20 @@ export async function initApp(forceRefresh = false) {
 }
 
 /**
- * Aktualizuje nazwy w interfejsie
+ * Aktualizuje nagłówek (Nazwa Drużyny / Liga)
  */
 function updateUIHeader(profile) {
     const teamNameEl = document.getElementById('display-team-name');
-    if (teamNameEl) teamNameEl.innerText = profile.team_name || "Brak nazwy";
-    
     const leagueNameEl = document.getElementById('display-league-name');
-    if (leagueNameEl) leagueNameEl.innerText = profile.league_name || "Brak ligi";
+    
+    if (teamNameEl) teamNameEl.innerText = profile.team_name || "Manager";
+    if (leagueNameEl) leagueNameEl.innerText = profile.league_name || "EBL Professional";
 }
 
 /**
- * Czyści kontenery widoków
+ * Czyści wszystkie kontenery przed załadowaniem nowego widoku
  */
 function clearAllContainers() {
-    // Lista wszystkich kontenerów z Twoich 5 modułów
     const containers = [
         'roster-view-container', 
         'app-main-view', 
@@ -98,91 +100,113 @@ function clearAllContainers() {
     });
 }
 
-// --- FUNKCJE WYŚWIETLANIA WIDOKÓW ---
+// --- FUNKCJE WIDOKÓW (EKSPORTOWANE DO WINDOW) ---
 
-export async function showRoster(forceRefresh = false) {
-    const data = await initApp(forceRefresh);
-    if (data) {
-        clearAllContainers();
-        // Upewnij się, że masz kontener o id 'roster-view-container' w index.html
-        renderRosterView(data.team, data.players);
+export const showRoster = async (forceRefresh = false) => {
+    try {
+        const data = await initApp(forceRefresh);
+        if (data) {
+            clearAllContainers();
+            // renderRosterView pochodzi z importu roster_view.js
+            await renderRosterView(data.team, data.players);
+        }
+    } catch (e) {
+        console.error("Błąd widoku składu:", e);
     }
-}
+};
 
-export async function showTraining(forceRefresh = false) {
-    const data = await initApp(forceRefresh);
-    if (data) {
-        clearAllContainers();
-        renderTrainingDashboard(data.team, data.players);
+export const showTraining = async (forceRefresh = false) => {
+    try {
+        const data = await initApp(forceRefresh);
+        if (data) {
+            clearAllContainers();
+            await renderTrainingDashboard(data.team, data.players);
+        }
+    } catch (e) {
+        console.error("Błąd widoku treningu:", e);
     }
-}
+};
 
-export async function showMarket() {
-    const data = await initApp(true);
-    if (data) {
-        clearAllContainers();
-        renderMarketView(data.team);
+export const showMarket = async () => {
+    try {
+        const data = await initApp(true);
+        if (data) {
+            clearAllContainers();
+            await renderMarketView(data.team);
+        }
+    } catch (e) {
+        console.error("Błąd widoku rynku:", e);
     }
-}
+};
 
-export async function showFinances() {
-    const data = await initApp(true);
-    if (data) {
-        clearAllContainers();
-        renderFinancesView(data.team);
+export const showFinances = async () => {
+    try {
+        const data = await initApp(true);
+        if (data) {
+            clearAllContainers();
+            await renderFinancesView(data.team);
+        }
+    } catch (e) {
+        console.error("Błąd widoku finansów:", e);
     }
-}
+};
 
 /**
- * Obsługa nawigacji (menu)
+ * Główny Switcher Zakładek
  */
 window.switchTab = async (tabName) => {
-    console.log("[APP] Przełączanie na:", tabName);
+    console.log("[Safari Debug] Przełączanie na:", tabName);
     
-    // Obsługa widoków managera
+    // Obsługa aktywnych klas przycisków
+    document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.querySelector(`[onclick*="${tabName}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // Obsługa logiki widoków
     switch(tabName) {
-        case 'm-roster': 
-        case 'roster': 
-            await showRoster(); 
+        case 'm-roster':
+        case 'roster':
+            await showRoster();
             break;
         case 'm-training':
-        case 'training': 
-            await showTraining(); 
+        case 'training':
+            await showTraining();
             break;
         case 'm-market':
-        case 'market': 
-            await showMarket(); 
+        case 'market':
+            await showMarket();
             break;
         case 'm-finances':
-        case 'finances': 
-            await showFinances(); 
+        case 'finances':
+            await showFinances();
             break;
-        default: 
-            // Obsługa widoków admina (jeśli switchTab jest współdzielony)
-            const adminTabs = ['admin-tab-gen', 'admin-tab-players', 'admin-tab-leagues', 'admin-tab-media'];
-            if (adminTabs.includes(tabName)) {
-                window.showAdminTab(tabName);
-            } else {
-                console.warn("Nieznana zakładka:", tabName);
+        default:
+            // Obsługa widoków administracyjnych
+            if (tabName.startsWith('admin-')) {
+                if (window.showAdminTab) window.showAdminTab(tabName);
             }
     }
 };
 
-/**
- * Funkcja pomocnicza do błędów
- */
 function renderError(message) {
     const container = document.getElementById('app-main-view') || document.body;
     container.innerHTML = `
-        <div style="color: #ff4444; padding: 20px; text-align: center; background: #1a1a1a; border-radius: 15px; border: 1px solid #333; margin: 20px;">
-            <h3 style="margin-top:0; color: #fff;">Błąd Modułu Managera</h3>
-            <p>${message}</p>
-            <button onclick="location.reload()" style="background:#444; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; margin-top:10px;">Spróbuj ponownie</button>
+        <div style="color: #ff4444; padding: 30px; text-align: center; background: rgba(255,0,0,0.1); border-radius: 20px; border: 1px solid rgba(255,0,0,0.2); margin: 20px;">
+            <h3 style="color: #fff;">Błąd systemu</h3>
+            <p style="opacity: 0.8;">${message}</p>
+            <button onclick="location.reload()" style="background:#fff; color:#000; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:700; margin-top:15px;">Odśwież stronę</button>
         </div>
     `;
 }
 
-window.refreshCurrentView = (viewName) => {
-    if (viewName === 'roster') showRoster(true);
-    if (viewName === 'training') showTraining(true);
-};
+// Rejestracja funkcji w window dla MacBook/Safari
+window.showRoster = showRoster;
+window.showTraining = showTraining;
+window.showMarket = showMarket;
+window.showFinances = showFinances;
+window.initApp = initApp;
+
+// Auto-inicjalizacja przy starcie
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+});
