@@ -1,14 +1,35 @@
 // js/app/roster_view.js
 
+/**
+ * Funkcja pomocnicza do aktualizacji górnego paska nawigacji (prawy róg)
+ */
+function updateGlobalHeader(teamName, leagueName) {
+    // Szukamy kontenerów w górnym pasku po strukturze ze screena
+    const headerTeamName = document.querySelector('header b, .team-info b, #global-team-name');
+    const headerLeagueName = document.querySelector('header span[style*="color: #ff4500"], #global-league-name');
+
+    // Jeśli znajdziemy elementy, podmieniamy tekst
+    if (headerTeamName) headerTeamName.textContent = teamName;
+    
+    // Szukamy specyficznego kontenera z Twojego screena (klasa lub styl)
+    const teamDisplay = document.evaluate("//div[contains(text(), 'Twoja Drużyna')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (teamDisplay) teamDisplay.textContent = teamName;
+
+    const leagueDisplay = document.evaluate("//div[contains(text(), 'Super League')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (leagueDisplay) leagueDisplay.textContent = leagueName;
+}
+
 export function renderRosterView(team, players) {
     const container = document.getElementById('roster-view-container');
     if (!container) return;
 
-    // Próba wyciągnięcia nazwy drużyny i ligi z różnych możliwych struktur obiektu
+    // Próba wyciągnięcia nazwy z różnych struktur
     const teamName = team?.team_name || team?.name || team?.displayName || 'Twoja Drużyna';
     const leagueName = team?.league_name || team?.leagueName || 'Super League';
 
-    // Wybór dwóch najlepszych zawodników do górnych kart (po OVR)
+    // AKTUALIZACJA GÓRNEGO ROGU
+    updateGlobalHeader(teamName, leagueName);
+
     const topStars = [...players].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0)).slice(0, 2);
 
     let html = `
@@ -41,10 +62,6 @@ export function renderRosterView(team, players) {
         </div>
 
         <div style="margin: 0 20px; padding-bottom: 40px;">
-            <div style="padding: 10px 20px; background: transparent;">
-                <h3 style="margin:0; color:#1e293b; text-transform:uppercase; font-size:0.9rem; font-family: system-ui; letter-spacing: 1px; font-weight: 800;">Full Squad List</h3>
-            </div>
-            
             <table style="width: 100%; border-collapse: separate; border-spacing: 0 12px;">
                 <thead>
                     <tr style="text-align: left; color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
@@ -55,7 +72,7 @@ export function renderRosterView(team, players) {
                         <th style="padding: 10px;">Potential Class</th>
                         <th style="padding: 10px;">Salary</th>
                         <th style="padding: 10px;">OVR</th>
-                        <th style="padding: 10px 25px; text-align: right;">Action</th>
+                        <th style="padding: 20px 25px; text-align: right;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
