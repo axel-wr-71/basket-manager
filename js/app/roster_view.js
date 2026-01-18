@@ -3,7 +3,7 @@ import { RosterActions } from './roster_actions.js';
 
 function getSkillColor(val) {
     const v = parseInt(val) || 0;
-    if (v >= 20) return '#ff4500'; // G.O.A.T. (z Twojego SQL)
+    if (v >= 20) return '#ff4500'; // G.O.A.T.
     if (v === 19) return '#b8860b'; // All-Time Great
     if (v === 18) return '#d4af37'; // Elite Franchise
     if (v === 17) return '#8b5cf6'; // Star Performer
@@ -12,7 +12,7 @@ function getSkillColor(val) {
     if (v === 14) return '#64748b'; // Reliable Bench
     if (v === 13) return '#94a3b8'; // Role Player
     if (v >= 11)  return '#cbd5e1'; // Deep Bench
-    return '#94a3b8';               // Project Player / Reszta
+    return '#94a3b8';               // Project Player
 }
 
 function renderSkillMini(name, val) {
@@ -30,13 +30,19 @@ export async function renderRosterView(teamData, players) {
     };
 
     let rowsHtml = players.map(p => {
-        const pot = p.potential_definitions || { label: 'Scouting...', color_hex: '#94a3b8', icon_url: null };
-        const progressWidth = Math.min(Math.round(((p.overall_rating || 0) / (p.potential || 100)) * 100), 100);
+        // KRYTYCZNA POPRAWKA: Mapowanie na nową strukturę z JOIN
+        const pot = p.potential_definitions || { label: 'Scouting...', color_hex: '#94a3b8', emoji: '🔍' };
+        
+        // Logika paska postępu: jeśli pot.min_value nie istnieje, używamy p.potential jako fallback
+        const maxPot = pot.min_value || 100;
+        const progressWidth = Math.min(Math.round(((p.overall_rating || 0) / maxPot) * 100), 100);
 
-        // Wyświetlanie ikony z bazy lub stylowego placeholdera
-        const iconHtml = pot.icon_url 
-            ? `<img src="${pot.icon_url}" style="width:16px;height:16px;border-radius:2px;">`
-            : `<div style="width:16px;height:16px;background:${pot.color_hex};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:900;">${pot.label[0]}</div>`;
+        // Wyświetlanie ikony - priorytet dla Emoji z bazy (najszybsze w Safari)
+        const iconHtml = pot.emoji 
+            ? `<span style="font-size:14px;margin-right:4px;">${pot.emoji}</span>`
+            : (pot.icon_url 
+                ? `<img src="${pot.icon_url}" style="width:16px;height:16px;border-radius:2px;">`
+                : `<div style="width:16px;height:16px;background:${pot.color_hex};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:900;">${pot.label[0]}</div>`);
 
         return `
         <tr style="border-bottom:1px solid #f8f9fa;">
@@ -74,7 +80,7 @@ export async function renderRosterView(teamData, players) {
     }).join('');
 
     container.innerHTML = `
-        <div style="padding:30px;font-family:'Inter',sans-serif;background:#f4f7f6;min-height:100vh;">
+        <div style="padding:30px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f7f6;min-height:100vh;">
             <h1 style="color:#1a237e;font-weight:800;">ROSTER MANAGEMENT</h1>
             <div style="background:white;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.05);">
                 <table style="width:100%;border-collapse:collapse;text-align:left;">
