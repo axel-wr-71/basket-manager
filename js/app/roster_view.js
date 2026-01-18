@@ -102,7 +102,6 @@ function renderPlayerRow(p) {
     const isRookie = p.is_rookie || p.age <= 19;
     const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Prospect', color: '#3b82f6' };
     
-    // Konwersja wzrostu
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
     const ft = Math.floor(inchesTotal / 12);
@@ -111,59 +110,52 @@ function renderPlayerRow(p) {
 
     return `
         <tr style="background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-radius: 15px;">
-            <td style="padding: 20px 25px; border-radius: 15px 0 0 15px; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; border-left: 1px solid #f1f5f9;">
+            <td style="padding: 20px 25px; border-radius: 15px 0 0 15px; border: 1px solid #f1f5f9; border-right: none;">
                 <div style="display: flex; align-items: flex-start; gap: 15px;">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" 
-                         style="width: 60px; height: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; object-fit: cover;">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 60px; height: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                             <strong style="color: #1a237e; font-size: 1.05rem;">${p.first_name} ${p.last_name}</strong>
                             ${isRookie ? '<span style="background:#fee2e2; color:#ef4444; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:4px; text-transform:uppercase;">Rookie</span>' : ''}
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 10px; border-radius: 10px; font-size: 0.65rem; border: 1px solid #edf2f7; min-width: 320px;">
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f8fafc; padding: 12px; border-radius: 10px; font-size: 0.65rem; border: 1px solid #edf2f7; min-width: 400px;">
                             <div>
                                 <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Attack</div>
                                 <div style="display:flex; justify-content:space-between;"><span>2PT Shot</span> <strong>${p.skill_2pt ?? '-'}</strong></div>
                                 <div style="display:flex; justify-content:space-between;"><span>3PT Shot</span> <strong>${p.skill_3pt ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between;"><span>Dunk</span> <strong>${p.skill_dunk ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Dunking</span> <strong>${p.skill_dunk ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>1on1 Off</span> <strong>${p.skill_1on1_off ?? '-'}</strong></div>
                             </div>
                             <div>
                                 <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Defense</div>
-                                <div style="display:flex; justify-content:space-between;"><span>1v1 D</span> <strong>${p.skill_1on1_def ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between;"><span>Block</span> <strong>${p.skill_block ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between;"><span>Steal</span> <strong>${p.skill_steal ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>1on1 Def</span> <strong>${p.skill_1on1_def ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Blocking</span> <strong>${p.skill_block ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Stealing</span> <strong>${p.skill_steal ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Rebound</span> <strong>${p.skill_rebound ?? '-'}</strong></div>
                             </div>
                             <div>
                                 <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">General</div>
-                                <div style="display:flex; justify-content:space-between;"><span>Reb</span> <strong>${p.skill_rebound ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between;"><span>Stam</span> <strong>${p.skill_stamina ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between;"><span>FT</span> <strong>${p.skill_ft ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Passing</span> <strong>${p.skill_passing ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Dribbling</span> <strong>${p.skill_dribbling ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Stamina</span> <strong>${p.skill_stamina ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>Free Th.</span> <strong>${p.skill_ft ?? '-'}</strong></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </td>
             <td style="padding: 20px 10px; font-weight: 700; color: #64748b;">${p.position}</td>
-            <td style="padding: 20px 10px; font-weight: 500; color: #64748b; font-size: 0.8rem;">
-                ${heightCm} cm<br><span style="font-size: 0.7rem; opacity: 0.6;">${heightInFt}</span>
-            </td>
+            <td style="padding: 20px 10px; font-weight: 500; color: #64748b; font-size: 0.8rem;">${heightCm} cm<br><small>${heightInFt}</small></td>
             <td style="padding: 20px 10px; font-weight: 700; color: #64748b;">${p.age}</td>
-            <td style="padding: 20px 10px;">
-                <div style="border-bottom: 3px solid ${potData.color}; display: inline-block;">
-                    <span style="font-weight: 800; color: #1e293b; font-size: 0.85rem;">${potData.label}</span>
-                </div>
-            </td>
+            <td style="padding: 20px 10px;"><div style="border-bottom: 3px solid ${potData.color}; display: inline-block;"><span style="font-weight: 800; color: #1e293b; font-size: 0.85rem;">${potData.label}</span></div></td>
             <td style="padding: 20px 10px; font-weight: 800; color: #059669;">$${(p.salary || 0).toLocaleString()}</td>
-            <td style="padding: 20px 10px;">
-                <div style="width: 40px; height: 40px; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #166534; font-size: 1.1rem;">
-                    ${p.overall_rating || '??'}
-                </div>
-            </td>
-            <td style="padding: 20px 25px; text-align: right; border-radius: 0 15px 15px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9;">
+            <td style="padding: 20px 10px;"><div style="width: 40px; height: 40px; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #166534;">${p.overall_rating || '??'}</div></td>
+            <td style="padding: 20px 25px; text-align: right; border-radius: 0 15px 15px 0; border: 1px solid #f1f5f9; border-left: none;">
                 <div style="display: flex; gap: 6px; justify-content: flex-end;">
-                    <button class="btn-profile-trigger" data-id="${p.id}" style="background: #1a237e; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.65rem;">Profile</button>
-                    <button class="btn-train-trigger" data-id="${p.id}" style="background: #f1f5f9; color: #1a237e; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.65rem;">Train</button>
-                    <button class="btn-sell-trigger" data-id="${p.id}" style="background: white; color: #ef4444; border: 1px solid #fee2e2; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 0.65rem;">Sell</button>
+                    <button class="btn-profile-trigger" data-id="${p.id}" style="background: #1a237e; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; font-size: 0.65rem;">Profile</button>
+                    <button class="btn-train-trigger" data-id="${p.id}" style="background: #f1f5f9; color: #1a237e; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; font-size: 0.65rem;">Train</button>
+                    <button class="btn-sell-trigger" data-id="${p.id}" style="background: white; color: #ef4444; border: 1px solid #fee2e2; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; font-size: 0.65rem;">Sell</button>
                 </div>
             </td>
         </tr>
