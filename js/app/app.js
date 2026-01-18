@@ -46,12 +46,12 @@ export async function initApp(force = false) {
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Zawodnicy z relacją potencjału - jawne wskazanie klucza fk_potential_definition
+        // 3. Zawodnicy z relacją potencjału - KRKTYCZNA POPRAWKA MAPOWANIA
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
                 *,
-                potential_definitions!fk_potential_definition (
+                potential_definitions:potential (
                     id, label, color_hex, emoji, min_value
                 )
             `)
@@ -101,7 +101,7 @@ function clearAllContainers() {
  */
 window.showRoster = async (force = false) => {
     const data = await initApp(force);
-    if (data) {
+    if (data && data.players) {
         clearAllContainers();
         renderRosterView(data.team, data.players);
     }
