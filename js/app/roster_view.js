@@ -1,123 +1,127 @@
-// js/app/roster_actions.js
+// js/app/roster_view.js
 
-// Funkcje globalne dostępne dla całej aplikacji
-window.getPotentialData = (val) => {
-    const p = parseInt(val) || 0;
-    if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500', icon: '👑' };
-    if (p >= 92) return { label: 'All-Time Great', color: '#b8860b', icon: '🏆' };
-    if (p >= 88) return { label: 'Elite Franchise', color: '#d4af37', icon: '⭐' };
-    if (p >= 84) return { label: 'Star Performer', color: '#8b5cf6', icon: '🌟' };
-    if (p >= 79) return { label: 'High Prospect', color: '#10b981', icon: '🚀' };
-    if (p >= 74) return { label: 'Solid Starter', color: '#6366f1', icon: '🏀' };
-    if (p >= 68) return { label: 'Reliable Bench', color: '#64748b', icon: '📋' };
-    if (p >= 60) return { label: 'Role Player', color: '#94a3b8', icon: '👤' };
-    if (p >= 50) return { label: 'Deep Bench', color: '#cbd5e1', icon: '🪑' };
-    return { label: 'Project Player', color: '#94a3b8', icon: '🛠️' };
-};
+export function renderRosterView(team, players) {
+    const container = document.getElementById('roster-view-container');
+    if (!container) return;
 
-const getSkillColor = (val) => {
-    const v = parseInt(val) || 0;
-    if (v >= 19) return '#d4af37'; 
-    if (v >= 17) return '#8b5cf6'; 
-    if (v >= 15) return '#10b981'; 
-    if (v >= 13) return '#06b6d4'; 
-    if (v >= 11) return '#3b82f6'; 
-    return '#64748b';             
-};
+    // 1. Wybór dwóch najlepszych zawodników do górnych kart (po OVR)
+    const topStars = [...players].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0)).slice(0, 2);
 
-function cmToFtIn(cm) {
-    if (!cm) return '--';
-    const inchesTotal = cm * 0.393701;
-    const feet = Math.floor(inchesTotal / 12);
-    const inches = Math.round(inchesTotal % 12);
-    return feet + "'" + inches + '"';
+    let html = `
+        <div class="roster-management-header" style="padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin:0; font-weight:900; color:#1a237e; text-transform:uppercase; font-family: system-ui;">ROSTER <span style="color:#e65100">MANAGEMENT</span></h1>
+                <p style="margin:0; color:#64748b;">Current squad: <strong>${team?.name || 'Twoja Drużyna'}</strong></p>
+            </div>
+            <div style="background:#1a237e; color:white; padding:10px 20px; border-radius:30px; font-weight:bold; font-size:0.85rem; display:flex; align-items:center; gap:8px;">
+                🏀 SQUAD SIZE: ${players.length} / 12
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 20px 30px 20px;">
+            ${topStars.map((star, idx) => `
+                <div style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); border-radius: 15px; padding: 25px; display: flex; align-items: center; gap: 20px; color: white; box-shadow: 0 10px 20px rgba(26,35,126,0.2);">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}" 
+                         style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2); object-fit: cover;">
+                    <div>
+                        <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #ffab40; font-weight: 800;">
+                            ${idx === 0 ? 'Franchise Star' : 'Future Pillar'}
+                        </span>
+                        <h2 style="margin: 5px 0; font-size: 1.5rem;">${star.first_name} ${star.last_name}</h2>
+                        <span style="font-size: 0.9rem; opacity: 0.8;">${star.position} | <strong>${star.potential_definitions?.label || 'Prospect'}</strong></span>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+
+        <div style="background: white; border-radius: 20px; margin: 0 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden;">
+            <div style="padding: 20px; border-bottom: 1px solid #f1f5f9;">
+                <h3 style="margin:0; color:#1e293b; text-transform:uppercase; font-size:1rem; font-family: system-ui;">Full Squad List</h3>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="text-align: left; color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #f1f5f9;">
+                        <th style="padding: 20px;">Player & Scouting Report</th>
+                        <th style="padding: 20px;">Pos</th>
+                        <th style="padding: 20px;">Age</th>
+                        <th style="padding: 20px;">Potential Class</th>
+                        <th style="padding: 20px;">Salary</th>
+                        <th style="padding: 20px;">OVR</th>
+                        <th style="padding: 20px; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${players.map(p => renderPlayerRow(p)).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = html;
 }
 
-// Obiekt akcji przypisany globalnie
-window.RosterActions = {
-    closeModal: () => {
-        const modal = document.getElementById('roster-modal-overlay');
-        if (modal) modal.remove();
-    },
+function renderPlayerRow(p) {
+    const isRookie = p.is_rookie || p.age <= 19;
 
-    _renderProfileCard: (label, val, color, extraHtml = '') => {
-        return '<div style="background:white; padding:20px; border-radius:20px; border:1px solid #e2e8f0; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100px;">' +
-            '<small style="color:#94a3b8; font-weight:800; text-transform:uppercase; font-size:0.7em; margin-bottom:8px; display:block;">' + label + '</small>' +
-            '<div style="color:' + color + '; font-size:1.4em; font-weight:900;">' + val + '</div>' +
-            (extraHtml || '') +
-            '</div>';
-    },
-
-    showProfile: (player) => {
-        const potData = window.getPotentialData(player.potential);
-        const progressWidth = Math.min(Math.round(((player.overall_rating || 0) / (player.potential || 1)) * 100), 100);
-        const countryCode = (player.country || 'pl').toLowerCase();
-        const flagUrl = 'https://flagcdn.com/w40/' + countryCode + '.png';
-
-        const skillGroups = [
-            {
-                name: 'Attack',
-                skills: [
-                    { name: 'Jump Shot', val: player.skill_2pt },
-                    { name: '3PT Range', val: player.skill_3pt },
-                    { name: 'Dunking', val: player.skill_dunk },
-                    { name: 'Passing', val: player.skill_passing }
-                ]
-            },
-            {
-                name: 'Defense',
-                skills: [
-                    { name: '1on1 Def', val: player.skill_1on1_def },
-                    { name: 'Rebound', val: player.skill_rebound },
-                    { name: 'Blocking', val: player.skill_block },
-                    { name: 'Stealing', val: player.skill_steal }
-                ]
-            },
-            {
-                name: 'General',
-                skills: [
-                    { name: 'Handling', val: player.skill_dribbling },
-                    { name: '1on1 Off', val: player.skill_1on1_off },
-                    { name: 'Stamina', val: player.skill_stamina },
-                    { name: 'Free Throw', val: player.skill_ft }
-                ]
-            }
-        ];
-
-        let modalHtml = '<div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.8); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(10px);">';
-        modalHtml += '<div style="background:white; width:1000px; max-height:95vh; border-radius:40px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 40px 80px rgba(0,0,0,0.4);">';
-        modalHtml += '<div style="background:#1a237e; color:white; padding:40px 50px; display:flex; align-items:center; position:relative;">';
-        modalHtml += '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + player.last_name + '" style="width:120px; height:120px; background:white; border-radius:30px; padding:5px; border:4px solid #3b82f6;">';
-        modalHtml += '<div style="margin-left:30px; flex-grow:1;">';
-        modalHtml += '<div style="display:flex; align-items:center; gap:15px;">';
-        modalHtml += '<h1 style="margin:0; font-size:2.5em; font-weight:900;">' + player.first_name + ' ' + player.last_name + '</h1>';
-        modalHtml += '<img src="' + flagUrl + '" style="width:30px; height:20px; border-radius:4px; object-fit:cover; border:1px solid rgba(255,255,255,0.2);">';
-        if (player.is_rookie) modalHtml += '<span style="background:#ef4444; color:white; font-size:10px; padding:4px 10px; border-radius:6px; font-weight:900; letter-spacing:1px; cursor:default; border:1px solid rgba(255,255,255,0.3);">ROOKIE</span>';
-        modalHtml += '</div><p style="margin:8px 0 0 0; opacity:0.8; font-size:1.1em; font-weight:500;">' + player.position + ' | ' + (player.height || '--') + ' cm (' + cmToFtIn(player.height) + ') | ' + player.age + ' Years Old</p></div>';
-        modalHtml += '<div style="text-align:center; margin-right:60px;"><div style="width:80px; height:80px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 8px;"><span style="color:#1a237e; font-size:2.2em; font-weight:900;">' + player.overall_rating + '</span></div><span style="font-size:0.7em; font-weight:800; text-transform:uppercase; letter-spacing:1px; opacity:0.9;">Overall Rating</span></div>';
-        modalHtml += '<button onclick="window.RosterActions.closeModal()" style="position:absolute; top:30px; right:30px; background:rgba(255,255,255,0.1); border:none; color:white; width:45px; height:45px; border-radius:50%; font-size:28px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button></div>';
-        modalHtml += '<div style="padding:40px; overflow-y:auto;">';
-        modalHtml += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; margin-bottom:40px;">';
-        
-        const potExtra = '<div style="width: 200px; height: 6px; background: #e2e8f0; border-radius: 10px; margin-top: 15px; overflow: hidden;"><div style="width: ' + progressWidth + '%; height: 100%; background: ' + potData.color + ';"></div></div><span style="font-size: 11px; font-weight: 800; color: #94a3b8; margin-top: 8px;">' + progressWidth + '% of potential reached</span>';
-        modalHtml += window.RosterActions._renderProfileCard("Potential Class", potData.icon + ' ' + potData.label, potData.color, potExtra);
-        modalHtml += window.RosterActions._renderProfileCard("Annual Salary", '$' + (player.salary || 0).toLocaleString(), "#2e7d32");
-        
-        modalHtml += '</div><h3 style="color:#1a237e; font-size:0.9em; text-transform:uppercase; letter-spacing:2px; margin-bottom:20px; border-left:4px solid #1a237e; padding-left:15px;">Technical Evaluation</h3>';
-        modalHtml += '<div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:30px;">';
-        
-        skillGroups.forEach(group => {
-            modalHtml += '<div style="background:#f8fafc; padding:20px; border-radius:25px; border:1px solid #f1f5f9;">';
-            modalHtml += '<h4 style="color:#94a3b8; font-size:0.75em; text-transform:uppercase; margin-bottom:15px; text-align:center;">' + group.name + '</h4>';
-            group.skills.forEach(s => {
-                modalHtml += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:white; padding:12px 15px; border-radius:15px; border:1px solid #e2e8f0;">';
-                modalHtml += '<span style="font-weight:700; color:#475569; font-size:0.85em;">' + s.name + '</span>';
-                modalHtml += '<span style="color:' + getSkillColor(s.val) + '; font-weight:900; font-size:1.1em;">' + (s.val || 0) + '</span></div>';
-            });
-            modalHtml += '</div>';
-        });
-
-        modalHtml += '</div></div></div></div>';
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
-};
+    return `
+        <tr style="border-bottom: 1px solid #f8fafc; vertical-align: middle;">
+            <td style="padding: 20px;">
+                <div style="display: flex; align-items: flex-start; gap: 15px;">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" 
+                         style="width: 65px; height: 65px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; object-fit: cover;">
+                    
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <strong style="color: #1a237e; font-size: 1.1rem;">${p.first_name} ${p.last_name}</strong>
+                            ${isRookie ? '<span style="background:#fee2e2; color:#ef4444; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:4px; text-transform:uppercase;">Rookie</span>' : ''}
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f8fafc; padding: 10px; border-radius: 10px; font-size: 0.65rem; border: 1px solid #edf2f7; min-width: 350px;">
+                            <div>
+                                <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Attack</div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Inside (2PT)</span> <strong>${p.skill_2pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>3PT Shot</span> <strong>${p.skill_3pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Dunk</span> <strong>${p.skill_dunk ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Passing</span> <strong>${p.skill_passing ?? '-'}</strong></div>
+                            </div>
+                            <div>
+                                <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Defense</div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>1v1 Def</span> <strong>${p.skill_1on1_def ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Steal</span> <strong>${p.skill_steal ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Block</span> <strong>${p.skill_block ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>1v1 Off</span> <strong>${p.skill_1on1_off ?? '-'}</strong></div>
+                            </div>
+                            <div>
+                                <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">General</div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Rebound</span> <strong>${p.skill_rebound ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Dribble</span> <strong>${p.skill_dribbling ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Stamina</span> <strong>${p.skill_stamina ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between; margin:2px 0;"><span>Free Throw</span> <strong>${p.skill_ft ?? '-'}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            
+            <td style="padding: 20px; font-weight: 700; color: #64748b;">${p.position}</td>
+            <td style="padding: 20px; font-weight: 700; color: #64748b;">${p.age}</td>
+            <td style="padding: 20px;">
+                <div style="border-bottom: 3px solid ${p.potential_definitions?.color_hex || '#3b82f6'}; display: inline-block; padding-bottom: 2px;">
+                    <span style="font-weight: 800; color: #1e293b; font-size: 0.85rem;">${p.potential_definitions?.label || 'Prospect'}</span>
+                </div>
+            </td>
+            <td style="padding: 20px; font-weight: 800; color: #059669;">$${(p.salary || 0).toLocaleString()}</td>
+            <td style="padding: 20px;">
+                <div style="width: 42px; height: 42px; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #166534; font-size: 1.1rem;">
+                    ${p.overall_rating || '??'}
+                </div>
+            </td>
+            <td style="padding: 20px; text-align: right;">
+                <button class="btn-dev" style="background: white; border: 1px solid #e2e8f0; padding: 10px 18px; border-radius: 8px; font-weight: 800; color: #1a237e; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; transition: 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                    Development
+                </button>
+            </td>
+        </tr>
+    `;
+}
