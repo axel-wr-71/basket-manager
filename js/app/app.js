@@ -37,18 +37,28 @@ export async function initApp(forceRefresh = false) {
             .from('teams').select('*').eq('id', profile.team_id).single();
 
         // KLUCZOWE: Zapytanie dopasowane do Twojego wyniku SQL
-        const { data, error } = await supabase
-    .from('players')
-    .select(`
-        *,
-        potential_definitions!fk_potential_definition (
-            label,
-            color_hex,
-            emoji
-        )
-    `)
-    .eq('team_id', myTeamId);
+       // js/app/app.js - KLUCZOWA POPRAWKA
+async function fetchPlayerData(myTeamId) {
+    const { data, error } = await supabase
+        .from('players')
+        .select(`
+            *,
+            potential_definitions:potential (
+                id,
+                label,
+                color_hex,
+                emoji,
+                min_value
+            )
+        `)
+        .eq('team_id', myTeamId);
 
+    if (error) {
+        console.error("Błąd pobierania:", error);
+        return [];
+    }
+    return data;
+}
         if (plErr) throw plErr;
 
         cachedProfile = profile; cachedTeam = team; cachedPlayers = players;
