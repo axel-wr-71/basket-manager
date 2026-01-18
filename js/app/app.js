@@ -46,12 +46,12 @@ export async function initApp(force = false) {
             .from('teams').select('*').eq('id', profile.team_id).single();
         if (teamErr) throw teamErr;
 
-        // 3. Zawodnicy z relacją potencjału - KRKTYCZNA POPRAWKA MAPOWANIA
+        // 3. Zawodnicy z relacją potencjału - Używamy jawnego wskazania relacji fk_potential_definition
         const { data: players, error: playersError } = await supabaseClient
             .from('players')
             .select(`
                 *,
-                potential_definitions:potential (
+                potential_definitions!fk_potential_definition (
                     id, label, color_hex, emoji, min_value
                 )
             `)
@@ -90,7 +90,8 @@ function updateUIHeader(profile) {
  * Czyszczenie kontenerów przed renderowaniem nowego widoku
  */
 function clearAllContainers() {
-    ['roster-view-container', 'market-container', 'finances-container', 'training-container', 'app-main-view'].forEach(id => {
+    const ids = ['roster-view-container', 'market-container', 'finances-container', 'training-container', 'app-main-view'];
+    ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = '';
     });
@@ -101,9 +102,12 @@ function clearAllContainers() {
  */
 window.showRoster = async (force = false) => {
     const data = await initApp(force);
+    // Sprawdzamy czy mamy dane i czy tablica zawodników nie jest pusta
     if (data && data.players) {
         clearAllContainers();
         renderRosterView(data.team, data.players);
+    } else {
+        console.warn("Nie znaleziono zawodników dla tej drużyny.");
     }
 };
 
