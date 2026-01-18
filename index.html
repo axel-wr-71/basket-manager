@@ -11,7 +11,6 @@
         .landing-hero { position: relative; width: 100%; height: 100vh; background: url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600') no-repeat center center fixed; background-size: cover; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
         .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1; }
         .landing-header { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; }
-        .media-logo { height: 80px; width: auto; object-fit: contain; }
         .lang-switcher-top { display: flex; gap: 12px; }
         .lang-flag { width: 32px; height: auto; cursor: pointer; transition: 0.3s; filter: grayscale(100%); opacity: 0.6; border-radius: 4px; }
         .lang-flag.active { filter: grayscale(0%); opacity: 1; transform: scale(1.1); box-shadow: 0 0 8px rgba(255,255,255,0.3); }
@@ -35,9 +34,7 @@
         .tab-content.active { display: block; }
         
         header.app-header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; }
-        .main-logo { height: 45px; width: auto; background: #eee; border-radius: 4px; }
         .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-settings-nav { background: #eee; border: none; border-radius: 12px 12px 0 0; padding: 12px; cursor: pointer; font-size: 1.2rem; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -45,9 +42,7 @@
 <div id="landing-page" class="landing-hero">
     <div class="hero-overlay"></div>
     <header class="landing-header">
-        <div class="header-left">
-            <div style="font-weight:900; color:white; font-size:1.5rem;">EBL</div>
-        </div>
+        <div class="header-left"><div style="font-weight:900; color:white; font-size:1.5rem;">EBL</div></div>
         <div class="header-right">
             <div class="lang-switcher-top">
                 <img src="https://flagcdn.com/w40/pl.png" class="lang-flag active" alt="PL">
@@ -98,30 +93,46 @@
         <button class="btn-tab" data-tab="m-finances">FINANSE</button>
     </div>
 
-    <div id="m-roster" class="tab-content active">
-        <div id="roster-view-container"></div>
-    </div>
-    <div id="m-training" class="tab-content">
-        <div id="training-view-container"></div>
-    </div>
-    <div id="m-market" class="tab-content">
-        <div id="market-view-container"></div>
-    </div>
-    <div id="m-finances" class="tab-content">
-        <div id="finances-view-container"></div>
-    </div>
+    <div id="m-roster" class="tab-content active"><div id="roster-view-container"></div></div>
+    <div id="m-training" class="tab-content"><div id="training-view-container"></div></div>
+    <div id="m-market" class="tab-content"><div id="market-view-container"></div></div>
+    <div id="m-finances" class="tab-content"><div id="finances-view-container"></div></div>
 </div>
 
-<script type="module" src="js/auth.js"></script>
 <script type="module">
-    import { switchTab } from './js/app/app.js';
-    // Podpinamy switchTab pod przyciski
-    document.querySelectorAll('.btn-tab').forEach(btn => {
-        btn.onclick = () => {
-            const tabId = btn.getAttribute('data-tab');
-            switchTab(tabId);
-        };
+    import { signIn, signUp, logout } from './js/auth.js';
+    import { switchTab, initApp } from './js/app/app.js';
+
+    // 1. Rejestracja globalna dla Safari (żeby działało window.setupUI)
+    window.setupUI = async function(role) {
+        console.log("[SETUP] Uruchamianie interfejsu dla:", role);
+        document.getElementById('landing-page').style.display = 'none';
+        document.getElementById('game-app').style.display = 'block';
+        
+        // Inicjalizacja danych i pokazanie pierwszej zakładki
+        await initApp();
+        await switchTab('m-roster');
+    };
+
+    // 2. Podpięcie zdarzeń (zamiast onclick w HTML)
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginBtn = document.getElementById('btn-login-action');
+        const signupBtn = document.getElementById('btn-signup-action');
+        const logoutBtn = document.getElementById('btn-logout-action');
+
+        if (loginBtn) loginBtn.addEventListener('click', signIn);
+        if (signupBtn) signupBtn.addEventListener('click', signUp);
+        if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+        // Podpięcie zakładek
+        document.querySelectorAll('.btn-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
     });
 </script>
+
 </body>
 </html>
