@@ -123,8 +123,8 @@ function renderPlayerRow(p) {
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; padding: 10px; border-radius: 10px; font-size: 0.65rem; border: 1px solid #edf2f7; min-width: 320px;">
                             <div>
                                 <div style="color:#1a237e; margin-bottom:4px; font-weight:800; text-transform:uppercase; border-bottom:1px solid #e2e8f0;">Attack</div>
-                                <div style="display:flex; justify-content:space-between;"><span>Inside</span> <strong>${p.skill_2pt ?? '-'}</strong></div>
-                                <div style="display:flex; justify-content:space-between;"><span>3PT</span> <strong>${p.skill_3pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>2PT Shot</span> <strong>${p.skill_2pt ?? '-'}</strong></div>
+                                <div style="display:flex; justify-content:space-between;"><span>3PT Shot</span> <strong>${p.skill_3pt ?? '-'}</strong></div>
                                 <div style="display:flex; justify-content:space-between;"><span>Dunk</span> <strong>${p.skill_dunk ?? '-'}</strong></div>
                             </div>
                             <div>
