@@ -13,7 +13,7 @@ function getFlagUrl(countryCode) {
  */
 function getPositionStyle(pos) {
     const styles = {
-        'PG': '#1e40af', 'SG': '#5b21b6', 'SF': '#065f46', 'PF': '#9a3412', 'C': '#991b1b'
+        'PG': '#1e40af', 'SG': '#5b21b6', 'SF': '#065f46', 'PF': '#9a3412', 'C': '#27E7F5'
     };
     const color = styles[pos] || '#334155';
     return `background: ${color}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);`;
