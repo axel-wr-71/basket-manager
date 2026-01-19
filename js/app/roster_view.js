@@ -1,7 +1,7 @@
 // js/app/roster_view.js
 
 /**
- * Helper: Pobieranie flagi z FlagCDN (Opcja 1)
+ * Helper: Pobieranie flagi z lokalnych zasobów
  */
 function getFlagUrl(countryCode) {
     if (!countryCode) return '';
@@ -73,21 +73,22 @@ export function renderRosterView(team, players) {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 20px 30px 20px;">
             ${topStars.map((star, idx) => {
                 const potData = window.getPotentialData ? window.getPotentialData(star.potential) : { label: 'Prospect', icon: '', color: '#3b82f6' };
-                // Sprawdzamy kraj dla gwiazd
                 const countryCode = star.country || star.nationality || "";
                 const flagUrl = getFlagUrl(countryCode);
                 
                 return `
                 <div style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); border-radius: 15px; padding: 25px; display: flex; align-items: center; gap: 20px; color: white; box-shadow: 0 10px 20px rgba(26,35,126,0.1);">
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}"object-fit: cover;">
-                        ${flagUrl ? `<img src="${flagUrl}" style="width: 24px; height: auto; border-radius: 2px; border: 1px solid white;">`; style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2);  ''}
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${star.last_name}" style="width: 75px; height: 75px; background: white; border-radius: 12px; border: 3px solid rgba(255,255,255,0.2); object-fit: cover;">
                     </div>
                     <div>
                         <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #ffab40; font-weight: 800;">
                             ${idx === 0 ? 'Franchise Star' : 'Future Pillar'}
                         </span>
-                        <h2 style="margin: 5px 0; font-size: 1.5rem;">${star.first_name} ${star.last_name}</h2>
+                        <h2 style="margin: 5px 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                            ${star.first_name} ${star.last_name}
+                            ${flagUrl ? `<img src="${flagUrl}" style="width: 28px; height: auto; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 2px 4px rgba(0,0,0,0.2);">` : ''}
+                        </h2>
                         <span style="font-size: 0.9rem; opacity: 0.8; display: flex; align-items: center; gap: 8px;">
                             <div style="${getPositionStyle(star.position)}; width: 24px; height: 24px; font-size: 0.55rem;">${star.position}</div> | <strong>${potData.label} ${potData.icon}</strong>
                         </span>
@@ -148,7 +149,6 @@ function renderPlayerRow(p) {
     const ovr = calculateOVR(p);
     const ovrStyle = getOvrStyle(ovr);
     
-    // Próba pobrania kraju z różnych kluczy
     const countryCode = p.country || p.nationality || p.country_code || "";
     const flagUrl = getFlagUrl(countryCode);
 
