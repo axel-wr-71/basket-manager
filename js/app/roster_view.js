@@ -15,7 +15,7 @@ function getFlagUrl(countryCode) {
  */
 function getPositionStyle(pos) {
     const styles = {
-        'PG': '#1e40af', 'SG': '#5b21b6', 'SF': '#065f46', 'PF': '#9a3412', 'C': '#991b1b'
+        'PG': '#1e40af', 'SG': '#5b21b6', 'SF': '#065f46', 'PF': '#9a3412', 'C': '#F5AD27'
     };
     const color = styles[pos] || '#334155';
     return `background: ${color}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);`;
@@ -29,6 +29,9 @@ function getOvrStyle(ovr) {
     if (ovr >= 80) return { bg: '#f0fdf4', border: '#22c55e', color: '#166534' };
     if (ovr >= 70) return { bg: '#f0f9ff', border: '#3b82f6', color: '#1e3a8a' };
     if (ovr >= 60) return { bg: '#fff7ed', border: '#fdba74', color: '#9a3412' };
+    if (ovr >= 50) return { bg: '#f0fdf4', border: '#22c55e', color: '#5b21b6' };
+    if (ovr >= 40) return { bg: '#f0f9ff', border: '#3b82f6', color: '#065f46' };
+    if (ovr >= 30) return { bg: '#fff7ed', border: '#fdba74', color: '#1e40af' };
     return { bg: '#f8fafc', border: '#e2e8f0', color: '#64748b' };
 }
 
