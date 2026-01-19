@@ -1,7 +1,7 @@
 // js/app/roster_view.js
 
 /**
- * Funkcja pomocnicza do aktualizacji górnego paska nawigacji (prawy róg)
+ * Funkcja pomocnicza do aktualizacji górnego paska nawigacji
  */
 function updateGlobalHeader(teamName, leagueName) {
     const headerTeamName = document.querySelector('.team-info b, #global-team-name');
@@ -15,15 +15,17 @@ export function renderRosterView(team, players) {
     const container = document.getElementById('roster-view-container');
     if (!container) return;
 
-    // Pobieranie danych zespołu
     const teamName = team?.team_name || team?.name || 'Twoja Drużyna';
     const leagueName = team?.league_name || 'Super League';
 
-    // Aktualizacja nagłówka globalnego
     updateGlobalHeader(teamName, leagueName);
 
-    // Wybór dwóch najlepszych zawodników (Gwiazdy)
-    const topStars = [...players].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0)).slice(0, 2);
+    // Wybór dwóch najlepszych zawodników (Gwiazdy) na podstawie OVR
+    const topStars = [...players].sort((a, b) => {
+        const ovrA = calculateOVR(a);
+        const ovrB = calculateOVR(b);
+        return ovrB - ovrA;
+    }).slice(0, 2);
 
     let html = `
         <div class="roster-management-header" style="padding: 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -77,8 +79,7 @@ export function renderRosterView(team, players) {
 
     container.innerHTML = html;
 
-    // --- DELEGACJA ZDARZEŃ (Naprawa Safari / MacBook) ---
-    // Zamiast pętli, jeden słuchacz na cały kontener
+    // Delegacja zdarzeń
     container.onclick = (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
@@ -98,10 +99,25 @@ export function renderRosterView(team, players) {
     };
 }
 
+/**
+ * Oblicza OVR na podstawie 12 umiejętności (System Krowy)
+ */
+function calculateOVR(p) {
+    const skills = [
+        p.skill_2pt, p.skill_3pt, p.skill_dunk, p.skill_ft, p.skill_passing, 
+        p.skill_dribbling, p.skill_stamina, p.skill_rebound, p.skill_block, 
+        p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
+    ];
+    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
+    // Maksymalna możliwa suma dla GOAT to 240, więc skalujemy do 100
+    return Math.round((sum / 240) * 100);
+}
+
 function renderPlayerRow(p) {
     const isRookie = p.is_rookie || p.age <= 19;
-    const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Prospect', color: '#3b82f6' };
-    
+    const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Prospect', icon: '', color: '#3b82f6' };
+    const ovr = calculateOVR(p);
+
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
     const ft = Math.floor(inchesTotal / 12);
@@ -148,9 +164,9 @@ function renderPlayerRow(p) {
             <td style="padding: 20px 10px; font-weight: 700; color: #64748b;">${p.position}</td>
             <td style="padding: 20px 10px; font-weight: 500; color: #64748b; font-size: 0.8rem;">${heightCm} cm<br><small>${heightInFt}</small></td>
             <td style="padding: 20px 10px; font-weight: 700; color: #64748b;">${p.age}</td>
-            <td style="padding: 20px 10px;"><div style="border-bottom: 3px solid ${potData.color}; display: inline-block;"><span style="font-weight: 800; color: #1e293b; font-size: 0.85rem;">${potData.label}</span></div></td>
+            <td style="padding: 20px 10px;"><div style="border-bottom: 3px solid ${potData.color}; display: inline-block;"><span style="font-weight: 800; color: #1e293b; font-size: 0.85rem;">${potData.label} ${potData.icon}</span></div></td>
             <td style="padding: 20px 10px; font-weight: 800; color: #059669;">$${(p.salary || 0).toLocaleString()}</td>
-            <td style="padding: 20px 10px;"><div style="width: 40px; height: 40px; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #166534;">${p.overall_rating || '??'}</div></td>
+            <td style="padding: 20px 10px;"><div style="width: 40px; height: 40px; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #166534;">${ovr}</div></td>
             <td style="padding: 20px 25px; text-align: right; border-radius: 0 15px 15px 0; border: 1px solid #f1f5f9; border-left: none;">
                 <div style="display: flex; gap: 6px; justify-content: flex-end;">
                     <button class="btn-profile-trigger" data-id="${p.id}" style="background: #1a237e; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 800; cursor: pointer; font-size: 0.65rem;">Profile</button>
