@@ -60,7 +60,7 @@ export function renderRosterView(team, players) {
                 <p style="margin:0; color:#64748b;">Current squad: <strong style="color:#1a237e">${teamName}</strong> | League: <strong style="color:#1a237e">${leagueName}</strong></p>
             </div>
             <div style="background:#1a237e; color:white; padding:10px 20px; border-radius:30px; font-weight:bold; font-size:0.85rem; display:flex; align-items:center; gap:8px; box-shadow: 0 4px 10px rgba(26,35,126,0.2);">
-                🏀 SQUAD SIZE: ${players.length} / 12
+                SQUAD SIZE: ${players.length} 
             </div>
         </div>
 
