@@ -10,10 +10,43 @@ import { RosterActions } from './roster_actions.js';
 
 // Rejestracja globalna natychmiast po załadowaniu
 window.RosterActions = RosterActions;
+window.potentialDefinitions = {}; // Globalny słownik definicji
+
+/**
+ * Pobiera definicje potencjału z bazy danych Supabase
+ */
+async function fetchPotentialDefinitions() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('potential_definitions')
+            .select('*');
+        
+        if (error) throw error;
+
+        // Mapowanie na obiekt po ID dla szybkiego dostępu
+        window.potentialDefinitions = data.reduce((acc, curr) => {
+            acc[curr.id] = curr;
+            return acc;
+        }, {});
+        
+        // Pomocnicza funkcja dostępna globalnie
+        window.getPotentialData = (id) => {
+            const d = window.potentialDefinitions[id];
+            return d ? { label: d.label, icon: d.emoji || '', color: d.color || '#3b82f6' } : { label: 'Prospect', icon: '', color: '#94a3b8' };
+        };
+    } catch (err) {
+        console.error("[APP] Błąd pobierania definicji potencjału:", err);
+    }
+}
 
 export async function initApp() {
     console.log("[APP] Pobieranie danych drużyny...");
     try {
+        // Najpierw upewnij się, że mamy definicje słownikowe
+        if (Object.keys(window.potentialDefinitions).length === 0) {
+            await fetchPotentialDefinitions();
+        }
+
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return null;
 
@@ -32,8 +65,8 @@ export async function initApp() {
 
         const team = teamRes.data;
         const players = (playersRes.data || []).map(p => {
-            // Używamy globalnej funkcji z roster_actions.js do mapowania potencjału
-            const potDef = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Prospect', color: '#94a3b8' };
+            // Używamy świeżo załadowanych danych z bazy
+            const potDef = window.getPotentialData(p.potential);
             return { ...p, potential_definitions: potDef };
         });
 
