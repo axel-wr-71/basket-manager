@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="css/market.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         /* KLUCZOWE: Ukrywamy wszystko na starcie, aby Safari nie pokazało logowania przed sprawdzeniem sesji */
         .auth-state-pending {
@@ -36,29 +35,9 @@
         .nav-container { display: flex; justify-content: center; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
         .btn-tab { padding: 12px 25px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 12px 12px 0 0; font-weight: 800; transition: 0.3s; color: #666; font-size: 0.85rem; letter-spacing: 0.5px; }
         .btn-tab.active { background: #1a237e; color: white; }
-        
         .tab-content { display: none; min-height: 80vh; background: #f4f7f6; }
         .tab-content.active { display: block; }
         
-        /* Style dla uchwytów Drag & Drop */
-        .drag-handle {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-bottom: none;
-            color: #94a3b8;
-            padding: 6px;
-            text-align: center;
-            font-size: 0.65rem;
-            font-weight: 800;
-            cursor: grab;
-            border-radius: 12px 12px 0 0;
-            margin: 0;
-            letter-spacing: 1px;
-            display: none;
-        }
-        .tab-content.active .drag-handle { display: block; }
-        .sortable-ghost { opacity: 0.2; background: #1a237e !important; }
-
         header.app-header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; }
         .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     </style>
@@ -116,61 +95,39 @@
         <button class="btn-tab active" data-tab="m-roster">ZAWODNICY</button>
         <button class="btn-tab" data-tab="m-training">TRENING</button>
         <button class="btn-tab" data-tab="m-market">RYNEK</button>
-        <button class="btn-tab" data-tab="m-media">MEDIA</button> 
-        <button class="btn-tab" data-tab="m-finances">FINANSE</button>
+        <button class="btn-tab" data-tab="m-media">MEDIA</button> <button class="btn-tab" data-tab="m-finances">FINANSE</button>
     </div>
 
-    <div id="game-content-area">
-        <div id="m-roster" class="tab-content active">
-            <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
-            <div id="roster-view-container"></div>
-        </div>
-        
-        <div id="m-training" class="tab-content">
-            <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
-            <div id="training-view-container"></div>
-        </div>
-
-        <div id="m-market" class="tab-content">
-            <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
-            <div id="market-view-container"></div>
-        </div>
-
-        <div id="m-media" class="tab-content">
-            <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
-            <div id="media-view-container"></div>
-        </div> 
-
-        <div id="m-finances" class="tab-content">
-            <div class="drag-handle">⠿ PRZECIĄGNIJ, ABY ZMIENIĆ UKŁAD</div>
-            <div id="finances-view-container"></div>
-        </div>
-    </div>
+    <div id="m-roster" class="tab-content active"><div id="roster-view-container"></div></div>
+    <div id="m-training" class="tab-content"><div id="training-view-container"></div></div>
+    <div id="m-market" class="tab-content"><div id="market-view-container"></div></div>
+    <div id="m-media" class="tab-content"><div id="media-view-container"></div></div> <div id="m-finances" class="tab-content"><div id="finances-view-container"></div></div>
 </div>
 
 <script type="module">
     import { signIn, signUp, logout } from './js/auth.js';
-    import { switchTab, initApp, initDragAndDrop } from './js/app/app.js';
+    import { switchTab, initApp } from './js/app/app.js';
 
+    // 1. Rejestracja globalna dla Safari
     window.setupUI = async function(role) {
         console.log("[SETUP] Uruchamianie interfejsu dla:", role);
         
         const landing = document.getElementById('landing-page');
         const app = document.getElementById('game-app');
 
+        // Usuwamy blokady i ustawiamy display
+        landing.classList.add('auth-state-pending');
         landing.style.display = 'none';
+        
         app.classList.remove('auth-state-pending');
         app.style.display = 'block';
         
+        // Inicjalizacja danych i pokazanie pierwszej zakładki
         await initApp();
         await switchTab('m-roster');
-
-        // Bezpieczne uruchomienie przeciągania
-        if (typeof initDragAndDrop === 'function') {
-            initDragAndDrop();
-        }
     };
 
+    // 2. Podpięcie zdarzeń
     document.addEventListener('DOMContentLoaded', () => {
         const loginBtn = document.getElementById('btn-login-action');
         const signupBtn = document.getElementById('btn-signup-action');
@@ -180,6 +137,7 @@
         if (signupBtn) signupBtn.addEventListener('click', signUp);
         if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
+        // Podpięcie zakładek
         document.querySelectorAll('.btn-tab').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tabId = btn.getAttribute('data-tab');
