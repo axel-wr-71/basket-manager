@@ -2,8 +2,26 @@
 import { supabaseClient } from '../auth.js';
 
 /**
- * Funkcje pomocnicze dla UI
+ * Funkcje pomocnicze dla UI & Dane z roster_view.js
  */
+
+function getFlagUrl(countryCode) {
+    if (!countryCode) return '';
+    const code = String(countryCode).toLowerCase().trim();
+    const finalCode = (code === 'el') ? 'gr' : code;
+    return `assets/flags/${finalCode}.png`;
+}
+
+function calculateOVR(p) {
+    const skills = [
+        p.skill_2pt, p.skill_3pt, p.skill_dunk, p.skill_ft, p.skill_passing, 
+        p.skill_dribbling, p.skill_stamina, p.skill_rebound, p.skill_block, 
+        p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
+    ];
+    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
+    return Math.round((sum / 240) * 100);
+}
+
 window.getPotentialData = (val) => {
     const p = parseInt(val) || 0;
     if (p >= 96) return { label: 'G.O.A.T.', color: '#ff4500', icon: '👑' };
@@ -36,7 +54,6 @@ function cmToFtIn(cm) {
     return `${feet}'${inches}"`;
 }
 
-// Mapa czytelnych nazw dla wszystkich 12 umiejętności
 const SKILL_LABELS = {
     '2pt': 'Jump Shot', '3pt': '3PT Range', 'dunk': 'Dunking', 'passing': 'Passing',
     '1on1_def': '1on1 Def', 'rebound': 'Rebound', 'block': 'Blocking', 'steal': 'Stealing',
@@ -53,9 +70,6 @@ export const RosterActions = {
         return window.gameState?.currentSeason || 1;
     },
 
-    /**
-     * Customowy Popup Potwierdzający w stylu gry
-     */
     showConfirm: (message, onConfirm) => {
         const confirmHtml = `
             <div id="custom-confirm-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.6); display:flex; align-items:center; justify-content:center; z-index:10000; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);">
@@ -94,12 +108,14 @@ export const RosterActions = {
         const seasonStats = statsRes.data || {};
         const gameHistory = historyRes.data || [];
         const trainHistory = trainHistoryRes.data || [];
-        const potData = window.getPotentialData(player.potential);
-        const isLocked = player.training_locked_season >= currentSeason;
         
-        // Wykorzystanie zdefiniowanej ścieżki do lokalnych plików PNG
-        const finalCode = player.nationality_code ? player.nationality_code.toLowerCase() : 'un';
-        const flagUrl = `assets/flags/${finalCode}.png`;
+        // Dane zintegrowane z roster_view
+        const potData = window.getPotentialData(player.potential);
+        const playerOvr = calculateOVR(player);
+        const countryCode = player.country || player.nationality || player.country_code || "";
+        const flagUrl = getFlagUrl(countryCode);
+        
+        const isLocked = player.training_locked_season >= currentSeason;
 
         let modalHtml = `
             <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px);">
@@ -113,12 +129,12 @@ export const RosterActions = {
                             </div>
                             <div>
                                 <h1 style="margin:0; color:white; font-size:2.2rem; font-weight:900; letter-spacing:-1px; display: flex; align-items: center; gap: 12px;">
-                                    <img src="${flagUrl}" style="width:36px; height:auto; border-radius:4px;" alt="${finalCode}">
+                                    ${flagUrl ? `<img src="${flagUrl}" style="width:36px; height:auto; border-radius:4px;">` : ''}
                                     ${player.first_name} ${player.last_name}
-                                    ${player.is_rookie ? '<span style="background:#ef4444; font-size:11px; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:10px;">ROOKIE</span>' : ''}
+                                    ${player.is_rookie || player.age <= 19 ? '<span style="background:#ef4444; font-size:11px; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:10px;">ROOKIE</span>' : ''}
                                 </h1>
                                 <p style="margin:5px 0 0 0; color:#94a3b8; font-size:1rem;">
-                                    ${player.height} cm (${cmToFtIn(player.height)}) | ${player.age} Years Old | ${player.country}
+                                    ${player.height} cm (${cmToFtIn(player.height)}) | ${player.age} Years Old | ${player.country || player.nationality}
                                 </p>
                             </div>
                         </div>
@@ -128,7 +144,7 @@ export const RosterActions = {
                             ${RosterActions._renderHeaderStat("RPG", seasonStats.rpg || '0.0')}
                             ${RosterActions._renderHeaderStat("APG", seasonStats.apg || '0.0')}
                             <div style="width:1px; background:rgba(255,255,255,0.1); margin:0 5px;"></div>
-                            ${RosterActions._renderHeaderStat("OVR", player.ovr || '??', "#3b82f6")}
+                            ${RosterActions._renderHeaderStat("OVR", playerOvr, "#3b82f6")}
                         </div>
                         <button onclick="window.RosterActions.closeModal()" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; opacity:0.6;">&times;</button>
                     </div>
@@ -174,7 +190,7 @@ export const RosterActions = {
                                     ${trainHistory.length > 0 ? trainHistory.map(h => `
                                         <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #f8fafc; padding-bottom:3px;">
                                             <span style="font-weight:700;">Season ${h.season_number}</span>
-                                            <span style="color:#3b82f6; font-weight:700;">${SKILL_LABELS[h.skill_focused.replace('skill_', '')]}</span>
+                                            <span style="color:#3b82f6; font-weight:700;">${SKILL_LABELS[h.skill_focused?.replace('skill_', '')] || '-'}</span>
                                         </div>
                                     `).join('') : '<span style="color:#cbd5e1;">New Recruit - No logs</span>'}
                                 </div>
