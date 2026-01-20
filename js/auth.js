@@ -12,11 +12,9 @@ window.POTENTIAL_MAP = [];
 
 /**
  * FUNKCJA NAPRAWIAJĄCA NAZWĘ DRUŻYNY W PRAWYM GÓRNYM ROGU
- * Poprawiona pod strukturę: Profiles (team_id) -> Teams (id)
  */
 async function fetchManagerTeam(userId) {
     try {
-        // 1. Najpierw pobieramy team_id z profilu użytkownika
         const { data: profile, error: profileError } = await _supabase
             .from('profiles')
             .select('team_id')
@@ -28,7 +26,6 @@ async function fetchManagerTeam(userId) {
             return;
         }
 
-        // 2. Pobieramy dane drużyny używając pobranego team_id
         const { data: team, error: teamError } = await _supabase
             .from('teams')
             .select('team_name, league_name')
@@ -38,9 +35,9 @@ async function fetchManagerTeam(userId) {
         if (teamError) throw teamError;
 
         if (team) {
-            // Szukamy kontenerów w prawym górnym rogu (Safari/MacBook)
-            const headerTeamName = document.querySelector('.team-info b, header b');
-            const headerLeagueName = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
+            // Safari/MacBook selectors
+            const headerTeamName = document.getElementById('display-team-name');
+            const headerLeagueName = document.getElementById('display-league-name');
 
             if (headerTeamName) headerTeamName.textContent = team.team_name;
             if (headerLeagueName) headerLeagueName.textContent = team.league_name;
@@ -67,33 +64,60 @@ async function fetchPotentialDefinitions() {
     }
 }
 
+/**
+ * Zaktualizowana funkcja setupUI - eliminuje migotanie
+ */
 export const setupUI = async (role) => {
     console.log("[AUTH] setupUI dla roli:", role);
     const landingPage = document.getElementById('landing-page');
     const gameApp = document.getElementById('game-app');
     const managerNav = document.getElementById('manager-nav');
 
-    if (landingPage) landingPage.style.display = 'none';
-    if (gameApp) gameApp.style.display = 'block';
+    // Usuwamy klasy blokujące widoczność (Anti-Flicker)
+    if (landingPage) {
+        landingPage.style.display = 'none';
+        landingPage.classList.add('auth-state-pending');
+    }
+    
+    if (gameApp) {
+        gameApp.style.display = 'block';
+        gameApp.classList.remove('auth-state-pending');
+    }
 
     if (role === 'manager') {
         if (managerNav) managerNav.style.display = 'flex';
-        // Inicjalizacja danych aplikacji (zawodnicy, bazy itp.)
         await initApp();
-        // Przełączenie na pierwszą zakładkę
         await switchTab('m-roster');
     }
 };
 window.setupUI = setupUI;
 
+/**
+ * NOWA FUNKCJA: showLogin
+ * Bezpieczne pokazanie ekranu logowania bez migania
+ */
+window.showLogin = function() {
+    const landingPage = document.getElementById('landing-page');
+    const gameApp = document.getElementById('game-app');
+    
+    if (gameApp) {
+        gameApp.style.display = 'none';
+        gameApp.classList.add('auth-state-pending');
+    }
+    if (landingPage) {
+        landingPage.style.display = 'flex';
+        landingPage.classList.remove('auth-state-pending');
+    }
+};
+
 export async function checkUser() {
-    const { data: { user } } = await _supabase.auth.getUser();
+    // Sprawdzamy sesję
+    const { data: { session } } = await _supabase.auth.getSession();
+    const user = session?.user;
     
     if (user) {
-        // Ładujemy mapę potencjałów
         await fetchPotentialDefinitions();
         
-        // Pobieramy profil, aby sprawdzić rolę i dane
         let { data: profile } = await _supabase
             .from('profiles')
             .select('*')
@@ -108,13 +132,11 @@ export async function checkUser() {
             profile = newProfile;
         }
 
-        // Aktualizacja nagłówka górnego po upewnieniu się, że mamy profil
         await fetchManagerTeam(user.id);
-
         await setupUI(profile?.role || 'manager');
     } else {
-        if (document.getElementById('landing-page')) document.getElementById('landing-page').style.display = 'block';
-        if (document.getElementById('game-app')) document.getElementById('game-app').style.display = 'none';
+        // Wywołujemy bezpieczne pokazanie logowania
+        window.showLogin();
     }
 }
 window.checkUser = checkUser;
@@ -147,5 +169,10 @@ export const logout = async () => {
 };
 window.logout = logout;
 
-// Start przy ładowaniu strony
+// Nasłuchiwanie zmian stanu (kluczowe dla Safari przy odświeżaniu)
+_supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') checkUser();
+    if (event === 'SIGNED_OUT') window.showLogin();
+});
+
 document.addEventListener('DOMContentLoaded', () => checkUser());
