@@ -82,6 +82,10 @@ export const RosterActions = {
     showProfile: async (player) => {
         const currentSeason = RosterActions.getCurrentSeason();
 
+        // Usuwamy stary modal jeśli istnieje, by uniknąć problemów przy odświeżaniu profilu
+        const oldModal = document.getElementById('roster-modal-overlay');
+        if (oldModal) oldModal.remove();
+
         const [statsRes, historyRes, trainHistoryRes] = await Promise.all([
             supabaseClient.from('vw_player_season_stats').select('*').eq('player_id', player.id).single(),
             supabaseClient.from('player_stats').select('*').eq('player_id', player.id).order('created_at', { ascending: false }).limit(10),
@@ -236,7 +240,7 @@ export const RosterActions = {
         const message = `Set <b>${skillLabel}</b> as the primary focus for <b>Season ${currentSeason}</b>? This action cannot be undone.`;
 
         this.showConfirm(message, async () => {
-            console.log("--- DEBUG START: SAVING TRAINING ---");
+            console.log("--- START: SAVING TRAINING ---");
             
             // 1. Aktualizacja tabeli players
             const { error: upError } = await supabaseClient
@@ -254,7 +258,7 @@ export const RosterActions = {
             }
 
             // 2. Dodanie wpisu do historii
-            const { error: histError } = await supabaseClient
+            await supabaseClient
                 .from('player_training_history')
                 .insert({
                     player_id: playerId,
@@ -262,16 +266,26 @@ export const RosterActions = {
                     skill_focused: skill
                 });
 
-            if (histError) {
-                console.error("❌ BŁĄD TABELI HISTORY:", histError);
-                // Nie blokujemy sukcesu jeśli historia się nie udała, ale zawodnik tak
+            // 3. POBIERANIE ŚWIEŻYCH DANYCH (KLUCZ DO ODŚWIEŻENIA FRONTU)
+            const { data: updatedPlayer, error: fetchError } = await supabaseClient
+                .from('players')
+                .select('*')
+                .eq('id', playerId)
+                .single();
+
+            if (!fetchError && updatedPlayer) {
+                console.log("✅ Dane odświeżone, przeładowuję profil.");
+                
+                // Odśwież listę zawodników w tle
+                if (window.loadRoster) window.loadRoster();
+                
+                // Odśwież modal profilu nowymi danymi
+                this.showProfile(updatedPlayer);
+            } else {
+                // Failsafe: jeśli pobranie nie wyjdzie, po prostu zamknij
+                this.closeModal();
+                if (window.loadRoster) window.loadRoster();
             }
-
-            console.log("--- DEBUG END: SUCCESS ---");
-
-            // Jeśli doszliśmy tutaj, to co najmniej update zawodnika się udał
-            this.closeModal();
-            if (window.loadRoster) window.loadRoster();
         });
     },
 
