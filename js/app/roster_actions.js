@@ -36,7 +36,7 @@ function cmToFtIn(cm) {
     return `${feet}'${inches}"`;
 }
 
-// Mapa czytelnych nazw dla kluczy technicznych
+// Mapa czytelnych nazw dla wszystkich 12 umiejętności
 const SKILL_LABELS = {
     '2pt': 'Jump Shot', '3pt': '3PT Range', 'dunk': 'Dunking', 'passing': 'Passing',
     '1on1_def': '1on1 Def', 'rebound': 'Rebound', 'block': 'Blocking', 'steal': 'Stealing',
@@ -50,8 +50,33 @@ export const RosterActions = {
     },
 
     getCurrentSeason: () => {
-        // Zmienna globalna Twojej gry lub domyślnie 1
         return window.gameState?.currentSeason || 1;
+    },
+
+    /**
+     * Customowy Popup Potwierdzający w stylu gry
+     */
+    showConfirm: (message, onConfirm) => {
+        const confirmHtml = `
+            <div id="custom-confirm-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.6); display:flex; align-items:center; justify-content:center; z-index:10000; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);">
+                <div style="background:#ffffff; width:420px; padding:40px; border-radius:32px; text-align:center; box-shadow:0 30px 70px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2);">
+                    <div style="font-size:3.5rem; margin-bottom:20px;">🎯</div>
+                    <h3 style="margin:0 0 15px 0; color:#0f172a; font-weight:900; font-size:1.5rem; letter-spacing:-0.5px;">Confirm Focus</h3>
+                    <p style="color:#64748b; line-height:1.6; font-size:1rem; margin-bottom:35px;">${message}</p>
+                    <div style="display:flex; gap:15px; justify-content:center;">
+                        <button id="confirm-no" style="background:#f1f5f9; color:#64748b; padding:14px 30px; border-radius:16px; border:none; font-weight:800; cursor:pointer; flex:1; transition: 0.2s;">CANCEL</button>
+                        <button id="confirm-yes" style="background:#1e293b; color:white; padding:14px 30px; border-radius:16px; border:none; font-weight:800; cursor:pointer; flex:1; transition: 0.2s;">YES, PROCEED</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', confirmHtml);
+
+        document.getElementById('confirm-no').onclick = () => document.getElementById('custom-confirm-overlay').remove();
+        document.getElementById('confirm-yes').onclick = () => {
+            document.getElementById('custom-confirm-overlay').remove();
+            onConfirm();
+        };
     },
 
     showProfile: async (player) => {
@@ -100,7 +125,7 @@ export const RosterActions = {
                         <button onclick="window.RosterActions.closeModal()" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; opacity:0.6;">&times;</button>
                     </div>
 
-                    <div id="modal-content-scroll" style="padding:30px 40px; overflow-y:auto; flex-grow:1; background:#f1f5f9;">
+                    <div id="modal-content-scroll" style="padding:30px 40px; overflow-y:auto; flex-grow:1; background:#f1f5f9; -webkit-overflow-scrolling: touch;">
                         
                         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-bottom:30px;">
                             ${RosterActions._renderProfileCard("Potential", potData.icon + ' ' + potData.label, potData.color)}
@@ -117,7 +142,7 @@ export const RosterActions = {
                         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-bottom:30px;">
                             <div id="training-section" style="background:white; padding:25px; border-radius:24px; border:2px solid #3b82f6; box-shadow:0 10px 30px rgba(59,130,246,0.1);">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                                    <h3 style="margin:0; color:#1e293b; font-size:0.9rem; text-transform:uppercase;">🎯 SEASON ${currentSeason} INDIVIDUAL FOCUS</h3>
+                                    <h3 style="margin:0; color:#1e293b; font-size:0.9rem; text-transform:uppercase; letter-spacing:1px;">🎯 SEASON ${currentSeason} INDIVIDUAL FOCUS</h3>
                                     ${isLocked ? `<span style="background:#fee2e2; color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:900; font-size:0.7rem;">LOCKED</span>` : ''}
                                 </div>
                                 <div style="display:flex; gap:15px;">
@@ -139,9 +164,9 @@ export const RosterActions = {
                                 <h4 style="margin:0 0 10px 0; font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">Development History</h4>
                                 <div style="font-size:0.8rem;">
                                     ${trainHistory.length > 0 ? trainHistory.map(h => `
-                                        <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #f8fafc;">
+                                        <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #f8fafc; padding-bottom:3px;">
                                             <span style="font-weight:700;">Season ${h.season_number}</span>
-                                            <span style="color:#3b82f6;">${SKILL_LABELS[h.skill_focused.replace('skill_', '')]}</span>
+                                            <span style="color:#3b82f6; font-weight:700;">${SKILL_LABELS[h.skill_focused.replace('skill_', '')]}</span>
                                         </div>
                                     `).join('') : '<span style="color:#cbd5e1;">New Recruit - No logs</span>'}
                                 </div>
@@ -190,7 +215,7 @@ export const RosterActions = {
                                                 </span>
                                             </td>
                                         </tr>
-                                    `).join('') : '<tr><td colspan="14" style="padding:40px; text-align:center; color:#94a3b8;">No game data available for Season ' + currentSeason + '</td></tr>'}
+                                    `).join('') : '<tr><td colspan="14" style="padding:40px; text-align:center; color:#94a3b8;">No game data for Season ' + currentSeason + '</td></tr>'}
                                 </tbody>
                             </table>
                         </div>
@@ -203,31 +228,33 @@ export const RosterActions = {
         if(scrollDiv) scrollDiv.scrollTop = 0;
     },
 
-    saveTraining: async (playerId) => {
-        const currentSeason = RosterActions.getCurrentSeason();
+    saveTraining: async function(playerId) {
+        const currentSeason = this.getCurrentSeason();
         const skill = document.getElementById('train-choice').value;
         const skillLabel = SKILL_LABELS[skill.replace('skill_', '')];
-        
-        if(!confirm(`Set focus to ${skillLabel} for Season ${currentSeason}? This cannot be changed later.`)) return;
 
-        const { error: upError } = await supabaseClient.from('players').update({
-            individual_training_skill: skill,
-            training_locked_season: currentSeason
-        }).eq('id', playerId);
+        const message = `Set <b>${skillLabel}</b> as the primary focus for <b>Season ${currentSeason}</b>? This action cannot be undone.`;
 
-        const { error: histError } = await supabaseClient.from('player_training_history').insert({
-            player_id: playerId,
-            season_number: currentSeason,
-            skill_focused: skill
+        // Wywołanie autorskiego UI zamiast systemowego confirm
+        this.showConfirm(message, async () => {
+            const { error: upError } = await supabaseClient.from('players').update({
+                individual_training_skill: skill,
+                training_locked_season: currentSeason
+            }).eq('id', playerId);
+
+            const { error: histError } = await supabaseClient.from('player_training_history').insert({
+                player_id: playerId,
+                season_number: currentSeason,
+                skill_focused: skill
+            });
+
+            if (!upError && !histError) {
+                this.closeModal();
+                if (window.loadRoster) window.loadRoster();
+            } else {
+                alert("Database Error: Could not save focus.");
+            }
         });
-
-        if (!upError && !histError) {
-            alert(`✅ Training focus locked!`);
-            RosterActions.closeModal();
-            if (window.loadRoster) window.loadRoster();
-        } else {
-            alert("Database Error: Could not save focus.");
-        }
     },
 
     _renderHeaderStat: (label, val, color = "#fff") => `
