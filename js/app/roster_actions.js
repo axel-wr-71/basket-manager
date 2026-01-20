@@ -36,6 +36,13 @@ function cmToFtIn(cm) {
     return `${feet}'${inches}"`;
 }
 
+// Mapa czytelnych nazw dla kluczy technicznych
+const SKILL_LABELS = {
+    '2pt': 'Jump Shot', '3pt': '3PT Range', 'dunk': 'Dunking', 'passing': 'Passing',
+    '1on1_def': '1on1 Def', 'rebound': 'Rebound', 'block': 'Blocking', 'steal': 'Stealing',
+    'dribbling': 'Handling', '1on1_off': '1on1 Off', 'stamina': 'Stamina', 'ft': 'Free Throw'
+};
+
 export const RosterActions = {
     closeModal: () => {
         const modal = document.getElementById('roster-modal-overlay');
@@ -43,14 +50,13 @@ export const RosterActions = {
     },
 
     getCurrentSeason: () => {
-        // Startujemy od Sezonu 1
+        // Zmienna globalna Twojej gry lub domyślnie 1
         return window.gameState?.currentSeason || 1;
     },
 
     showProfile: async (player) => {
         const currentSeason = RosterActions.getCurrentSeason();
 
-        // 1. Pobieranie danych: Sezonowe, Historia meczów, Historia treningów
         const [statsRes, historyRes, trainHistoryRes] = await Promise.all([
             supabaseClient.from('vw_player_season_stats').select('*').eq('player_id', player.id).single(),
             supabaseClient.from('player_stats').select('*').eq('player_id', player.id).order('created_at', { ascending: false }).limit(10),
@@ -78,7 +84,7 @@ export const RosterActions = {
                                     ${player.first_name} ${player.last_name}
                                     ${player.is_rookie ? '<span style="background:#ef4444; font-size:11px; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:10px;">ROOKIE</span>' : ''}
                                 </h1>
-                                <p style="margin:5px 0 0 0; color:#94a3b8; font-size:1rem; font-weight:500;">
+                                <p style="margin:5px 0 0 0; color:#94a3b8; font-size:1rem;">
                                     ${player.height} cm (${cmToFtIn(player.height)}) | ${player.age} Years Old | ${player.country}
                                 </p>
                             </div>
@@ -94,7 +100,7 @@ export const RosterActions = {
                         <button onclick="window.RosterActions.closeModal()" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; opacity:0.6;">&times;</button>
                     </div>
 
-                    <div id="modal-content-scroll" style="padding:30px 40px; overflow-y:auto; flex-grow:1; background:#f1f5f9; -webkit-overflow-scrolling: touch;">
+                    <div id="modal-content-scroll" style="padding:30px 40px; overflow-y:auto; flex-grow:1; background:#f1f5f9;">
                         
                         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-bottom:30px;">
                             ${RosterActions._renderProfileCard("Potential", potData.icon + ' ' + potData.label, potData.color)}
@@ -111,34 +117,33 @@ export const RosterActions = {
                         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-bottom:30px;">
                             <div id="training-section" style="background:white; padding:25px; border-radius:24px; border:2px solid #3b82f6; box-shadow:0 10px 30px rgba(59,130,246,0.1);">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                                    <h3 style="margin:0; color:#1e293b; font-size:0.9rem; text-transform:uppercase; letter-spacing:1px;">🎯 Season ${currentSeason} Individual Focus</h3>
+                                    <h3 style="margin:0; color:#1e293b; font-size:0.9rem; text-transform:uppercase;">🎯 SEASON ${currentSeason} INDIVIDUAL FOCUS</h3>
                                     ${isLocked ? `<span style="background:#fee2e2; color:#ef4444; padding:4px 10px; border-radius:8px; font-weight:900; font-size:0.7rem;">LOCKED</span>` : ''}
                                 </div>
                                 <div style="display:flex; gap:15px;">
                                     <select id="train-choice" ${isLocked ? 'disabled' : ''} style="flex-grow:1; padding:12px; border-radius:12px; border:2px solid #f1f5f9; font-weight:700; font-family:inherit; font-size:0.9rem;">
-                                        <option value="skill_2pt">Mid-Range Focus</option>
-                                        <option value="skill_3pt">Three-Point Specialist</option>
-                                        <option value="skill_dunk">Inside Aggression</option>
-                                        <option value="skill_passing">Court Vision</option>
-                                        <option value="skill_1on1_def">Perimeter Lockdown</option>
-                                        <option value="skill_rebound">Board Crasher</option>
+                                        ${Object.keys(SKILL_LABELS).map(key => `
+                                            <option value="skill_${key}" ${player.individual_training_skill === 'skill_'+key ? 'selected' : ''}>
+                                                ${SKILL_LABELS[key]}
+                                            </option>
+                                        `).join('')}
                                     </select>
                                     <button onclick="window.RosterActions.saveTraining('${player.id}')" ${isLocked ? 'disabled' : ''} 
                                         style="background:${isLocked ? '#94a3b8' : '#1e293b'}; color:white; padding:12px 30px; border-radius:12px; font-weight:800; border:none; cursor:${isLocked ? 'default' : 'pointer'};">
-                                        ${isLocked ? 'COMPLETE' : 'SET FOCUS'}
+                                        ${isLocked ? 'COMPLETED' : 'SET FOCUS'}
                                     </button>
                                 </div>
                             </div>
                             
                             <div style="background:#fff; border-radius:24px; padding:20px; border:1px solid #e2e8f0;">
-                                <h4 style="margin:0 0 10px 0; font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">Training Logs</h4>
+                                <h4 style="margin:0 0 10px 0; font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">Development History</h4>
                                 <div style="font-size:0.8rem;">
                                     ${trainHistory.length > 0 ? trainHistory.map(h => `
-                                        <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #f8fafc; padding-bottom:3px;">
-                                            <span style="font-weight:700;">S${h.season_number}</span>
-                                            <span style="color:#64748b;">${h.skill_focused.replace('skill_', '').toUpperCase()}</span>
+                                        <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #f8fafc;">
+                                            <span style="font-weight:700;">Season ${h.season_number}</span>
+                                            <span style="color:#3b82f6;">${SKILL_LABELS[h.skill_focused.replace('skill_', '')]}</span>
                                         </div>
-                                    `).join('') : '<span style="color:#cbd5e1;">No history</span>'}
+                                    `).join('') : '<span style="color:#cbd5e1;">New Recruit - No logs</span>'}
                                 </div>
                             </div>
                         </div>
@@ -185,7 +190,7 @@ export const RosterActions = {
                                                 </span>
                                             </td>
                                         </tr>
-                                    `).join('') : '<tr><td colspan="14" style="padding:40px; text-align:center; color:#94a3b8;">No game data available.</td></tr>'}
+                                    `).join('') : '<tr><td colspan="14" style="padding:40px; text-align:center; color:#94a3b8;">No game data available for Season ' + currentSeason + '</td></tr>'}
                                 </tbody>
                             </table>
                         </div>
@@ -201,10 +206,10 @@ export const RosterActions = {
     saveTraining: async (playerId) => {
         const currentSeason = RosterActions.getCurrentSeason();
         const skill = document.getElementById('train-choice').value;
+        const skillLabel = SKILL_LABELS[skill.replace('skill_', '')];
         
-        if(!confirm(`Start training: ${skill} for Season ${currentSeason}? This cannot be changed.`)) return;
+        if(!confirm(`Set focus to ${skillLabel} for Season ${currentSeason}? This cannot be changed later.`)) return;
 
-        // Wykonujemy dwie operacje: Update zawodnika + Insert do historii
         const { error: upError } = await supabaseClient.from('players').update({
             individual_training_skill: skill,
             training_locked_season: currentSeason
@@ -217,11 +222,10 @@ export const RosterActions = {
         });
 
         if (!upError && !histError) {
-            alert(`✅ Focus locked for Season ${currentSeason}!`);
+            alert(`✅ Training focus locked!`);
             RosterActions.closeModal();
             if (window.loadRoster) window.loadRoster();
         } else {
-            console.error(upError, histError);
             alert("Database Error: Could not save focus.");
         }
     },
@@ -241,18 +245,13 @@ export const RosterActions = {
     `,
 
     _renderSkillBlock: (title, player, keys) => {
-        const labels = {
-            '2pt': 'Jump Shot', '3pt': '3PT Range', 'dunk': 'Dunking', 'passing': 'Passing',
-            '1on1_def': '1on1 Def', 'rebound': 'Rebound', 'block': 'Blocking', 'steal': 'Stealing',
-            'dribbling': 'Handling', '1on1_off': '1on1 Off', 'stamina': 'Stamina', 'ft': 'Free Throw'
-        };
         let html = `<div style="background:white; padding:20px; border-radius:24px; border:1px solid #e2e8f0;">
             <h4 style="margin:0 0 12px 0; color:#94a3b8; font-size:0.7rem; text-transform:uppercase; border-bottom:1px solid #f1f5f9; padding-bottom:5px;">${title}</h4>`;
         keys.forEach(k => {
             const v = player['skill_' + k] || 0;
             const sColor = getSkillColor(v);
             html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-weight:700; color:#475569; font-size:0.8rem;">${labels[k]}</span>
+                <span style="font-weight:700; color:#475569; font-size:0.8rem;">${SKILL_LABELS[k]}</span>
                 <span style="background:${sColor}20; padding:3px 8px; border-radius:6px; font-weight:900; color:${sColor}; font-size:0.8rem;">${v}</span>
             </div>`;
         });
