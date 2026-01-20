@@ -235,25 +235,43 @@ export const RosterActions = {
 
         const message = `Set <b>${skillLabel}</b> as the primary focus for <b>Season ${currentSeason}</b>? This action cannot be undone.`;
 
-        // Wywołanie autorskiego UI zamiast systemowego confirm
         this.showConfirm(message, async () => {
-            const { error: upError } = await supabaseClient.from('players').update({
-                individual_training_skill: skill,
-                training_locked_season: currentSeason
-            }).eq('id', playerId);
+            console.log("--- DEBUG START: SAVING TRAINING ---");
+            
+            // 1. Aktualizacja tabeli players
+            const { error: upError } = await supabaseClient
+                .from('players')
+                .update({
+                    individual_training_skill: skill,
+                    training_locked_season: currentSeason
+                })
+                .eq('id', playerId);
 
-            const { error: histError } = await supabaseClient.from('player_training_history').insert({
-                player_id: playerId,
-                season_number: currentSeason,
-                skill_focused: skill
-            });
-
-            if (!upError && !histError) {
-                this.closeModal();
-                if (window.loadRoster) window.loadRoster();
-            } else {
-                alert("Database Error: Could not save focus.");
+            if (upError) {
+                console.error("❌ BŁĄD TABELI PLAYERS:", upError);
+                alert(`Database Error (players): ${upError.message}`);
+                return;
             }
+
+            // 2. Dodanie wpisu do historii
+            const { error: histError } = await supabaseClient
+                .from('player_training_history')
+                .insert({
+                    player_id: playerId,
+                    season_number: currentSeason,
+                    skill_focused: skill
+                });
+
+            if (histError) {
+                console.error("❌ BŁĄD TABELI HISTORY:", histError);
+                // Nie blokujemy sukcesu jeśli historia się nie udała, ale zawodnik tak
+            }
+
+            console.log("--- DEBUG END: SUCCESS ---");
+
+            // Jeśli doszliśmy tutaj, to co najmniej update zawodnika się udał
+            this.closeModal();
+            if (window.loadRoster) window.loadRoster();
         });
     },
 
