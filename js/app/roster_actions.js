@@ -82,7 +82,7 @@ export const RosterActions = {
     showProfile: async (player) => {
         const currentSeason = RosterActions.getCurrentSeason();
 
-        // Usuwamy stary modal jeśli istnieje, by uniknąć problemów przy odświeżaniu profilu
+        // Usuwamy stary modal jeśli istnieje
         const oldModal = document.getElementById('roster-modal-overlay');
         if (oldModal) oldModal.remove();
 
@@ -97,6 +97,10 @@ export const RosterActions = {
         const trainHistory = trainHistoryRes.data || [];
         const potData = window.getPotentialData(player.potential);
         const isLocked = player.training_locked_season >= currentSeason;
+        
+        // Dynamiczna flaga narodowości
+        const flagCode = player.nationality_code ? player.nationality_code.toLowerCase() : 'un';
+        const flagUrl = `https://flagcdn.com/w40/${flagCode}.png`;
 
         let modalHtml = `
             <div id="roster-modal-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,10,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px);">
@@ -109,7 +113,8 @@ export const RosterActions = {
                                 <div style="position:absolute; bottom:-5px; right:-5px; background:#3b82f6; color:white; padding:4px 10px; border-radius:8px; font-weight:900; font-size:12px;">${player.position}</div>
                             </div>
                             <div>
-                                <h1 style="margin:0; color:white; font-size:2.2rem; font-weight:900; letter-spacing:-1px;">
+                                <h1 style="margin:0; color:white; font-size:2.2rem; font-weight:900; letter-spacing:-1px; display: flex; align-items: center; gap: 12px;">
+                                    <img src="${flagUrl}" style="width:32px; height:auto; border-radius:4px; border:1px solid rgba(255,255,255,0.2);" alt="${player.nationality_code}">
                                     ${player.first_name} ${player.last_name}
                                     ${player.is_rookie ? '<span style="background:#ef4444; font-size:11px; padding:3px 8px; border-radius:6px; vertical-align:middle; margin-left:10px;">ROOKIE</span>' : ''}
                                 </h1>
@@ -124,7 +129,7 @@ export const RosterActions = {
                             ${RosterActions._renderHeaderStat("RPG", seasonStats.rpg || '0.0')}
                             ${RosterActions._renderHeaderStat("APG", seasonStats.apg || '0.0')}
                             <div style="width:1px; background:rgba(255,255,255,0.1); margin:0 5px;"></div>
-                            ${RosterActions._renderHeaderStat("OVR", player.overall_rating || '??', "#3b82f6")}
+                            ${RosterActions._renderHeaderStat("OVR", player.ovr || '??', "#3b82f6")}
                         </div>
                         <button onclick="window.RosterActions.closeModal()" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; opacity:0.6;">&times;</button>
                     </div>
@@ -242,7 +247,6 @@ export const RosterActions = {
         this.showConfirm(message, async () => {
             console.log("--- START: SAVING TRAINING ---");
             
-            // 1. Aktualizacja tabeli players
             const { error: upError } = await supabaseClient
                 .from('players')
                 .update({
@@ -257,7 +261,6 @@ export const RosterActions = {
                 return;
             }
 
-            // 2. Dodanie wpisu do historii
             await supabaseClient
                 .from('player_training_history')
                 .insert({
@@ -266,7 +269,6 @@ export const RosterActions = {
                     skill_focused: skill
                 });
 
-            // 3. POBIERANIE ŚWIEŻYCH DANYCH (KLUCZ DO ODŚWIEŻENIA FRONTU)
             const { data: updatedPlayer, error: fetchError } = await supabaseClient
                 .from('players')
                 .select('*')
@@ -275,14 +277,9 @@ export const RosterActions = {
 
             if (!fetchError && updatedPlayer) {
                 console.log("✅ Dane odświeżone, przeładowuję profil.");
-                
-                // Odśwież listę zawodników w tle
                 if (window.loadRoster) window.loadRoster();
-                
-                // Odśwież modal profilu nowymi danymi
                 this.showProfile(updatedPlayer);
             } else {
-                // Failsafe: jeśli pobranie nie wyjdzie, po prostu zamknij
                 this.closeModal();
                 if (window.loadRoster) window.loadRoster();
             }
