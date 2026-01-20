@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/market.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         /* KLUCZOWE: Ukrywamy wszystko na starcie, aby Safari nie pokazało logowania przed sprawdzeniem sesji */
         .auth-state-pending {
@@ -47,29 +48,32 @@
         .tab-content { display: none; margin-bottom: 10px; }
         .tab-content.active { display: block; }
 
-        /* NOWOŚĆ: Style dla uchwytów Drag & Drop */
+        /* POPRAWIONE Style dla uchwytów Drag & Drop */
         .drag-handle {
-            background: #f1f5f9;
-            border: 1px dashed #cbd5e1;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
             color: #94a3b8;
-            padding: 8px;
+            padding: 6px;
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 800;
             cursor: grab;
             border-radius: 12px 12px 0 0;
-            margin: 0 20px;
+            margin: 0; /* Usunięto marginesy boczne dla lepszego przylegania */
+            letter-spacing: 1px;
             transition: 0.2s;
-            display: none; /* Domyślnie ukryte, pokażemy w trybie edycji */
+            display: none;
         }
         
         .tab-content.active .drag-handle {
-            display: block; /* Pokazuj tylko dla aktywnej sekcji lub w trybie edycji */
+            display: block;
         }
 
         .drag-handle:hover {
-            background: #e2e8f0;
-            color: #1a237e;
+            background: #1a237e;
+            color: white;
+            border-color: #1a237e;
         }
 
         .drag-handle:active {
@@ -78,7 +82,7 @@
 
         /* Styl dla elementu "ducha" podczas przeciągania */
         .sortable-ghost {
-            opacity: 0.3;
+            opacity: 0.1;
             background: #1a237e !important;
         }
         
@@ -173,7 +177,7 @@
 
 <script type="module">
     import { signIn, signUp, logout } from './js/auth.js';
-    import { switchTab, initApp } from './js/app/app.js';
+    import { switchTab, initApp, initDragAndDrop } from './js/app/app.js';
 
     window.setupUI = async function(role) {
         console.log("[SETUP] Uruchamianie interfejsu...");
@@ -187,6 +191,11 @@
         
         await initApp();
         await switchTab('m-roster');
+        
+        // Aktywacja Drag & Drop po załadowaniu wszystkiego
+        if (typeof initDragAndDrop === 'function') {
+            initDragAndDrop();
+        }
     };
 
     document.addEventListener('DOMContentLoaded', () => {
