@@ -4,6 +4,7 @@ import { renderRosterView } from './roster_view.js';
 import { renderTrainingDashboard } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
+import { renderMediaView } from './media_view.js'; // Dodano import dla komponentu media
 
 // KRYTYCZNY IMPORT DLA PRZYCISKÓW
 import { RosterActions } from './roster_actions.js';
@@ -58,6 +59,9 @@ export async function initApp() {
             return null;
         }
 
+        // Zapisujemy team_id globalnie dla akcji w innych plikach
+        window.userTeamId = profile.team_id;
+
         const [teamRes, playersRes] = await Promise.all([
             supabaseClient.from('teams').select('*').eq('id', profile.team_id).single(),
             supabaseClient.from('players').select('*').eq('team_id', profile.team_id)
@@ -106,10 +110,18 @@ export async function switchTab(tabId) {
     const data = await initApp();
     if (!data) return;
 
-    if (tabId === 'm-roster') renderRosterView(data.team, data.players);
-    else if (tabId === 'm-training') renderTrainingDashboard(data.players);
-    else if (tabId === 'm-market') renderMarketView(data.team, data.players);
-    else if (tabId === 'm-finances') renderFinancesView(data.team, data.players);
+    // Renderowanie odpowiedniego widoku
+    if (tabId === 'm-roster') {
+        renderRosterView(data.team, data.players);
+    } else if (tabId === 'm-training') {
+        renderTrainingDashboard(data.team, data.players);
+    } else if (tabId === 'm-market') {
+        renderMarketView(data.team, data.players);
+    } else if (tabId === 'm-media') {
+        renderMediaView(data.team, data.players);
+    } else if (tabId === 'm-finances') {
+        renderFinancesView(data.team, data.players);
+    }
 }
 
 window.switchTab = switchTab;
