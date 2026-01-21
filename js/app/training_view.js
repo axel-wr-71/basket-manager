@@ -1,175 +1,139 @@
-// js/app/training_view.js
 import { supabaseClient } from '../auth.js';
 
-/**
- * Zaktualizowany moduł treningowy:
- * - 12 zawodników (pełny skład)
- * - Indywidualne profile treningowe
- * - Sekcja Personelu (Offense, Defense, General)
- * - Kalendarz i Historia
- */
-export async function renderTrainingDashboard(teamData, players, currentWeek = 0) {
-    const appContainer = document.getElementById('app-main-view');
-    if (!appContainer) return;
-
-    try {
-        // Pobieranie historii treningów dla kalendarza
-        const { data: history } = await supabaseClient
-            .from('training_history')
-            .select('*')
-            .eq('team_id', teamData.id)
-            .order('training_date', { ascending: false });
-
-        const isOffSeason = currentWeek >= 15;
-
-        appContainer.innerHTML = `
-            <div class="training-container" style="padding: 30px; font-family: 'Inter', sans-serif; background: #f4f7f6; min-height: 100vh;">
-                
-                <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h1 style="font-size: 2em; font-weight: 900; color: #1a237e; margin:0;">CENTRE DE FORMATION</h1>
-                        <p style="margin:5px 0 0 0; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
-                            Season 1 • <span style="color: #e65100;">Week ${currentWeek}</span> • ${getWeekStatusLabel(currentWeek)}
-                        </p>
-                    </div>
-                    <div style="background: white; padding: 15px 25px; border-radius: 12px; border: 1px solid #e0e0e0; text-align: right;">
-                        <div style="font-size: 0.7em; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Weekly Session Count</div>
-                        <div style="font-size: 1.2em; font-weight: 900; color: #1a237e;">5 / 5 Sessions</div>
-                    </div>
-                </header>
-
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
-                    ${renderStaffMember('OFFENSE', 'Technical Specialist', teamData.coach_offense_lvl || 1, '#e65100')}
-                    ${renderStaffMember('DEFENSE', 'Defensive Coordinator', teamData.coach_defense_lvl || 1, '#1a237e')}
-                    ${renderStaffMember('GENERAL', 'Performance Coach', teamData.coach_general_lvl || 1, '#455a64')}
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 30px;">
-                    
-                    <div style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.02); overflow: hidden;">
-                        <div style="padding: 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                            <h3 style="margin:0; font-size: 0.9em; font-weight: 800; color: #1a237e; text-transform: uppercase;">Player Training Focus (Full Roster)</h3>
-                            <span style="font-size: 0.75em; color: #64748b;">Max 3 players per position</span>
-                        </div>
-                        <div style="max-height: 600px; overflow-y: auto;">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead style="background: #ffffff; position: sticky; top: 0; z-index: 10;">
-                                    <tr style="text-align: left; font-size: 0.7em; color: #94a3b8; border-bottom: 1px solid #f1f5f9;">
-                                        <th style="padding: 15px 20px;">PLAYER</th>
-                                        <th style="padding: 15px 20px;">SKILL SET FOCUS</th>
-                                        <th style="padding: 15px 20px; text-align: right;">EST. GROWTH</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${players.slice(0, 12).map(p => renderPlayerRow(p, isOffSeason)).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 30px;">
-                        <div style="background: white; border-radius: 20px; padding: 25px; border: 1px solid #e2e8f0;">
-                            <h3 style="margin: 0 0 20px 0; font-size: 0.9em; font-weight: 800; color: #1a237e; text-transform: uppercase;">Activity Calendar</h3>
-                            ${renderCalendar(currentCalendarDate, history || [])}
-                        </div>
-
-                        <div style="background: white; border-radius: 20px; padding: 25px; border: 1px solid #e2e8f0;">
-                            <h3 style="margin: 0 0 15px 0; font-size: 0.9em; font-weight: 800; color: #1a237e; text-transform: uppercase;">Latest Progress Logs</h3>
-                            <div style="display: flex; flex-direction: column; gap: 10px;">
-                                ${renderSimpleLogs(players)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    } catch (err) {
-        console.error("Critical Render Error:", err);
-    }
+// --- LOGIKA OBLICZEŃ ---
+function calculateTotalSkills(p) {
+    const skills = [
+        p.skill_2pt, p.skill_3pt, p.skill_dunk, p.skill_ft, p.skill_passing, 
+        p.skill_dribbling, p.skill_stamina, p.skill_rebound, p.skill_block, 
+        p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
+    ];
+    return skills.reduce((a, b) => (a || 0) + (parseInt(b) || 0), 0);
 }
 
-function renderStaffMember(title, role, lvl, color) {
-    return `
-        <div style="background: white; padding: 20px; border-radius: 15px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px;">
-            <div style="width: 50px; height: 50px; background: ${color}; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 1.2em;">${lvl}</div>
+function getFlagUrl(countryCode) {
+    if (!countryCode) return '';
+    const code = String(countryCode).toLowerCase().trim();
+    const finalCode = (code === 'el') ? 'gr' : code;
+    return `assets/flags/${finalCode}.png`;
+}
+
+const TEAM_DRILLS = [
+    { id: 'T_OFF_FB', name: 'Fast Break Mastery', skills: ['Dribbling', 'Passing', 'Dunking'] },
+    { id: 'T_DEF_PL', name: 'Perimeter Lockdown', skills: ['1on1 Def', 'Stealing', 'Stamina'] },
+    { id: 'T_DEF_PP', name: 'Paint Protection', skills: ['Blocking', 'Rebound', '1on1 Def'] },
+    { id: 'T_OFF_MO', name: 'Motion Offense', skills: ['Passing', '2pt Shot', '3pt Shot'] },
+    { id: 'T_OFF_PR', name: 'Pick & Roll Logic', skills: ['Passing', 'Dribbling', '2pt Shot'] },
+    { id: 'T_SHOOT', name: 'Sharp Shooter Hub', skills: ['3pt Shot', 'Free Th.', '1on1 Off'] },
+    { id: 'T_POST', name: 'Post Dominance', skills: ['Dunking', 'Rebound', '1on1 Off'] },
+    { id: 'T_PHYS', name: 'Iron Defense', skills: ['Stealing', 'Blocking', 'Stamina'] },
+    { id: 'T_TRANS', name: 'Transition Game', skills: ['Dribbling', 'Stamina', 'Passing'] },
+    { id: 'T_ISO', name: 'Iso-Scoring Focus', skills: ['1on1 Off', '2pt Shot', 'Dunking'] }
+];
+
+export async function renderTrainingView(team, players, currentWeek) {
+    const container = document.getElementById('roster-view-container');
+    if (!container) return;
+
+    const currentDrillId = team?.current_team_drill || 'T_OFF_FB';
+
+    let html = `
+        <div class="training-header" style="padding: 25px; display: flex; justify-content: space-between; align-items: flex-end;">
             <div>
-                <div style="font-size: 0.75em; font-weight: 800; color: ${color};">${title}</div>
-                <div style="font-size: 0.85em; font-weight: 700; color: #1a237e;">${role}</div>
+                <h1 style="margin:0; font-weight:900; color:#1a237e; letter-spacing:-1px; font-size: 2rem;">TRAINING <span style="color:#e65100">CENTER</span></h1>
+                <p style="margin:0; color:#64748b; font-weight: 500;">Season 1 | Week ${currentWeek} | Team Practice Management</p>
+            </div>
+            <div style="text-align: right;">
+                <span style="background:#f1f5f9; padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color:#1e293b; border: 1px solid #e2e8f0;">
+                    STAFF EFFICIENCY: <span style="color:#059669">+${((team.coach_general_lvl || 1) * 2.5).toFixed(1)}%</span>
+                </span>
             </div>
         </div>
-    `;
-}
 
-function renderPlayerRow(p, isLocked) {
-    const growth = ((p.is_rookie ? 0.08 : 0.05) * (p.potential_cat === 'GOAT' ? 1.5 : 1)).toFixed(3);
-    
-    return `
-        <tr style="border-bottom: 1px solid #f8fafc; transition: background 0.2s;" onmouseover="this.style.background='#fcfdfe'" onmouseout="this.style.background='transparent'">
-            <td style="padding: 15px 20px;">
-                <div style="font-weight: 800; color: #1a237e; font-size: 0.9em;">${p.last_name}</div>
-                <div style="font-size: 0.7em; color: #94a3b8;">${p.position} | Age: ${p.age} | ${p.potential_cat}</div>
-            </td>
-            <td style="padding: 15px 20px;">
-                <select onchange="window.saveTrainingFocus(${p.id}, this.value)" ${isLocked ? 'disabled' : ''} 
-                    style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.8em; font-weight: 600; background: #fff; cursor: pointer;">
-                    <option value="GENERAL" ${p.current_training_focus === 'GENERAL' ? 'selected' : ''}>General Training</option>
-                    <option value="OFFENSE" ${p.current_training_focus === 'OFFENSE' ? 'selected' : ''}>Offensive Skills</option>
-                    <option value="DEFENSE" ${p.current_training_focus === 'DEFENSE' ? 'selected' : ''}>Defensive Drills</option>
-                    <option value="PHYSICAL" ${p.current_training_focus === 'PHYSICAL' ? 'selected' : ''}>Strength & Conditioning</option>
-                </select>
-            </td>
-            <td style="padding: 15px 20px; text-align: right;">
-                <span style="font-family: monospace; font-weight: 900; color: #059669; background: #ecfdf5; padding: 4px 8px; border-radius: 6px; font-size: 0.85em;">+${growth}</span>
-            </td>
-        </tr>
-    `;
-}
+        <div style="margin: 0 25px 30px 25px; background: #1a237e; border-radius: 20px; padding: 25px; color: white; box-shadow: 0 15px 30px rgba(26,35,126,0.2);">
+            <div style="margin-bottom: 20px;">
+                <h3 style="margin:0; text-transform: uppercase; letter-spacing: 1px; color: #ffab40; font-size: 0.9rem;">Global Team Focus (Mon/Fri)</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+                ${TEAM_DRILLS.map(drill => {
+                    const isSelected = currentDrillId === drill.id;
+                    return `
+                    <div onclick="window.updateTeamDrill('${team.id}', '${drill.id}')" 
+                         style="background: ${isSelected ? '#ffab40' : 'rgba(255,255,255,0.05)'}; 
+                                color: ${isSelected ? '#1a237e' : 'white'};
+                                padding: 15px 10px; border-radius: 12px; cursor: pointer; text-align:center; transition: 0.3s;
+                                border: 1px solid ${isSelected ? '#ffab40' : 'rgba(255,255,255,0.1)'};">
+                        <div style="font-weight: 900; font-size: 0.75rem; margin-bottom: 4px;">${drill.name}</div>
+                        <div style="font-size: 0.55rem; opacity: ${isSelected ? '0.9' : '0.5'}; font-weight: 700;">${drill.skills.join(' • ')}</div>
+                    </div>`}).join('')}
+            </div>
+        </div>
 
-function renderCalendar(date, history) {
-    const month = date.getMonth();
-    const year = date.getFullYear();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    return `
-        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
-            ${['S','M','T','W','T','F','S'].map(d => `<div style="font-size: 0.65em; font-weight: 800; color: #94a3b8; padding-bottom: 10px;">${d}</div>`).join('')}
-            ${Array(firstDay).fill('<div></div>').join('')}
-            ${Array.from({ length: daysInMonth }, (_, i) => {
-                const day = i + 1;
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const hasSession = history.some(h => h.training_date === dateStr);
-                return `<div style="height: 28px; line-height: 28px; font-size: 0.75em; border-radius: 5px; ${hasSession ? 'background: #1a237e; color: white; font-weight: bold;' : 'color: #64748b'}">${day}</div>`;
-            }).join('')}
+        <div style="margin: 0 25px;">
+            <table style="width: 100%; border-collapse: separate; border-spacing: 0 12px;">
+                <thead>
+                    <tr style="text-align: left; color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
+                        <th style="padding: 10px 25px;">Player & Potential</th>
+                        <th style="padding: 10px; text-align: center;">Skill Points (Max 240)</th>
+                        <th style="padding: 10px;">Individual Drill (Thu)</th>
+                        <th style="padding: 10px; text-align: right;">Last Growth</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${players.map(p => {
+                        const currentTotal = calculateTotalSkills(p);
+                        const maxCap = p.max_total_cap || 240;
+                        const pot = p.potential_definitions || { label: 'Prospect', color_hex: '#94a3b8', emoji: '👤' };
+                        const progressPercent = (currentTotal / maxCap) * 100;
+                        const flagUrl = getFlagUrl(p.country);
+                        
+                        return `
+                        <tr style="background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border-radius: 16px;">
+                            <td style="padding: 18px 25px; border-radius: 16px 0 0 16px; border: 1px solid #f1f5f9; border-right: none;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 45px; height: 45px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                                    <div>
+                                        <div style="font-weight: 800; color: #1a237e; font-size: 0.95rem; display:flex; align-items:center; gap:6px;">
+                                            ${p.first_name} ${p.last_name} ${flagUrl ? `<img src="${flagUrl}" style="width:14px;">` : ''}
+                                        </div>
+                                        <div style="font-size: 0.65rem; font-weight: 800; color: ${pot.color_hex}; text-transform: uppercase;">
+                                            ${pot.emoji} ${pot.label}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 18px 10px; text-align: center;">
+                                <div style="font-size: 0.9rem; font-weight: 900; color: #1e293b; margin-bottom:6px;">${currentTotal} / ${maxCap}</div>
+                                <div style="width: 100px; height: 6px; background: #f1f5f9; border-radius: 10px; margin: 0 auto; overflow: hidden;">
+                                    <div style="width: ${progressPercent}%; height: 100%; background: ${pot.color_hex};"></div>
+                                </div>
+                            </td>
+                            <td style="padding: 18px 10px;">
+                                <select onchange="window.updatePlayerFocus('${p.id}', this.value)" 
+                                        style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 700; color: #1a237e; background: #f8fafc;">
+                                    <option value="GENERAL" ${p.individual_training_skill === 'GENERAL' ? 'selected' : ''}>General</option>
+                                    <option value="OFFENSE" ${p.individual_training_skill === 'OFFENSE' ? 'selected' : ''}>Offense</option>
+                                    <option value="DEFENSE" ${p.individual_training_skill === 'DEFENSE' ? 'selected' : ''}>Defense</option>
+                                    <option value="PHYSICAL" ${p.individual_training_skill === 'PHYSICAL' ? 'selected' : ''}>Physical</option>
+                                </select>
+                            </td>
+                            <td style="padding: 18px 25px; text-align: right; border-radius: 0 16px 16px 0; border: 1px solid #f1f5f9; border-left: none;">
+                                <div style="font-weight: 900; color: #059669; font-family: monospace;">+${(p.last_training_growth || 0).toFixed(3)}</div>
+                            </td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
         </div>
     `;
+    container.innerHTML = html;
 }
 
-function renderSimpleLogs(players) {
-    return players.filter(p => p.last_training_growth > 0).slice(0, 5).map(p => `
-        <div style="display: flex; justify-content: space-between; font-size: 0.8em; padding: 8px 0; border-bottom: 1px dotted #e2e8f0;">
-            <span style="font-weight: 700; color: #1a237e;">${p.last_name}</span>
-            <span style="color: #059669; font-weight: 800;">+${parseFloat(p.last_training_growth).toFixed(3)} EXP</span>
-        </div>
-    `).join('') || '<div style="font-size: 0.8em; color: #94a3b8; text-align: center;">No sessions recorded today.</div>';
-}
+window.updateTeamDrill = async (teamId, drillId) => {
+    await supabaseClient.from('teams').update({ current_team_drill: drillId }).eq('id', teamId);
+    console.log("Team Drill Updated:", drillId);
+};
 
-function getWeekStatusLabel(week) {
-    if (week === 0) return "Pre-season Friendlies";
-    if (week === 6) return "All-Star Event";
-    if (week >= 11 && week <= 14) return "Playoff Intensity";
-    if (week === 15) return "Off-season / Draft";
-    return "Regular Season Training";
-}
-
-// --- WINDOW FUNCTIONS ---
-window.saveTrainingFocus = async (playerId, focus) => {
-    try {
-        const { error } = await supabaseClient
-            .from('players')
-            .update({ current_training_focus: focus })
-            .eq('id', playerId);
-        if (error) throw error;
-        console.log(`Focus updated for player ${playerId}: ${focus}`);
-    } catch (e) { console.error("Error updating focus:", e); }
+window.updatePlayerFocus = async (playerId, focusValue) => {
+    await supabaseClient.from('players').update({ individual_training_skill: focusValue }).eq('id', playerId);
+    console.log("Player Focus Updated:", focusValue);
 };
