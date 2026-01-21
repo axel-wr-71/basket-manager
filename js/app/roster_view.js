@@ -1,5 +1,3 @@
-// js/app/roster_view.js
-
 /**
  * Helper: Pobieranie flagi z lokalnych zasobów
  */
@@ -7,13 +5,11 @@ function getFlagUrl(countryCode) {
     if (!countryCode) return '';
     const code = String(countryCode).toLowerCase().trim();
     const finalCode = (code === 'el') ? 'gr' : code;
-    
-    // Ścieżka relatywna do pliku index.html
     return `assets/flags/${finalCode}.png`;
 }
 
 /**
- * Helper: Styl kwadratów pozycji (Z zachowaniem koloru dla C)
+ * Helper: Styl kwadratów pozycji
  */
 function getPositionStyle(pos) {
     const styles = {
@@ -28,7 +24,7 @@ function getPositionStyle(pos) {
 }
 
 /**
- * Helper: Styl plakietek OVR (Pełna Twoja skala)
+ * Helper: Styl plakietek OVR
  */
 function getOvrStyle(ovr) {
     if (ovr >= 90) return { bg: '#fffbeb', border: '#f59e0b', color: '#92400e' };
@@ -42,8 +38,8 @@ function getOvrStyle(ovr) {
 }
 
 function updateGlobalHeader(teamName, leagueName) {
-    const headerTeamName = document.querySelector('.team-info b, #global-team-name');
-    const headerLeagueName = document.querySelector('.team-info span[style*="color: #ff4500"], #global-league-name');
+    const headerTeamName = document.getElementById('display-team-name');
+    const headerLeagueName = document.getElementById('display-league-name');
     if (headerTeamName) headerTeamName.textContent = teamName;
     if (headerLeagueName) headerLeagueName.textContent = leagueName;
 }
@@ -52,7 +48,7 @@ export function renderRosterView(team, players) {
     const container = document.getElementById('roster-view-container');
     if (!container) return;
 
-    const teamName = team?.team_name || team?.name || 'Twoja Drużyna';
+    const teamName = team?.name || 'Twoja Drużyna';
     const leagueName = team?.league_name || 'Super League';
 
     updateGlobalHeader(teamName, leagueName);
@@ -66,13 +62,13 @@ export function renderRosterView(team, players) {
                 <p style="margin:0; color:#64748b;">Current squad: <strong style="color:#1a237e">${teamName}</strong> | League: <strong style="color:#1a237e">${leagueName}</strong></p>
             </div>
             <div style="background:#1a237e; color:white; padding:10px 20px; border-radius:30px; font-weight:bold; font-size:0.85rem; display:flex; align-items:center; gap:8px; box-shadow: 0 4px 10px rgba(26,35,126,0.2);">
-                SQUAD SIZE: ${players.length} 
+                SQUAD SIZE: ${players.length} / 12
             </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 20px 30px 20px;">
             ${topStars.map((star, idx) => {
-                const potData = window.getPotentialData ? window.getPotentialData(star.potential) : { label: 'Prospect', icon: '', color: '#3b82f6' };
+                const potData = star.potential_definitions || { label: 'Prospect', icon: '', color: '#3b82f6' };
                 const countryCode = star.country || star.nationality || "";
                 const flagUrl = getFlagUrl(countryCode);
                 
@@ -87,7 +83,7 @@ export function renderRosterView(team, players) {
                         </span>
                         <h2 style="margin: 5px 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
                             ${star.first_name} ${star.last_name}
-                            ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">` : ''}
+                            ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0;">` : ''}
                         </h2>
                         <span style="font-size: 0.9rem; opacity: 0.8; display: flex; align-items: center; gap: 8px;">
                             <div style="${getPositionStyle(star.position)}; width: 24px; height: 24px; font-size: 0.55rem;">${star.position}</div> | <strong>${potData.label} ${potData.icon}</strong>
@@ -97,7 +93,7 @@ export function renderRosterView(team, players) {
             }).join('')}
         </div>
 
-        <div style="margin: 0 20px; padding-bottom: 40px;">
+        <div style="margin: 0 20px; padding-bottom: 40px; overflow-x: auto;">
             <table style="width: 100%; border-collapse: separate; border-spacing: 0 12px;">
                 <thead>
                     <tr style="text-align: left; color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
@@ -145,7 +141,7 @@ function calculateOVR(p) {
 
 function renderPlayerRow(p) {
     const isRookie = p.is_rookie || p.age <= 19;
-    const potData = window.getPotentialData ? window.getPotentialData(p.potential) : { label: 'Prospect', icon: '', color: '#3b82f6' };
+    const potData = p.potential_definitions || { label: 'Prospect', icon: '', color: '#3b82f6' };
     const ovr = calculateOVR(p);
     const ovrStyle = getOvrStyle(ovr);
     
@@ -164,7 +160,7 @@ function renderPlayerRow(p) {
                 <div style="display: flex; align-items: flex-start; gap: 15px;">
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 60px;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 60px; height: 60px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                        ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">` : ''}
+                        ${flagUrl ? `<img src="${flagUrl}" style="width: 22px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0;">` : ''}
                     </div>
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
