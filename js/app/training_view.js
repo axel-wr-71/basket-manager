@@ -1,3 +1,7 @@
+/**
+ * js/app/training_view.js
+ * Zarządzanie widokiem treningu zawodników
+ */
 import { supabaseClient } from '../auth.js';
 
 // --- LOGIKA OBLICZEŃ ---
@@ -14,7 +18,7 @@ function getFlagUrl(countryCode) {
     if (!countryCode) return '';
     const code = String(countryCode).toLowerCase().trim();
     const finalCode = (code === 'el') ? 'gr' : code;
-    return `assets/flags/${finalCode}.png`;
+    return `https://flagcdn.com/w40/${finalCode}.png`;
 }
 
 const TEAM_DRILLS = [
@@ -31,7 +35,8 @@ const TEAM_DRILLS = [
 ];
 
 export async function renderTrainingView(team, players, currentWeek) {
-    const container = document.getElementById('roster-view-container');
+    // Zmiana kontenera na właściwy dla modułu treningu
+    const container = document.getElementById('training-view-container');
     if (!container) return;
 
     const currentDrillId = team?.current_team_drill || 'T_OFF_FB';
@@ -40,7 +45,7 @@ export async function renderTrainingView(team, players, currentWeek) {
         <div class="training-header" style="padding: 25px; display: flex; justify-content: space-between; align-items: flex-end;">
             <div>
                 <h1 style="margin:0; font-weight:900; color:#1a237e; letter-spacing:-1px; font-size: 2rem;">TRAINING <span style="color:#e65100">CENTER</span></h1>
-                <p style="margin:0; color:#64748b; font-weight: 500;">Season 1 | Week ${currentWeek} | Team Practice Management</p>
+                <p style="margin:0; color:#64748b; font-weight: 500;">Season 1 | Week ${currentWeek || 1} | Team Practice Management</p>
             </div>
             <div style="text-align: right;">
                 <span style="background:#f1f5f9; padding: 8px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color:#1e293b; border: 1px solid #e2e8f0;">
@@ -59,9 +64,9 @@ export async function renderTrainingView(team, players, currentWeek) {
                     return `
                     <div onclick="window.updateTeamDrill('${team.id}', '${drill.id}')" 
                          style="background: ${isSelected ? '#ffab40' : 'rgba(255,255,255,0.05)'}; 
-                                color: ${isSelected ? '#1a237e' : 'white'};
-                                padding: 15px 10px; border-radius: 12px; cursor: pointer; text-align:center; transition: 0.3s;
-                                border: 1px solid ${isSelected ? '#ffab40' : 'rgba(255,255,255,0.1)'};">
+                                 color: ${isSelected ? '#1a237e' : 'white'};
+                                 padding: 15px 10px; border-radius: 12px; cursor: pointer; text-align:center; transition: 0.3s;
+                                 border: 1px solid ${isSelected ? '#ffab40' : 'rgba(255,255,255,0.1)'};">
                         <div style="font-weight: 900; font-size: 0.75rem; margin-bottom: 4px;">${drill.name}</div>
                         <div style="font-size: 0.55rem; opacity: ${isSelected ? '0.9' : '0.5'}; font-weight: 700;">${drill.skills.join(' • ')}</div>
                     </div>`}).join('')}
@@ -73,7 +78,7 @@ export async function renderTrainingView(team, players, currentWeek) {
                 <thead>
                     <tr style="text-align: left; color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">
                         <th style="padding: 10px 25px;">Player & Potential</th>
-                        <th style="padding: 10px; text-align: center;">Skill Points (Max 240)</th>
+                        <th style="padding: 10px; text-align: center;">Skill Points (Progress)</th>
                         <th style="padding: 10px;">Individual Drill (Thu)</th>
                         <th style="padding: 10px; text-align: right;">Last Growth</th>
                     </tr>
@@ -83,8 +88,8 @@ export async function renderTrainingView(team, players, currentWeek) {
                         const currentTotal = calculateTotalSkills(p);
                         const maxCap = p.max_total_cap || 240;
                         const pot = p.potential_definitions || { label: 'Prospect', color_hex: '#94a3b8', emoji: '👤' };
-                        const progressPercent = (currentTotal / maxCap) * 100;
-                        const flagUrl = getFlagUrl(p.country);
+                        const progressPercent = Math.min((currentTotal / maxCap) * 100, 100);
+                        const flagUrl = getFlagUrl(p.country || p.nationality);
                         
                         return `
                         <tr style="background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border-radius: 16px;">
@@ -93,23 +98,23 @@ export async function renderTrainingView(team, players, currentWeek) {
                                     <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" style="width: 45px; height: 45px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
                                     <div>
                                         <div style="font-weight: 800; color: #1a237e; font-size: 0.95rem; display:flex; align-items:center; gap:6px;">
-                                            ${p.first_name} ${p.last_name} ${flagUrl ? `<img src="${flagUrl}" style="width:14px;">` : ''}
+                                            ${p.first_name} ${p.last_name} ${flagUrl ? `<img src="${flagUrl}" style="width:14px; border-radius: 2px;">` : ''}
                                         </div>
-                                        <div style="font-size: 0.65rem; font-weight: 800; color: ${pot.color_hex}; text-transform: uppercase;">
-                                            ${pot.emoji} ${pot.label}
+                                        <div style="font-size: 0.65rem; font-weight: 800; color: ${pot.color_hex}; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                                            <span>${pot.emoji}</span> <span>${pot.label}</span>
                                         </div>
                                     </div>
                                 </div>
                             </td>
                             <td style="padding: 18px 10px; text-align: center;">
                                 <div style="font-size: 0.9rem; font-weight: 900; color: #1e293b; margin-bottom:6px;">${currentTotal} / ${maxCap}</div>
-                                <div style="width: 100px; height: 6px; background: #f1f5f9; border-radius: 10px; margin: 0 auto; overflow: hidden;">
-                                    <div style="width: ${progressPercent}%; height: 100%; background: ${pot.color_hex};"></div>
+                                <div style="width: 120px; height: 8px; background: #f1f5f9; border-radius: 10px; margin: 0 auto; overflow: hidden; border: 1px solid #e2e8f0;">
+                                    <div style="width: ${progressPercent}%; height: 100%; background: ${pot.color_hex}; transition: width 0.5s ease;"></div>
                                 </div>
                             </td>
                             <td style="padding: 18px 10px;">
                                 <select onchange="window.updatePlayerFocus('${p.id}', this.value)" 
-                                        style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 700; color: #1a237e; background: #f8fafc;">
+                                        style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.75rem; font-weight: 700; color: #1a237e; background: #f8fafc; cursor: pointer;">
                                     <option value="GENERAL" ${p.individual_training_skill === 'GENERAL' ? 'selected' : ''}>General</option>
                                     <option value="OFFENSE" ${p.individual_training_skill === 'OFFENSE' ? 'selected' : ''}>Offense</option>
                                     <option value="DEFENSE" ${p.individual_training_skill === 'DEFENSE' ? 'selected' : ''}>Defense</option>
@@ -117,7 +122,9 @@ export async function renderTrainingView(team, players, currentWeek) {
                                 </select>
                             </td>
                             <td style="padding: 18px 25px; text-align: right; border-radius: 0 16px 16px 0; border: 1px solid #f1f5f9; border-left: none;">
-                                <div style="font-weight: 900; color: #059669; font-family: monospace;">+${(p.last_training_growth || 0).toFixed(3)}</div>
+                                <div style="font-weight: 900; color: #059669; font-family: 'Courier New', monospace; font-size: 0.9rem;">
+                                    +${(p.last_training_growth || 0).toFixed(3)}
+                                </div>
                             </td>
                         </tr>`;
                     }).join('')}
@@ -128,12 +135,33 @@ export async function renderTrainingView(team, players, currentWeek) {
     container.innerHTML = html;
 }
 
+// Globalne funkcje aktualizacji (wywoływane przez onclick/onchange)
 window.updateTeamDrill = async (teamId, drillId) => {
-    await supabaseClient.from('teams').update({ current_team_drill: drillId }).eq('id', teamId);
-    console.log("Team Drill Updated:", drillId);
+    try {
+        const { error } = await supabaseClient
+            .from('teams')
+            .update({ current_team_drill: drillId })
+            .eq('id', teamId);
+        
+        if (error) throw error;
+        console.log("Team Drill Updated:", drillId);
+        
+        // Można tu dodać toast/powiadomienie
+    } catch (err) {
+        console.error("Error updating team drill:", err.message);
+    }
 };
 
 window.updatePlayerFocus = async (playerId, focusValue) => {
-    await supabaseClient.from('players').update({ individual_training_skill: focusValue }).eq('id', playerId);
-    console.log("Player Focus Updated:", focusValue);
+    try {
+        const { error } = await supabaseClient
+            .from('players')
+            .update({ individual_training_skill: focusValue })
+            .eq('id', playerId);
+            
+        if (error) throw error;
+        console.log("Player Focus Updated:", focusValue);
+    } catch (err) {
+        console.error("Error updating player focus:", err.message);
+    }
 };
