@@ -7,7 +7,7 @@ function getFlagUrl(countryCode) {
     if (!countryCode) return '';
     const code = String(countryCode).toLowerCase().trim();
     const finalCode = (code === 'el') ? 'gr' : code;
-    return `https://flagcdn.com/w40/${finalCode}.png`;
+    return `assets/flags/${finalCode}.png`;
 }
 
 function getPositionStyle(pos) {
