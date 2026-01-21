@@ -1,7 +1,8 @@
 // js/app/app.js
 import { supabaseClient } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
-import { renderTrainingDashboard } from './training_view.js';
+// ZMIANA: Importujemy renderTrainingView zamiast nieistniejącego renderTrainingDashboard
+import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
@@ -33,7 +34,13 @@ async function fetchPotentialDefinitions() {
         // Pomocnicza funkcja dostępna globalnie
         window.getPotentialData = (id) => {
             const d = window.potentialDefinitions[id];
-            return d ? { label: d.label, icon: d.emoji || '', color: d.color || '#3b82f6' } : { label: 'Prospect', icon: '', color: '#94a3b8' };
+            // Poprawione mapowanie pól na te z Twojego SQL (color_hex, emoji)
+            return d ? { 
+                label: d.label, 
+                emoji: d.emoji || '', 
+                color_hex: d.color_hex || '#3b82f6',
+                min_value: d.min_value
+            } : { label: 'Prospect', emoji: '', color_hex: '#94a3b8', min_value: 0 };
         };
     } catch (err) {
         console.error("[APP] Błąd pobierania definicji potencjału:", err);
@@ -69,7 +76,7 @@ export async function initApp() {
 
         const team = teamRes.data;
         const players = (playersRes.data || []).map(p => {
-            // Używamy świeżo załadowanych danych z bazy
+            // Używamy świeżo załadowanych danych z bazy i przypisujemy do zawodnika
             const potDef = window.getPotentialData(p.potential);
             return { ...p, potential_definitions: potDef };
         });
@@ -117,7 +124,8 @@ export async function switchTab(tabId) {
     if (tabId === 'm-roster') {
         renderRosterView(data.team, data.players);
     } else if (tabId === 'm-training') {
-        renderTrainingDashboard(data.team, data.players);
+        // ZMIANA: Wywołanie poprawnej funkcji renderTrainingView
+        renderTrainingView(data.team, data.players, 1); // 1 to przykładowy numer tygodnia
     } else if (tabId === 'm-market') {
         renderMarketView(data.team, data.players);
     } else if (tabId === 'm-media') {
