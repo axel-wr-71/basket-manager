@@ -197,7 +197,7 @@ export async function switchTab(tabId) {
     if (tabId === 'm-roster') {
         renderRosterView(data.team, data.players);
     } else if (tabId === 'm-training') {
-        renderTrainingDashboard(data.team, data.players);
+        renderTrainingView(data.team, data.players);
     } else if (tabId === 'm-market') {
         renderMarketView(data.team, data.players);
     } else if (tabId === 'm-media') {
