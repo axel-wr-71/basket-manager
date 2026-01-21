@@ -1,7 +1,7 @@
 // js/app/app.js
 import { supabaseClient } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
-import { TrainingView } from './training_view.js'; // Zmieniono na import obiektu
+import { renderTrainingDashboard } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 
@@ -70,13 +70,6 @@ export async function initApp() {
             return { ...p, potential_definitions: potDef };
         });
 
-        // Ustawienie globalnego stanu dla modułów
-        window.gameState = {
-            teamId: profile.team_id,
-            teamData: team,
-            players: players
-        };
-
         const teamName = team?.team_name || team?.name || "Twoja Drużyna";
         const leagueName = team?.league_name || "Super League";
 
@@ -114,7 +107,7 @@ export async function switchTab(tabId) {
     if (!data) return;
 
     if (tabId === 'm-roster') renderRosterView(data.team, data.players);
-    else if (tabId === 'm-training') await TrainingView.render(); // Zaktualizowane wywołanie
+    else if (tabId === 'm-training') renderTrainingDashboard(data.players);
     else if (tabId === 'm-market') renderMarketView(data.team, data.players);
     else if (tabId === 'm-finances') renderFinancesView(data.team, data.players);
 }
