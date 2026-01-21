@@ -20,7 +20,6 @@ export function pairTeamsForSeason(teams) {
     west.forEach((wTeam, wIdx) => {
         east.forEach((eTeam, eIdx) => {
             // Logika balansu dom/wyjazd (5 dom, 5 wyjazd)
-            // Jeśli suma indeksów jest parzysta, gospodarzem jest WEST
             if ((wIdx + eIdx) % 2 === 0) {
                 interConferenceMatches.push({ home_id: wTeam.id, away_id: eTeam.id, type: 'LEAGUE' });
             } else {
@@ -30,11 +29,10 @@ export function pairTeamsForSeason(teams) {
     });
     allLeagueMatches.push(...interConferenceMatches);
 
-    // Mieszamy mecze, aby terminarz nie był nudny
+    // Mieszamy mecze, aby terminarz nie był przewidywalny
     return shuffleArray(allLeagueMatches);
 }
 
-// Funkcja pomocnicza do algorytmu karuzelowego (Round Robin)
 function generateRoundRobin(teams, homeAndAway) {
     let matches = [];
     const n = teams.length;
