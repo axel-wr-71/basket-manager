@@ -1,7 +1,7 @@
 // js/app/app.js
 import { supabaseClient } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
-import { renderTrainingDashboard } from './training_view.js';
+import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
