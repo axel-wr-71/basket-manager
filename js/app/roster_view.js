@@ -1,6 +1,8 @@
 /**
- * Helper: Pobieranie flagi z lokalnych zasobów
+ * js/app/roster_view.js
+ * Zarządzanie widokiem listy zawodników (Roster)
  */
+
 function getFlagUrl(countryCode) {
     if (!countryCode) return '';
     const code = String(countryCode).toLowerCase().trim();
@@ -8,9 +10,6 @@ function getFlagUrl(countryCode) {
     return `assets/flags/${finalCode}.png`;
 }
 
-/**
- * Helper: Styl kwadratów pozycji
- */
 function getPositionStyle(pos) {
     const styles = {
         'PG': '#1e40af', 
@@ -23,9 +22,6 @@ function getPositionStyle(pos) {
     return `background: ${color}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);`;
 }
 
-/**
- * Helper: Styl plakietek OVR
- */
 function getOvrStyle(ovr) {
     if (ovr >= 90) return { bg: '#fffbeb', border: '#f59e0b', color: '#92400e' };
     if (ovr >= 80) return { bg: '#f0fdf4', border: '#22c55e', color: '#166534' };
@@ -44,11 +40,22 @@ function updateGlobalHeader(teamName, leagueName) {
     if (headerLeagueName) headerLeagueName.textContent = leagueName;
 }
 
+function calculateOVR(p) {
+    const skills = [
+        p.skill_2pt, p.skill_3pt, p.skill_dunk, p.skill_ft, p.skill_passing, 
+        p.skill_dribbling, p.skill_stamina, p.skill_rebound, p.skill_block, 
+        p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
+    ];
+    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
+    return Math.round((sum / 240) * 100);
+}
+
 export function renderRosterView(team, players) {
     const container = document.getElementById('roster-view-container');
     if (!container) return;
 
-    const teamName = team?.name || 'Twoja Drużyna';
+    // Pobieranie dynamiczne z obiektu team (zgodnie z bazą)
+    const teamName = team?.team_name || team?.name || 'Twoja Drużyna';
     const leagueName = team?.league_name || 'Super League';
 
     updateGlobalHeader(teamName, leagueName);
@@ -127,16 +134,6 @@ export function renderRosterView(team, players) {
         else if (btn.classList.contains('btn-train-trigger')) window.RosterActions.showTraining(player);
         else if (btn.classList.contains('btn-sell-trigger')) window.RosterActions.sellPlayer(player);
     };
-}
-
-function calculateOVR(p) {
-    const skills = [
-        p.skill_2pt, p.skill_3pt, p.skill_dunk, p.skill_ft, p.skill_passing, 
-        p.skill_dribbling, p.skill_stamina, p.skill_rebound, p.skill_block, 
-        p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
-    ];
-    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
-    return Math.round((sum / 240) * 100);
 }
 
 function renderPlayerRow(p) {
