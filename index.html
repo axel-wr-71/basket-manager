@@ -126,7 +126,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6rem 2rem 2rem;
+            padding: 6rem 2rem 4rem; /* Zwiększony dolny padding */
             max-width: 1400px;
             margin: 0 auto;
             width: 100%;
@@ -381,14 +381,16 @@
             font-weight: 600;
         }
         
-        /* Footer styles - ZAKTUALIZOWANE */
+        /* Footer styles - POPRAWIONE */
         .landing-footer {
             background: linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, #0a0a0a 100%);
             backdrop-filter: blur(10px);
-            padding: 4rem 2rem 3rem;
+            padding: 3rem 2rem 2.5rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             margin-top: auto;
             position: relative;
+            width: 100%;
+            z-index: 10;
         }
         
         .landing-footer::before {
@@ -674,7 +676,7 @@
             }
             
             .hero-content {
-                padding: 5rem 1.5rem 2rem;
+                padding: 5rem 1.5rem 3rem;
             }
             
             .auth-card {
@@ -695,7 +697,7 @@
             }
             
             .landing-footer {
-                padding: 3rem 1.5rem 2rem;
+                padding: 2.5rem 1.5rem 2rem;
             }
             
             .footer-bottom-links {
@@ -913,6 +915,74 @@
         .hidden {
             display: none !important;
         }
+        
+        /* FAQ Modal Styles */
+        .faq-modal-container {
+            background: white;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.4s ease;
+        }
+        
+        .faq-content {
+            padding: 32px;
+        }
+        
+        .faq-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 32px;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #1a237e, #3949ab);
+            color: white;
+            border-radius: 24px 24px 0 0;
+        }
+        
+        .faq-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .faq-item {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .faq-question {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a237e;
+            margin-bottom: 8px;
+        }
+        
+        .faq-answer {
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .faq-contact {
+            margin-top: 32px;
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -1051,7 +1121,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="/content/help/faq.html" target="_blank">
+                        <a href="#" onclick="event.preventDefault(); showFAQ();">
                             <span class="footer-link-icon">❓</span>
                             FAQ & Help Center
                         </a>
@@ -1090,7 +1160,7 @@
             <div class="footer-bottom-links">
                 <a href="#" onclick="event.preventDefault(); showTerms();">Terms of Service</a>
                 <a href="#" onclick="event.preventDefault(); showPrivacy();">Privacy Policy</a>
-                <a href="/content/help/faq.html" target="_blank">FAQ</a>
+                <a href="#" onclick="event.preventDefault(); showFAQ();">FAQ</a>
                 <a href="https://discord.gg/elitebuzzer" target="_blank">Discord</a>
                 <a href="https://twitter.com/elitebuzzer" target="_blank">Twitter</a>
             </div>
@@ -1251,7 +1321,7 @@
                     </span>
                 </label>
                 <div style="font-size: 0.85rem; color: #64748b; margin-top: 8px;">
-                    Read our full <a href="/content/help/faq.html" target="_blank" style="color: #3b82f6;">FAQ</a> for more information about the game.
+                    Read our full <a href="#" onclick="event.preventDefault(); showFAQ();" style="color: #3b82f6;">FAQ</a> for more information about the game.
                 </div>
             </div>
             
@@ -1307,11 +1377,64 @@
             <div class="form-footer">
                 <p>Don't have an account? <a href="#" class="link" id="switch-to-register">Register here</a></p>
                 <p style="margin-top: 10px; font-size: 0.85rem;">
-                    <a href="/content/help/faq.html" target="_blank" class="link">Need help?</a>
+                    <a href="#" onclick="event.preventDefault(); showFAQ();" class="link">Need help?</a>
                 </p>
             </div>
         </form>
         <div id="login-message" class="form-message hidden"></div>
+    </div>
+</div>
+
+<!-- FAQ Modal -->
+<div id="faqModal" class="modal-overlay hidden">
+    <div class="faq-modal-container">
+        <div class="faq-header">
+            <h2>❓ Frequently Asked Questions</h2>
+            <button class="modal-close" onclick="hideFAQ()">&times;</button>
+        </div>
+        
+        <div class="faq-content">
+            <div class="faq-item">
+                <div class="faq-question">Q: Is Elite Buzzer League free to play?</div>
+                <div class="faq-answer">A: Yes, EBL is 100% free to play with no pay-to-win mechanics.</div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: How do I create an account?</div>
+                <div class="faq-answer">A: Click "Create new account" on the main page and follow the registration process.</div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: Can I play on mobile?</div>
+                <div class="faq-answer">A: Yes, EBL is fully responsive and works on mobile devices.</div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: How often are games simulated?</div>
+                <div class="faq-answer">A: Games are simulated daily at 8 PM UTC.</div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: How many players can I have on my roster?</div>
+                <div class="faq-answer">A: Each team can have up to 15 players on the active roster.</div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: Can I change my team name after registration?</div>
+                <div class="faq-answer">A: Yes, you can change your team name once per season in the team settings.</div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Q: What happens if I forget my password?</div>
+                <div class="faq-answer">A: Use the "Forgot password" link on the login page to reset your password.</div>
+            </div>
+            
+            <div class="faq-contact">
+                <p><strong>Still have questions?</strong></p>
+                <p>Contact us at: <a href="mailto:info.ebl.game@gmail.com">info.ebl.game@gmail.com</a></p>
+                <p>Or join our <a href="https://discord.gg/elitebuzzer" target="_blank">Discord community</a> for live support.</p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1348,6 +1471,21 @@
         }
     }
 
+    // Funkcje do obsługi FAQ
+    window.showFAQ = function() {
+        const faqModal = document.getElementById('faqModal');
+        if (faqModal) {
+            faqModal.classList.remove('hidden');
+        }
+    };
+
+    window.hideFAQ = function() {
+        const faqModal = document.getElementById('faqModal');
+        if (faqModal) {
+            faqModal.classList.add('hidden');
+        }
+    };
+
     window.setupUI = async function(role) {
         const landing = document.getElementById('landing-page');
         const app = document.getElementById('game-app');
@@ -1368,6 +1506,16 @@
         document.getElementById('btn-signup-action')?.addEventListener('click', signUp);
         document.getElementById('btn-logout-action')?.addEventListener('click', logout);
         
+        // Obsługa zamykania FAQ modala
+        const faqModal = document.getElementById('faqModal');
+        if (faqModal) {
+            faqModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideFAQ();
+                }
+            });
+        }
+        
         // Linki w footerze (już mają onclick, ale dla pewności)
         const termsLinks = document.querySelectorAll('a[onclick*="showTerms"]');
         termsLinks.forEach(link => {
@@ -1385,6 +1533,16 @@
                 e.preventDefault();
                 if (typeof window.showPrivacy === 'function') {
                     window.showPrivacy();
+                }
+            });
+        });
+        
+        const faqLinks = document.querySelectorAll('a[onclick*="showFAQ"]');
+        faqLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof window.showFAQ === 'function') {
+                    window.showFAQ();
                 }
             });
         });
