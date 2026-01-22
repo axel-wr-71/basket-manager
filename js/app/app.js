@@ -5,6 +5,7 @@ import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
+import { ScheduleView } from './schedule_view.js'; // NOWY IMPORT
 
 // KRYTYCZNY IMPORT DLA PRZYCISKÓW
 import { RosterActions } from './roster_actions.js';
@@ -65,7 +66,7 @@ async function loadDynamicNavigation() {
             settings = (defaults || []).map((m, idx) => ({ app_modules: m, order_index: idx }));
         }
 
-        const navContainer = document.getElementById('main-nav-container'); // Upewnij się, że masz takie ID w HTML
+        const navContainer = document.getElementById('main-nav-container'); 
         if (!navContainer) return;
 
         navContainer.innerHTML = settings.map(s => `
@@ -104,7 +105,6 @@ function initSidebarSortable(container, userId) {
 
             console.log("[DASHBOARD] Zapisywanie nowej kolejności...");
             
-            // Logika zapisu do bazy (używając RPC lub pętli)
             for (const item of updates) {
                 const { data: mod } = await supabaseClient
                     .from('app_modules')
@@ -127,7 +127,6 @@ function initSidebarSortable(container, userId) {
 export async function initApp() {
     console.log("[APP] Pobieranie danych drużyny...");
     try {
-        // Ładowanie nawigacji i słowników równolegle
         await Promise.all([
             fetchPotentialDefinitions(),
             loadDynamicNavigation()
@@ -202,6 +201,8 @@ export async function switchTab(tabId) {
         renderMarketView(data.team, data.players);
     } else if (tabId === 'm-media') {
         renderMediaView(data.team, data.players);
+    } else if (tabId === 'm-schedule') { // NOWY WARUNEK DLA TERMINARZA
+        ScheduleView.render(tabId, window.userTeamId);
     } else if (tabId === 'm-finances') {
         renderFinancesView(data.team, data.players);
     }
