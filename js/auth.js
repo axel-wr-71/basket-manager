@@ -301,7 +301,6 @@ async function handleRegister(e) {
         }
         
         // 3. Zaktualizuj drużynę (przypisz użytkownika i zmień nazwę)
-        // USUNIĘTO: updated_at: new Date().toISOString() - ponieważ kolumna nie istnieje w bazie
         const { error: teamUpdateError } = await supabaseClient
             .from('teams')
             .update({
@@ -310,17 +309,17 @@ async function handleRegister(e) {
                 country_code: country,
                 is_bot: false,
                 available_for_new_user: false
-                // USUNIĘTO: updated_at
             })
             .eq('id', botTeam.id);
             
         if (teamUpdateError) throw teamUpdateError;
         
-        // 4. Utwórz profil użytkownika
+        // 4. Utwórz profil użytkownika (DODANO: email)
         const { error: profileError } = await supabaseClient
             .from('profiles')
             .insert([{
                 id: userId,
+                email: email, // DODANO: Email do profilu
                 username: username,
                 team_id: botTeam.id,
                 role: 'manager',
@@ -604,7 +603,11 @@ export async function checkUser() {
         if (!profile) {
             const { data: newProfile } = await _supabase
                 .from('profiles')
-                .insert([{ id: user.id, email: user.email, role: 'manager' }])
+                .insert([{ 
+                    id: user.id, 
+                    email: user.email, // DODANO: Email przy tworzeniu profilu
+                    role: 'manager' 
+                }])
                 .select().single();
             profile = newProfile;
         }
