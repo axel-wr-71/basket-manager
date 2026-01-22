@@ -10,11 +10,11 @@ export function calculatePlayerDynamicWage(player) {
     let baseWage = 0;
 
     // 1. WYCENA UMIEJĘTNOŚCI (OVR)
-    if (ovr >= 95) baseWage = 200000 + (ovr - 95) * 10000;
-    else if (ovr >= 90) baseWage = 130000 + (ovr - 90) * 14000;
-    else if (ovr >= 80) baseWage = 50000 + (ovr - 80) * 8000;
-    else if (ovr >= 70) baseWage = 15000 + (ovr - 70) * 3500;
-    else baseWage = 3000 + (ovr - 60) * 1200;
+    if (ovr >= 95) baseWage = 20000 + (ovr - 95) * 10000;
+    else if (ovr >= 90) baseWage = 13000 + (ovr - 90) * 14000;
+    else if (ovr >= 80) baseWage = 5000 + (ovr - 80) * 8000;
+    else if (ovr >= 70) baseWage = 1500 + (ovr - 70) * 3500;
+    else baseWage = 800 + (ovr - 60) * 1200;
 
     // 2. BONUS ZA POTENCJAŁ
     if (age < 26) {
