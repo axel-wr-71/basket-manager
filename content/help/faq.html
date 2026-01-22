@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frequently Asked Questions - Elite Buzzer League</title>
+    <style>
+        .faq-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .faq-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            color: #1a237e;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 900;
+        }
+        
+        .subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 30px;
+        }
+        
+        .search-box {
+            max-width: 500px;
+            margin: 30px auto 40px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 16px 20px 16px 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%2394a3b8' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 20px center;
+            background-size: 20px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .faq-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        
+        .category-btn {
+            background: #f8fafc;
+            border: 2px solid #e5e7eb;
+            border-radius: 30px;
+            padding: 10px 25px;
+            font-weight: 600;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .category-btn:hover,
+        .category-btn.active {
+            background: #1a237e;
+            color: white;
+            border-color: #1a237e;
+        }
+        
+        .faq-section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            color: #1a237e;
+            font-size: 1.75rem;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .faq-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .faq-item.active {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+        
+        .faq-question {
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 700;
+            color: #1a237e;
+            background: #f8fafc;
+        }
+        
+        .faq-question:hover {
+            background: #f1f5f9;
+        }
+        
+        .faq-icon {
+            font-size: 1.5rem;
+            color: #64748b;
+            transition: transform 0.3s;
+        }
+        
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+            color: #3b82f6;
+        }
+        
+        .faq-answer {
+            padding: 0 25px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .faq-item.active .faq-answer {
+            padding: 0 25px 25px 25px;
+            max-height: 1000px;
+        }
+        
+        .faq-answer ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .faq-answer li {
+            margin-bottom: 8px;
+        }
+        
+        .faq-answer strong {
+            color: #1a237e;
+        }
+        
+        .helpful-section {
+            background: #f0f9ff;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: center;
+        }
+        
+        .helpful-title {
+            color: #0369a1;
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+        }
+        
+        .helpful-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .helpful-btn {
+            padding: 10px 30px;
+            border: 2px solid #38bdf8;
+            border-radius: 8px;
+            background: white;
+            color: #0369a1;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .helpful-btn:hover {
+            background: #38bdf8;
+            color: white;
+        }
+        
+        .contact-support {
+            background: linear-gradient(135deg, #fef3c7 0%, #fef3c7 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: center;
+            border: 2px solid #f59e0b;
+        }
+        
+        .contact-title {
+            color: #92400e;
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+        }
+        
+        .support-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+        
+        .support-option {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .support-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #1a237e;
+        }
+        
+        .support-option h4 {
+            color: #1a237e;
+            margin: 10px 0;
+        }
+        
+        .support-email {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .faq-footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .faq-container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .faq-question {
+                padding: 15px 20px;
+                font-size: 0.95rem;
+            }
+            
+            .faq-answer {
+                padding: 0 20px;
+                font-size: 0.95rem;
+            }
+            
+            .faq-item.active .faq-answer {
+                padding: 0 20px 20px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="faq-container">
+        <div class="faq-header">
+            <h1>Frequently Asked Questions</h1>
+            <div class="subtitle">
+                Find answers to common questions about Elite Buzzer League. Can't find what you're looking for? 
+                <a href="#contact" style="color: #3b82f6;">Contact our support team</a>.
+            </div>
+            
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search for answers...">
+            </div>
+            
+            <div class="faq-categories">
+                <button class="category-btn active" data-category="all">All Questions</button>
+                <button class="category-btn" data-category="getting-started">Getting Started</button>
+                <button class="category-btn" data-category="gameplay">Gameplay</button>
+                <button class="category-btn" data-category="teams">Teams & Players</button>
+                <button class="category-btn" data-category="account">Account & Security</button>
+                <button class="category-btn" data-category="technical">Technical Issues</button>
+            </div>
+        </div>
+        
+        <!-- Getting Started Section -->
+        <div class="faq-section" data-category="getting-started">
+            <h2 class="section-title">🚀 Getting Started</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I create an account?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Creating an account is simple:</p>
+                    <ol>
+                        <li>Click the "Create Account" button on the homepage</li>
+                        <li>Enter your email address and choose a secure password</li>
+                        <li>Create your username and team name</li>
+                        <li>Select your country from the dropdown menu</li>
+                        <li>Accept the Terms of Service and Privacy Policy</li>
+                        <li>Click "Create Account" to complete registration</li>
+                    </ol>
+                    <p>You'll receive a confirmation email to verify your account. Once confirmed, you can log in and start managing your team!</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    Is Elite Buzzer League free to play?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Yes!</strong> Elite Buzzer League is completely free to play. You can enjoy all core gameplay features without any cost.</p>
+                    <p>We offer optional premium features and cosmetic items for those who want to enhance their experience, but these are never required to compete or enjoy the game.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    What system requirements are needed?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Elite Buzzer League runs in your web browser and has minimal requirements:</p>
+                    <ul>
+                        <li><strong>Browser:</strong> Latest version of Chrome, Firefox, Safari, or Edge</li>
+                        <li><strong>Internet:</strong> Stable internet connection (broadband recommended)</li>
+                        <li><strong>Screen:</strong> Minimum 1024x768 resolution</li>
+                        <li><strong>JavaScript:</strong> Must be enabled in your browser</li>
+                    </ul>
+                    <p>The game is designed to work on desktop computers, laptops, and tablets. Mobile support is coming soon!</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gameplay Section -->
+        <div class="faq-section" data-category="gameplay">
+            <h2 class="section-title">🎮 Gameplay</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I train my players?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Player training is essential for improving your team:</p>
+                    <ol>
+                        <li>Navigate to the "Training" tab from your main menu</li>
+                        <li>Select which players you want to train</li>
+                        <li>Choose training focus: Shooting, Defense, Conditioning, or Playmaking</li>
+                        <li>Allocate training intensity (light, medium, heavy)</li>
+                        <li>Click "Start Training" to begin the session</li>
+                    </ol>
+                    <p><strong>Tips:</strong> Training too intensely can lead to player fatigue. Balance training with rest periods for optimal results.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How does the transfer market work?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>The transfer market is where you buy and sell players:</p>
+                    <ul>
+                        <li><strong>Bidding:</strong> Place bids on available players</li>
+                        <li><strong>Auction:</strong> Some players are sold through timed auctions</li>
+                        <li><strong>Direct Offers:</strong> Make offers to other managers for their players</li>
+                        <li><strong>Free Agents:</strong> Sign unattached players</li>
+                    </ul>
+                    <p>Each player has a market value based on age, skills, and performance. Prices fluctuate based on supply and demand.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How often do games occur?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Game schedule depends on your league:</p>
+                    <ul>
+                        <li><strong>Regular Season:</strong> 2-3 games per week (varies by league)</li>
+                        <li><strong>Playoffs:</strong> Daily games during playoff weeks</li>
+                        <li><strong>Cup Competitions:</strong> Weekly knockout matches</li>
+                        <li><strong>Friendlies:</strong> Can be scheduled at any time</li>
+                    </ul>
+                    <p>Games are simulated automatically at scheduled times. You can set your lineup and strategy before each game.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Teams & Players Section -->
+        <div class="faq-section" data-category="teams">
+            <h2 class="section-title">🏀 Teams & Players</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How many players can I have on my team?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Team roster limits:</p>
+                    <ul>
+                        <li><strong>Active Roster:</strong> 12-15 players (varies by league rules)</li>
+                        <li><strong>Reserve Squad:</strong> Up to 5 additional players</li>
+                        <li><strong>Youth Team:</strong> Unlimited players under age 21</li>
+                    </ul>
+                    <p>You must maintain at least 10 active players at all times. Exceeding roster limits may result in automatic player releases or penalties.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I improve my team's chemistry?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Team chemistry affects performance significantly. Improve it by:</p>
+                    <ol>
+                        <li><strong>Consistent Lineups:</strong> Keep your starting five together</li>
+                        <li><strong>Training Together:</strong> Group training sessions</li>
+                        <li><strong>Team Meetings:</strong> Hold weekly team meetings</li>
+                        <li><strong>Player Personalities:</strong> Sign players with compatible personalities</li>
+                        <li><strong>Winning Games:</strong> Success boosts chemistry</li>
+                    </ol>
+                    <p>Chemistry ranges from 0-100. Higher chemistry provides performance bonuses in games.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    Can I change my team name?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Yes, with limitations:</strong></p>
+                    <ul>
+                        <li>Free name change once per season</li>
+                        <li>Additional changes cost 500 EBL Coins</li>
+                        <li>Cannot change to inappropriate or offensive names</li>
+                        <li>Cannot impersonate other teams or real-world organizations</li>
+                    </ul>
+                    <p>To change your team name, go to Account Settings → Team Management → Change Team Name.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account & Security Section -->
+        <div class="faq-section" data-category="account">
+            <h2 class="section-title">🔐 Account & Security</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I reset my password?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>If you've forgotten your password:</p>
+                    <ol>
+                        <li>Click "Forgot Password" on the login screen</li>
+                        <li>Enter the email address associated with your account</li>
+                        <li>Check your email for a password reset link</li>
+                        <li>Click the link and create a new password</li>
+                        <li>Log in with your new credentials</li>
+                    </ol>
+                    <p>Password reset links expire after 1 hour for security. If you don't receive the email, check your spam folder.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    Can I delete my account?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Account deletion is permanent and irreversible. To delete your account:</p>
+                    <ol>
+                        <li>Log into your account</li>
+                        <li>Go to Account Settings → Privacy & Security</li>
+                        <li>Scroll to "Delete Account" section</li>
+                        <li>Enter your password to confirm</li>
+                        <li>Click "Permanently Delete Account"</li>
+                    </ol>
+                    <p><strong>Warning:</strong> Deleting your account will permanently remove all your teams, players, and game progress. This action cannot be undone.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I enable two-factor authentication?
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Two-factor authentication (2FA) adds an extra layer of security:</p>
+                    <ol>
+                        <li>Log into your account</li>
+                        <li>Go to Account Settings → Security</li>
+                        <li>Click "Enable Two-Factor Authentication"</li>
+                        <li>Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)</li>
+                        <li>Enter the 6-digit code from your app</li>
+                        <li>Save your backup codes in a secure location</li>
+                    </ol>
+                    <p>We strongly recommend enabling 2FA to protect your account from unauthorized access.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Helpful Feedback Section -->
+        <div class="helpful-section">
+            <div class="helpful-title">Was this information helpful?</div>
+            <p>Let us know if we answered your questions effectively.</p>
+            <div class="helpful-buttons">
+                <button class="helpful-btn" data-helpful="yes">👍 Yes, helped a lot</button>
+                <button class="helpful-btn" data-helpful="somewhat">😐 Somewhat helpful</button>
+                <button class="helpful-btn" data-helpful="no">👎 Still need help</button>
+            </div>
+        </div>
+        
+        <!-- Contact Support Section -->
+        <div class="contact-support" id="contact">
+            <div class="contact-title">📞 Still Need Help?</div>
+            <p>Our support team is here to assist you with any issues or questions.</p>
+            
+            <div class="support-options">
+                <div class="support-option">
+                    <div class="support-icon">📧</div>
+                    <h4>Email Support</h4>
+                    <p>For account issues and general questions</p>
+                    <a href="mailto:support@elitebuzzerleague.com" class="support-email">support@elitebuzzerleague.com</a>
+                </div>
+                
+                <div class="support-option">
+                    <div class="support-icon">🛡️</div>
+                    <h4>Security Issues</h4>
+                    <p>For account security concerns</p>
+                    <a href="mailto:security@elitebuzzerleague.com" class="support-email">security@elitebuzzerleague.com</a>
+                </div>
+                
+                <div class="support-option">
+                    <div class="support-icon">💬</div>
+                    <h4>Community Help</h4>
+                    <p>Join our Discord community</p>
+                    <a href="https://discord.gg/elitebuzzer" class="support-email">discord.gg/elitebuzzer</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="faq-footer">
+            <p>© 2024 Elite Buzzer League. All rights reserved.</p>
+            <p>This FAQ is regularly updated. Last updated: January 23, 2024</p>
+        </div>
+    </div>
+
+    <script>
+        // FAQ toggle functionality
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                item.classList.toggle('active');
+            });
+        });
+        
+        // Category filtering
+        document.querySelectorAll('.category-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                
+                const category = button.dataset.category;
+                const allSections = document.querySelectorAll('.faq-section');
+                
+                if (category === 'all') {
+                    allSections.forEach(section => {
+                        section.style.display = 'block';
+                    });
+                } else {
+                    allSections.forEach(section => {
+                        if (section.dataset.category === category) {
+                            section.style.display = 'block';
+                        } else {
+                            section.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Search functionality
+        const searchInput = document.querySelector('.search-input');
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            document.querySelectorAll('.faq-item').forEach(item => {
+                const question = item.querySelector('.faq-question').textContent.toLowerCase();
+                const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+                
+                if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+                    item.style.display = 'block';
+                    if (searchTerm) {
+                        item.classList.add('active');
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+        
+        // Helpful feedback buttons
+        document.querySelectorAll('.helpful-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const response = button.dataset.helpful;
+                alert(`Thank you for your feedback! We'll use this to improve our help resources.`);
+                
+                // Reset buttons
+                document.querySelectorAll('.helpful-btn').forEach(btn => {
+                    btn.style.background = 'white';
+                    btn.style.color = '#0369a1';
+                });
+                
+                // Highlight selected button
+                button.style.background = '#38bdf8';
+                button.style.color = 'white';
+            });
+        });
+    </script>
+</body>
+</html>
