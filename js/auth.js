@@ -365,6 +365,22 @@ async function handleRegister(e) {
 }
 
 /**
+ * Sprawdza złożoność hasła
+ */
+function validatePasswordComplexity(password) {
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    
+    return {
+        isValid: hasLowerCase && hasUpperCase && hasNumbers,
+        hasLowerCase,
+        hasUpperCase,
+        hasNumbers
+    };
+}
+
+/**
  * Walidacja formularza rejestracji
  */
 function validateRegisterForm(email, password, passwordConfirm, username, teamName, country, termsAccepted) {
@@ -390,6 +406,21 @@ function validateRegisterForm(email, password, passwordConfirm, username, teamNa
     // Długość hasła
     if (password.length < 8) {
         showMessage('register-message', 'Password must be at least 8 characters long', 'error');
+        return false;
+    }
+    
+    // Złożoność hasła
+    const passwordCheck = validatePasswordComplexity(password);
+    if (!passwordCheck.isValid) {
+        let requirements = [];
+        if (!passwordCheck.hasLowerCase) requirements.push('lowercase letter (a-z)');
+        if (!passwordCheck.hasUpperCase) requirements.push('uppercase letter (A-Z)');
+        if (!passwordCheck.hasNumbers) requirements.push('number (0-9)');
+        
+        showMessage('register-message', 
+            `Password must contain at least one: ${requirements.join(', ')}`, 
+            'error'
+        );
         return false;
     }
     
@@ -458,7 +489,9 @@ function getErrorMessage(error) {
         'Email not confirmed': 'Please confirm your email before logging in',
         'Invalid login credentials': 'Invalid email or password',
         'Password should be at least 6 characters': 'Password must be at least 6 characters',
-        'Password should be at least 8 characters': 'Password must be at least 8 characters'
+        'Password should be at least 8 characters': 'Password must be at least 8 characters',
+        'Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789': 
+            'Password must contain at least one lowercase letter, one uppercase letter, and one number'
     };
     
     return messages[error.message] || error.message || 'An unexpected error occurred';
