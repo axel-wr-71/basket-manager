@@ -2,49 +2,515 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Elite Basket League</title>
+    <title>Elite Basket League - Zarządzaj swoją drużyną koszykarską</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/market.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
     <style>
-        .auth-state-pending { display: none !important; }
-        .landing-hero { position: relative; width: 100%; height: 100vh; background: url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600') no-repeat center center fixed; background-size: cover; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 1; }
-        .landing-header { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; }
-        .lang-switcher-top { display: flex; gap: 12px; }
-        .lang-flag { width: 32px; height: auto; cursor: pointer; transition: 0.3s; filter: grayscale(100%); opacity: 0.6; border-radius: 4px; }
-        .lang-flag.active { filter: grayscale(0%); opacity: 1; transform: scale(1.1); box-shadow: 0 0 8px rgba(255,255,255,0.3); }
-        .hero-content { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding-bottom: 50px; }
-        .main-title { font-size: 4.5rem; font-weight: 900; margin: 0 0 30px 0; text-transform: uppercase; letter-spacing: 4px; color: #fff; text-shadow: 3px 3px 15px rgba(0,0,0,0.7); }
-        .auth-box { background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 100%; max-width: 400px; color: #333; }
-        .auth-box h2 { margin-top: 0; margin-bottom: 25px; color: #1a237e; font-weight: 800; }
-        .auth-inputs { display: flex; flex-direction: column; gap: 15px; }
-        .auth-inputs input { padding: 14px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
-        .auth-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .btn-main { padding: 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
-        .btn-login { background: #e65100; color: white; }
-        .btn-login:hover { background: #ff6d00; }
-        .btn-signup { background: #444; color: white; }
-        .btn-signup:hover { background: #222; }
+        /* Reset i podstawy */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
-        /* Nawigacja */
-        .nav-container { display: flex; justify-content: center; gap: 5px; padding: 0 20px; margin-top: 15px; flex-wrap: wrap; }
-        .btn-tab { display: flex; align-items: center; gap: 8px; padding: 12px 25px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 12px 12px 0 0; font-weight: 800; transition: 0.3s; color: #666; font-size: 0.85rem; letter-spacing: 0.5px; }
-        .btn-tab.active { background: #1a237e; color: white; }
-        .tab-content { display: none; min-height: 80vh; background: #f4f7f6; }
-        .tab-content.active { display: block; }
-        header.app-header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e0e0e0; }
-        .btn-logout { background: #f44336; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-
-        /* Style dla Drag & Drop */
-        .sortable-ghost { opacity: 0.3; background: #ffab40 !important; }
-        .btn-tab { cursor: grab; }
-        .btn-tab:active { cursor: grabbing; }
-
-        /* Style modalów - dodajemy na końcu */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .auth-state-pending { 
+            display: none !important; 
+        }
+        
+        /* Strona startowa - nowy layout */
+        .landing-hero {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.85)),
+                url('https://images.unsplash.com/photo-1504450758481-7338eba7524a?w=1600') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header - minimalistyczny */
+        .landing-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1a237e, #3949ab);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(26, 35, 126, 0.4);
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .lang-switcher-top {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .lang-flag {
+            width: 32px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+            object-fit: cover;
+        }
+        
+        .lang-flag.active {
+            opacity: 1;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Hero content - nowy układ */
+        .hero-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 2rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            width: 100%;
+            align-items: center;
+        }
+        
+        .hero-left {
+            animation: fadeInLeft 1s ease;
+        }
+        
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .main-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, #ffab40 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+        
+        .title-accent {
+            color: #ff6d00;
+            -webkit-text-fill-color: #ff6d00;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 109, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(255, 109, 0, 0.1);
+        }
+        
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, rgba(255, 109, 0, 0.2), rgba(255, 171, 64, 0.1));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+        
+        .feature-desc {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
+        }
+        
+        /* Right side - Auth section */
+        .hero-right {
+            animation: fadeInRight 1s ease;
+        }
+        
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        
+        .auth-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #1a237e, #3949ab);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.8rem;
+            color: white;
+        }
+        
+        .auth-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #1a237e;
+            margin-bottom: 0.5rem;
+        }
+        
+        .auth-subtitle {
+            color: #64748b;
+            font-size: 1rem;
+        }
+        
+        .auth-buttons-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .btn-auth {
+            padding: 1.25rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-auth::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .btn-auth:hover::before {
+            opacity: 1;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #e65100, #ff6d00);
+            color: white;
+            box-shadow: 0 4px 15px rgba(230, 81, 0, 0.3);
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(230, 81, 0, 0.4);
+        }
+        
+        .btn-signup {
+            background: white;
+            color: #1a237e;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            border-color: #1a237e;
+            box-shadow: 0 8px 25px rgba(26, 35, 126, 0.1);
+        }
+        
+        .btn-icon {
+            font-size: 1.3rem;
+        }
+        
+        .stats-section {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1a237e;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+        
+        /* Game app section - bez zmian */
+        #game-app {
+            display: none;
+        }
+        
+        .app-header {
+            background: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .btn-logout {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            padding: 0 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 25px;
+            border: none;
+            background: #e0e0e0;
+            cursor: pointer;
+            border-radius: 12px 12px 0 0;
+            font-weight: 800;
+            transition: 0.3s;
+            color: #666;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-tab.active {
+            background: #1a237e;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            min-height: 80vh;
+            background: #f4f7f6;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Responsywność */
+        @media (max-width: 1200px) {
+            .hero-grid {
+                gap: 3rem;
+            }
+            
+            .main-title {
+                font-size: 3rem;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 4rem;
+                text-align: center;
+            }
+            
+            .hero-left {
+                order: 2;
+            }
+            
+            .hero-right {
+                order: 1;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+                margin: 0 auto 3rem;
+            }
+            
+            .main-title {
+                font-size: 2.75rem;
+            }
+            
+            .hero-subtitle {
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .landing-header {
+                padding: 1rem 1.5rem;
+            }
+            
+            .hero-content {
+                padding: 5rem 1.5rem 2rem;
+            }
+            
+            .auth-card {
+                padding: 2rem;
+            }
+            
+            .main-title {
+                font-size: 2.25rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .auth-card {
+                padding: 1.5rem;
+            }
+            
+            .btn-auth {
+                padding: 1rem 1.5rem;
+                font-size: 1rem;
+            }
+            
+            .stats-section {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+        }
+        
+        /* Style modalów - zachowane z poprzedniej wersji */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -76,7 +542,7 @@
 
         .modal-container {
             background: white;
-            border-radius: 16px;
+            border-radius: 24px;
             width: 100%;
             max-width: 480px;
             max-height: 90vh;
@@ -98,7 +564,7 @@
             border-bottom: 1px solid #e5e7eb;
             background: linear-gradient(135deg, #1a237e, #3949ab);
             color: white;
-            border-radius: 16px 16px 0 0;
+            border-radius: 24px 24px 0 0;
         }
 
         .modal-header h2 {
@@ -237,33 +703,110 @@
 </head>
 <body>
 
+<!-- Strona startowa -->
 <div id="landing-page" class="landing-hero auth-state-pending">
-    <div class="hero-overlay"></div>
     <header class="landing-header">
-        <div class="header-left"><div style="font-weight:900; color:white; font-size:1.5rem;">EBL</div></div>
-        <div class="header-right">
-            <div class="lang-switcher-top">
-                <img src="https://flagcdn.com/w40/pl.png" class="lang-flag active" alt="PL">
-                <img src="https://flagcdn.com/w40/us.png" class="lang-flag" alt="EN">
-            </div>
+        <a href="#" class="logo-container">
+            <div class="logo-icon">🏀</div>
+            <div class="logo-text">Elite Buzzer League</div>
+        </a>
+        <div class="lang-switcher-top">
+            <img src="https://flagcdn.com/w40/pl.png" class="lang-flag active" alt="PL">
+            <img src="https://flagcdn.com/w40/us.png" class="lang-flag" alt="EN">
         </div>
     </header>
+    
     <main class="hero-content">
-        <h1 class="main-title">ELITE BASKET LEAGUE</h1>
-        <div class="auth-box">
-            <h2>Panel Managera</h2>
-            <div class="auth-inputs">
-                <input type="email" id="email" placeholder="Email">
-                <input type="password" id="password" placeholder="Hasło">
-                <div class="auth-buttons">
-                    <button id="btn-login-action" class="btn-main btn-login">ZALOGUJ SIĘ</button>
-                    <button id="btn-signup-action" class="btn-main btn-signup">ZAŁÓŻ KONTO</button>
+        <div class="hero-grid">
+            <!-- Lewa strona - Opis gry -->
+            <div class="hero-left">
+                <h1 class="main-title">
+                    Zostań legendą<br>
+                    <span class="title-accent">koszykarskiego biznesu</span>
+                </h1>
+                
+                <p class="hero-subtitle">
+                    Elite Buzzer League to najbardziej zaawansowana platforma do zarządzania drużyną koszykarską. 
+                    Rekrutuj talent, trenuj zawodników, zarządzaj finansami i prowadź swoją drużynę do mistrzostwa.
+                </p>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <h3 class="feature-title">Dynamiczny Rynek</h3>
+                        <p class="feature-desc">
+                            Kupuj, sprzedawaj i wymieniaj zawodników na realistycznym rynku transferowym
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3 class="feature-title">Zaawansowane Statystyki</h3>
+                        <p class="feature-desc">
+                            Analizuj każdy aspekt gry za pomocą szczegółowych danych i raportów
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🏆</div>
+                        <h3 class="feature-title">Globalne Rozgrywki</h3>
+                        <p class="feature-desc">
+                            Rywalizuj z tysiącami managerów z całego świata w różnych ligach
+                        </p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">💎</div>
+                        <h3 class="feature-title">System Rozwoju</h3>
+                        <p class="feature-desc">
+                            Rozwijaj młode talenty i tworz legendy ligi dzięki systemowi treningowemu
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Prawa strona - Panel logowania/rejestracji -->
+            <div class="hero-right">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="auth-icon">🏀</div>
+                        <h2 class="auth-title">Dołącz do EBL</h2>
+                        <p class="auth-subtitle">Rozpocznij swoją koszykarską przygodę</p>
+                    </div>
+                    
+                    <div class="auth-buttons-grid">
+                        <button id="btn-login-action" class="btn-auth btn-login">
+                            <span class="btn-icon">🔐</span>
+                            Zaloguj się do konta
+                        </button>
+                        
+                        <button id="btn-signup-action" class="btn-auth btn-signup">
+                            <span class="btn-icon">⭐</span>
+                            Utwórz nowe konto
+                        </button>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <div class="stat-item">
+                            <span class="stat-number">10K+</span>
+                            <span class="stat-label">Aktywnych graczy</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">24/7</span>
+                            <span class="stat-label">Aktywna rozgrywka</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">100%</span>
+                            <span class="stat-label">Grywalności</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 </div>
 
+<!-- Główna aplikacja (po zalogowaniu) -->
 <div id="game-app" class="auth-state-pending">
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 20px;">
@@ -312,7 +855,7 @@
     </div>
 </div>
 
-<!-- Modal rejestracji -->
+<!-- Modale rejestracji i logowania -->
 <div id="registerModal" class="modal-overlay hidden">
     <div class="modal-container">
         <div class="modal-header">
@@ -401,7 +944,6 @@
     </div>
 </div>
 
-<!-- Modal logowania -->
 <div id="loginModal" class="modal-overlay hidden">
     <div class="modal-container">
         <div class="modal-header">
@@ -427,7 +969,6 @@
 </div>
 
 <script type="module">
-    // Importujemy funkcje z auth.js - teraz signIn i signUp otwierają modale
     import { signIn, signUp, logout } from './js/auth.js';
     import { switchTab, initApp } from './js/app/app.js';
 
@@ -438,14 +979,10 @@
         app.classList.remove('auth-state-pending');
         app.style.display = 'block';
         
-        // Najpierw inicjalizujemy aplikację (to załaduje też dynamiczne menu)
         await initApp();
-        
-        // Po załadowaniu menu aktywujemy domyślną zakładkę
         await switchTab('m-roster');
     };
 
-    // Globalne funkcje do pokazywania warunków
     window.showTerms = function() {
         alert('Warunki korzystania z serwisu będą dostępne wkrótce.');
         return false;
@@ -457,7 +994,6 @@
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Te przyciski używają teraz nowych funkcji z auth.js
         document.getElementById('btn-login-action')?.addEventListener('click', signIn);
         document.getElementById('btn-signup-action')?.addEventListener('click', signUp);
         document.getElementById('btn-logout-action')?.addEventListener('click', logout);
