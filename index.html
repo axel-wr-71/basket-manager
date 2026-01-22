@@ -98,12 +98,28 @@
         <div style="padding: 10px; color: #94a3b8; font-size: 0.8rem;">Ładowanie modułów...</div>
     </div>
 
-    <div id="m-roster" class="tab-content active"><div id="roster-view-container"></div></div>
-    <div id="m-training" class="tab-content"><div id="training-view-container"></div></div>
-    <div id="m-market" class="tab-content"><div id="market-view-container"></div></div>
-    <div id="m-media" class="tab-content"><div id="media-view-container"></div></div> 
-    <div id="m-schedule" class="tab-content"><div id="schedule-view-container"></div></div>
-    <div id="m-finances" class="tab-content"><div id="finances-view-container"></div></div>
+    <div id="m-roster" class="tab-content active">
+        <div id="roster-view-container"></div>
+    </div>
+    
+    <div id="m-training" class="tab-content">
+        <div id="training-view-container"></div>
+    </div>
+    
+    <div id="m-market" class="tab-content">
+        <div id="market-view-container"></div>
+    </div>
+    
+    <div id="m-media" class="tab-content">
+        <div id="media-view-container"></div>
+    </div> 
+
+    <div id="m-schedule" class="tab-content">
+        </div>
+
+    <div id="m-finances" class="tab-content">
+        <div id="finances-view-container"></div>
+    </div>
 </div>
 
 <script type="module">
@@ -128,9 +144,6 @@
         document.getElementById('btn-login-action')?.addEventListener('click', signIn);
         document.getElementById('btn-signup-action')?.addEventListener('click', signUp);
         document.getElementById('btn-logout-action')?.addEventListener('click', logout);
-
-        // Uwaga: Przyciski są teraz generowane dynamicznie w app.js, 
-        // więc listenery są przypisane przez onclick bezpośrednio w HTML przycisków.
     });
 </script>
 </body>
