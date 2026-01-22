@@ -10,6 +10,9 @@ import { initApp, switchTab } from './app/app.js';
 
 window.POTENTIAL_MAP = [];
 
+// Globalne zmienne dla modalów
+let registerModal, loginModal;
+
 /**
  * FUNKCJA NAPRAWIAJĄCA NAZWĘ DRUŻYNY W PRAWYM GÓRNYM ROGU
  */
@@ -65,6 +68,435 @@ async function fetchPotentialDefinitions() {
 }
 
 /**
+ * Inicjalizacja systemu modalów
+ */
+function initAuthModals() {
+    registerModal = document.getElementById('registerModal');
+    loginModal = document.getElementById('loginModal');
+    
+    if (!registerModal || !loginModal) {
+        console.warn('[AUTH] Modale nie znalezione w DOM - prawdopodobnie użytkownik jest zalogowany');
+        return;
+    }
+    
+    bindAuthEvents();
+}
+
+/**
+ * Podpięcie event listenerów do modalów
+ */
+function bindAuthEvents() {
+    // Przyciski na stronie głównej
+    const signupBtn = document.getElementById('btn-signup-action');
+    const loginBtn = document.getElementById('btn-login-action');
+    
+    if (signupBtn) {
+        signupBtn.removeEventListener('click', oldSignUp); // Usuń starego listenera
+        signupBtn.addEventListener('click', showRegisterModal);
+    }
+    
+    if (loginBtn) {
+        loginBtn.removeEventListener('click', oldSignIn); // Usuń starego listenera
+        loginBtn.addEventListener('click', showLoginModal);
+    }
+    
+    // Zamknięcie modalów
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.addEventListener('click', hideAllModals);
+    });
+    
+    // Kliknięcie poza modalem
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideAllModals();
+        });
+    });
+    
+    // Przełączanie między modalami
+    const switchToLogin = document.getElementById('switch-to-login');
+    const switchToRegister = document.getElementById('switch-to-register');
+    
+    if (switchToLogin) {
+        switchToLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            showLoginModal();
+        });
+    }
+    
+    if (switchToRegister) {
+        switchToRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            showRegisterModal();
+        });
+    }
+    
+    // Formularz rejestracji
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegister);
+    }
+    
+    // Formularz logowania
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    // Klawisz Escape zamyka modale
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideAllModals();
+    });
+}
+
+/**
+ * Pokazuje modal rejestracji
+ */
+export function showRegisterModal() {
+    hideAllModals();
+    if (registerModal) {
+        registerModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Ustaw focus na pierwsze pole
+        setTimeout(() => {
+            const emailInput = document.getElementById('register-email');
+            if (emailInput) emailInput.focus();
+        }, 100);
+    }
+}
+
+/**
+ * Pokazuje modal logowania
+ */
+export function showLoginModal() {
+    hideAllModals();
+    if (loginModal) {
+        loginModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const emailInput = document.getElementById('login-email');
+            if (emailInput) emailInput.focus();
+        }, 100);
+    }
+}
+
+/**
+ * Ukrywa wszystkie modale
+ */
+function hideAllModals() {
+    if (registerModal) registerModal.classList.add('hidden');
+    if (loginModal) loginModal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+/**
+ * Znajduje losową drużynę-bota w najniższej lidze
+ */
+async function findBotTeamForNewUser() {
+    try {
+        // Szukamy drużyn oznaczonych jako boty i dostępne dla nowych użytkowników
+        let query = supabaseClient
+            .from('teams')
+            .select('*')
+            .eq('is_bot', true)
+            .eq('available_for_new_user', true)
+            .is('owner_id', null);  // Używamy owner_id!
+        
+        // Spróbuj znaleźć drużynę w najniższej lidze (najwyższy level)
+        try {
+            const { data: lowestLeague } = await supabaseClient
+                .from('leagues')
+                .select('id')
+                .order('level', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            
+            if (lowestLeague) {
+                query = query.eq('league_id', lowestLeague.id);
+            }
+        } catch (leagueError) {
+            console.log('[AUTH] Nie znaleziono lig, szukamy dowolnej bot-drużyny');
+        }
+        
+        // Losowe pobranie jednej drużyny
+        query = query.limit(1);
+        
+        const { data: teams, error } = await query;
+        
+        if (error) throw error;
+        if (!teams || teams.length === 0) {
+            // Fallback: jakakolwiek drużyna bez właściciela
+            const { data: fallbackTeams } = await supabaseClient
+                .from('teams')
+                .select('*')
+                .is('owner_id', null)
+                .limit(1);
+            
+            if (!fallbackTeams || fallbackTeams.length === 0) {
+                throw new Error('Brak dostępnych drużyn do przypisania');
+            }
+            
+            return fallbackTeams[0];
+        }
+        
+        return teams[0];
+        
+    } catch (error) {
+        console.error('Error finding bot team:', error);
+        return null;
+    }
+}
+
+/**
+ * Obsługa rejestracji użytkownika
+ */
+async function handleRegister(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+    const username = document.getElementById('register-username').value.trim();
+    const teamName = document.getElementById('register-teamname').value.trim();
+    const country = document.getElementById('register-country').value;
+    const termsAccepted = document.getElementById('register-terms').checked;
+    const newsletter = document.getElementById('register-newsletter')?.checked || false;
+    
+    // Walidacja
+    if (!validateRegisterForm(email, password, username, teamName, country, termsAccepted)) {
+        return;
+    }
+    
+    // Przycisk ładowania
+    const submitBtn = e.target.querySelector('.btn-submit');
+    const btnText = submitBtn.querySelector('#register-btn-text');
+    const loading = submitBtn.querySelector('#register-loading');
+    
+    if (btnText) btnText.style.display = 'none';
+    if (loading) loading.style.display = 'flex';
+    submitBtn.disabled = true;
+    
+    try {
+        // 1. Rejestracja w Supabase Auth
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    username: username,
+                    newsletter_subscribed: newsletter
+                }
+            }
+        });
+        
+        if (authError) throw authError;
+        
+        const userId = authData.user.id;
+        
+        // 2. Znajdź losową drużynę-bota
+        const botTeam = await findBotTeamForNewUser();
+        if (!botTeam) {
+            throw new Error('Brak dostępnych drużyn do przypisania. Spróbuj ponownie później.');
+        }
+        
+        // 3. Zaktualizuj drużynę (przypisz użytkownika i zmień nazwę)
+        const { error: teamUpdateError } = await supabaseClient
+            .from('teams')
+            .update({
+                owner_id: userId,           // owner_id, nie user_id!
+                team_name: teamName,
+                country_code: country,
+                is_bot: false,
+                available_for_new_user: false,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', botTeam.id);
+            
+        if (teamUpdateError) throw teamUpdateError;
+        
+        // 4. Utwórz profil użytkownika
+        const { error: profileError } = await supabaseClient
+            .from('profiles')
+            .insert([{
+                id: userId,
+                username: username,
+                team_id: botTeam.id,
+                role: 'manager',
+                newsletter_subscribed: newsletter,
+                terms_accepted: termsAccepted,
+                terms_accepted_at: new Date().toISOString()
+            }]);
+            
+        if (profileError) throw profileError;
+        
+        // 5. Sukces!
+        showMessage('register-message', 
+            '✅ Rejestracja udana! Sprawdź swoją skrzynkę email, aby potwierdzić konto.', 
+            'success'
+        );
+        
+        // Wyczyść formularz
+        e.target.reset();
+        
+        // Automatyczne logowanie po 3 sekundach
+        setTimeout(async () => {
+            hideAllModals();
+            // Spróbuj automatycznie zalogować
+            const { error: loginError } = await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (!loginError) {
+                window.location.reload();
+            }
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        showMessage('register-message', getErrorMessage(error), 'error');
+    } finally {
+        // Przywróć przycisk
+        if (btnText) btnText.style.display = 'block';
+        if (loading) loading.style.display = 'none';
+        submitBtn.disabled = false;
+    }
+}
+
+/**
+ * Walidacja formularza rejestracji
+ */
+function validateRegisterForm(email, password, username, teamName, country, termsAccepted) {
+    const messageEl = document.getElementById('register-message');
+    
+    // Reset message
+    messageEl.textContent = '';
+    messageEl.className = 'form-message hidden';
+    
+    // Sprawdź czy wszystkie pola są wypełnione
+    if (!email || !password || !username || !teamName || !country) {
+        showMessage('register-message', 'Wypełnij wszystkie wymagane pola', 'error');
+        return false;
+    }
+    
+    // Walidacja email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showMessage('register-message', 'Podaj poprawny adres email', 'error');
+        return false;
+    }
+    
+    // Długość hasła
+    if (password.length < 8) {
+        showMessage('register-message', 'Hasło musi mieć co najmniej 8 znaków', 'error');
+        return false;
+    }
+    
+    // Nazwa użytkownika
+    if (username.length < 3) {
+        showMessage('register-message', 'Nazwa użytkownika musi mieć co najmniej 3 znaki', 'error');
+        return false;
+    }
+    
+    // Nazwa drużyny
+    if (teamName.length < 3) {
+        showMessage('register-message', 'Nazwa drużyny musi mieć co najmniej 3 znaki', 'error');
+        return false;
+    }
+    
+    // Zgody
+    if (!termsAccepted) {
+        showMessage('register-message', 'Musisz zaakceptować regulamin i politykę prywatności', 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Obsługa logowania w modal
+ */
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    try {
+        const { error } = await supabaseClient.auth.signInWithPassword({
+            email,
+            password
+        });
+        
+        if (error) throw error;
+        
+        // Sukces - zamknij modal
+        hideAllModals();
+        
+        // Sprawdź użytkownika (to zaktualizuje UI)
+        await checkUser();
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showMessage('login-message', getErrorMessage(error), 'error');
+    }
+}
+
+/**
+ * Przyjazne komunikaty błędów
+ */
+function getErrorMessage(error) {
+    const messages = {
+        'User already registered': 'Użytkownik z tym emailem już istnieje',
+        'Email not confirmed': 'Potwierdź swój email przed logowaniem',
+        'Invalid login credentials': 'Nieprawidłowy email lub hasło',
+        'Password should be at least 6 characters': 'Hasło musi mieć co najmniej 6 znaków'
+    };
+    
+    return messages[error.message] || error.message || 'Wystąpił nieoczekiwany błąd';
+}
+
+/**
+ * Pokazuje komunikat w modalach
+ */
+function showMessage(elementId, text, type) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    element.textContent = text;
+    element.className = `form-message ${type}`;
+    element.classList.remove('hidden');
+    
+    // Ukryj po 5 sekundach (oprócz sukcesu w rejestracji)
+    if (type !== 'success' || elementId === 'login-message') {
+        setTimeout(() => {
+            element.classList.add('hidden');
+        }, 5000);
+    }
+}
+
+// Zachowaj stare funkcje dla kompatybilności wstecznej
+async function oldSignIn() {
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
+    console.log("[AUTH] Próba logowania (stara metoda)...");
+    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
+    if (error) {
+        alert("Błąd: " + error.message);
+    } else {
+        await checkUser();
+    }
+}
+
+async function oldSignUp() {
+    const e = document.getElementById('email')?.value;
+    const p = document.getElementById('password')?.value;
+    const { error } = await _supabase.auth.signUp({ email: e, password: p });
+    if (error) alert("Błąd rejestracji: " + error.message);
+    else alert("Konto założone! Możesz się zalogować.");
+}
+
+/**
  * Zaktualizowana funkcja setupUI - eliminuje migotanie
  */
 export const setupUI = async (role) => {
@@ -108,6 +540,9 @@ window.showLogin = function() {
         landingPage.style.display = 'flex';
         landingPage.classList.remove('auth-state-pending');
     }
+    
+    // Inicjalizuj modale gdy pokazujemy stronę logowania
+    setTimeout(initAuthModals, 100);
 };
 
 export async function checkUser() {
@@ -141,27 +576,9 @@ export async function checkUser() {
 }
 window.checkUser = checkUser;
 
-export const signIn = async () => {
-    const e = document.getElementById('email')?.value;
-    const p = document.getElementById('password')?.value;
-    console.log("[AUTH] Próba logowania...");
-    const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
-    if (error) {
-        alert("Błąd: " + error.message);
-    } else {
-        await checkUser();
-    }
-};
-window.signIn = signIn;
-
-export const signUp = async () => {
-    const e = document.getElementById('email')?.value;
-    const p = document.getElementById('password')?.value;
-    const { error } = await _supabase.auth.signUp({ email: e, password: p });
-    if (error) alert("Błąd rejestracji: " + error.message);
-    else alert("Konto założone! Możesz się zalogować.");
-};
-window.signUp = signUp;
+// Nowe funkcje signIn i signUp dla kompatybilności
+export const signIn = showLoginModal;
+export const signUp = showRegisterModal;
 
 export const logout = async () => { 
     await _supabase.auth.signOut(); 
@@ -175,4 +592,9 @@ _supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT') window.showLogin();
 });
 
-document.addEventListener('DOMContentLoaded', () => checkUser());
+// Inicjalizacja przy załadowaniu strony
+document.addEventListener('DOMContentLoaded', () => {
+    checkUser();
+    // Inicjalizuj modale z opóźnieniem, aby DOM miał czas na załadowanie
+    setTimeout(initAuthModals, 500);
+});
