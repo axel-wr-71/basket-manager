@@ -35,12 +35,16 @@ export const ScheduleView = {
         let currentWeek = window.gameState?.currentWeek;
         
         if (currentWeek === undefined) {
-            const { data: config } = await supabaseClient
-                .from('game_config')
-                .select('value')
-                .eq('key', 'current_week')
-                .single();
-            currentWeek = config ? parseInt(config.value) : 0;
+            try {
+                const { data: config } = await supabaseClient
+                    .from('game_config')
+                    .select('value')
+                    .eq('key', 'current_week')
+                    .single();
+                currentWeek = config ? parseInt(config.value) : 0;
+            } catch (e) {
+                currentWeek = 1;
+            }
         }
 
         try {
@@ -52,7 +56,7 @@ export const ScheduleView = {
                         <div class="schedule-card" style="background: #111; border: 1px solid #222; padding: 40px; border-radius: 12px; text-align: center;">
                             <div style="font-size: 2rem; margin-bottom: 10px;">📅</div>
                             <div style="color: #fff; font-weight: bold; margin-bottom: 5px;">Brak meczów w bazie danych.</div>
-                            <div style="color: #666; font-size: 0.85rem;">Upewnij się, że terminarz na Sezon 1 został wygenerowany w bazie.</div>
+                            <div style="color: #666; font-size: 0.85rem;">Upewnij się, że ID zespołu (${teamId}) jest poprawne i terminarz został wygenerowany.</div>
                         </div>
                     </div>`;
                 return;
@@ -164,9 +168,9 @@ export const ScheduleView = {
                                 <td style="padding: 12px 10px; color: #666;">${m.week}</td>
                                 <td style="padding: 12px 10px; color: #888; font-size: 0.75rem;">${this.translateDay(m.day_of_week).substring(0,3).toUpperCase()}</td>
                                 <td style="padding: 12px 10px; font-weight: 500;">
-                                    <span style="${m.home_team_id === currentTeamId ? 'color: #ff4500;' : ''}">${m.home_team?.team_name || 'Błąd danych'}</span> 
+                                    <span style="${m.home_team_id === currentTeamId ? 'color: #ff4500; font-weight:bold;' : ''}">${m.home_team?.team_name || 'Ładowanie...'}</span> 
                                     <span style="color: #444; margin: 0 5px;">vs</span> 
-                                    <span style="${m.away_team_id === currentTeamId ? 'color: #ff4500;' : ''}">${m.away_team?.team_name || 'Błąd danych'}</span>
+                                    <span style="${m.away_team_id === currentTeamId ? 'color: #ff4500; font-weight:bold;' : ''}">${m.away_team?.team_name || 'Ładowanie...'}</span>
                                 </td>
                                 <td style="padding: 12px 10px; font-weight: bold; color: ${m.score_home !== null ? '#fff' : '#444'}; text-align: center; font-family: 'Courier New', monospace;">
                                     ${m.score_home !== null ? `${m.score_home}:${m.score_away}` : '— : —'}
@@ -180,9 +184,9 @@ export const ScheduleView = {
     },
 
     async fetchTeamSchedule(teamId) {
+        if (!teamId) return [];
         console.log("[ScheduleView] Pobieram mecze dla teamId:", teamId);
         
-        // Zoptymalizowane zapytanie z użyciem poprawnej kolumny team_name i operatora OR
         const { data, error } = await supabaseClient
             .from('matches')
             .select(`
@@ -195,23 +199,18 @@ export const ScheduleView = {
                 score_away,
                 home_team_id,
                 away_team_id,
-                home_team:teams!home_team_id ( team_name ),
-                away_team:teams!away_team_id ( team_name )
+                match_date,
+                home_team:home_team_id ( team_name ),
+                away_team:away_team_id ( team_name )
             `)
             .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-            .order('week', { ascending: true });
+            .order('match_date', { ascending: true });
         
         if (error) {
             console.error("[ScheduleView] Błąd Supabase:", error);
             throw error;
         }
 
-        // Dodatkowe sortowanie po dniach tygodnia wewnątrz JS, 
-        // ponieważ TUESDAY/THURSDAY nie sortują się alfabetycznie zgodnie z logiką sportową
-        return data.sort((a, b) => {
-            if (a.week !== b.week) return a.week - b.week;
-            const dayOrder = { 'TUESDAY': 1, 'WEDNESDAY': 2, 'THURSDAY': 3, 'SATURDAY': 4 };
-            return (dayOrder[a.day_of_week] || 99) - (dayOrder[b.day_of_week] || 99);
-        });
+        return data;
     }
 };
