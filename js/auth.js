@@ -256,6 +256,7 @@ async function handleRegister(e) {
     
     const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
+    const passwordConfirm = document.getElementById('register-password-confirm').value;
     const username = document.getElementById('register-username').value.trim();
     const teamName = document.getElementById('register-teamname').value.trim();
     const country = document.getElementById('register-country').value;
@@ -263,7 +264,7 @@ async function handleRegister(e) {
     const newsletter = document.getElementById('register-newsletter')?.checked || false;
     
     // Walidacja
-    if (!validateRegisterForm(email, password, username, teamName, country, termsAccepted)) {
+    if (!validateRegisterForm(email, password, passwordConfirm, username, teamName, country, termsAccepted)) {
         return;
     }
     
@@ -331,7 +332,7 @@ async function handleRegister(e) {
         
         // 5. Sukces!
         showMessage('register-message', 
-            '✅ Rejestracja udana! Sprawdź swoją skrzynkę email, aby potwierdzić konto.', 
+            '✅ Registration successful! Check your email to confirm your account.', 
             'success'
         );
         
@@ -366,7 +367,7 @@ async function handleRegister(e) {
 /**
  * Walidacja formularza rejestracji
  */
-function validateRegisterForm(email, password, username, teamName, country, termsAccepted) {
+function validateRegisterForm(email, password, passwordConfirm, username, teamName, country, termsAccepted) {
     const messageEl = document.getElementById('register-message');
     
     // Reset message
@@ -374,39 +375,45 @@ function validateRegisterForm(email, password, username, teamName, country, term
     messageEl.className = 'form-message hidden';
     
     // Sprawdź czy wszystkie pola są wypełnione
-    if (!email || !password || !username || !teamName || !country) {
-        showMessage('register-message', 'Wypełnij wszystkie wymagane pola', 'error');
+    if (!email || !password || !passwordConfirm || !username || !teamName || !country) {
+        showMessage('register-message', 'Please fill in all required fields', 'error');
         return false;
     }
     
     // Walidacja email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        showMessage('register-message', 'Podaj poprawny adres email', 'error');
+        showMessage('register-message', 'Please enter a valid email address', 'error');
         return false;
     }
     
     // Długość hasła
     if (password.length < 8) {
-        showMessage('register-message', 'Hasło musi mieć co najmniej 8 znaków', 'error');
+        showMessage('register-message', 'Password must be at least 8 characters long', 'error');
+        return false;
+    }
+    
+    // Sprawdzenie zgodności haseł
+    if (password !== passwordConfirm) {
+        showMessage('register-message', 'Passwords do not match', 'error');
         return false;
     }
     
     // Nazwa użytkownika
     if (username.length < 3) {
-        showMessage('register-message', 'Nazwa użytkownika musi mieć co najmniej 3 znaki', 'error');
+        showMessage('register-message', 'Username must be at least 3 characters', 'error');
         return false;
     }
     
     // Nazwa drużyny
     if (teamName.length < 3) {
-        showMessage('register-message', 'Nazwa drużyny musi mieć co najmniej 3 znaki', 'error');
+        showMessage('register-message', 'Team name must be at least 3 characters', 'error');
         return false;
     }
     
     // Zgody
     if (!termsAccepted) {
-        showMessage('register-message', 'Musisz zaakceptować regulamin i politykę prywatności', 'error');
+        showMessage('register-message', 'You must accept the Terms of Service and Privacy Policy', 'error');
         return false;
     }
     
@@ -447,13 +454,14 @@ async function handleLogin(e) {
  */
 function getErrorMessage(error) {
     const messages = {
-        'User already registered': 'Użytkownik z tym emailem już istnieje',
-        'Email not confirmed': 'Potwierdź swój email przed logowaniem',
-        'Invalid login credentials': 'Nieprawidłowy email lub hasło',
-        'Password should be at least 6 characters': 'Hasło musi mieć co najmniej 6 znaków'
+        'User already registered': 'User with this email already exists',
+        'Email not confirmed': 'Please confirm your email before logging in',
+        'Invalid login credentials': 'Invalid email or password',
+        'Password should be at least 6 characters': 'Password must be at least 6 characters',
+        'Password should be at least 8 characters': 'Password must be at least 8 characters'
     };
     
-    return messages[error.message] || error.message || 'Wystąpił nieoczekiwany błąd';
+    return messages[error.message] || error.message || 'An unexpected error occurred';
 }
 
 /**
@@ -482,7 +490,7 @@ async function oldSignIn() {
     console.log("[AUTH] Próba logowania (stara metoda)...");
     const { error } = await _supabase.auth.signInWithPassword({ email: e, password: p });
     if (error) {
-        alert("Błąd: " + error.message);
+        alert("Error: " + error.message);
     } else {
         await checkUser();
     }
@@ -492,8 +500,8 @@ async function oldSignUp() {
     const e = document.getElementById('email')?.value;
     const p = document.getElementById('password')?.value;
     const { error } = await _supabase.auth.signUp({ email: e, password: p });
-    if (error) alert("Błąd rejestracji: " + error.message);
-    else alert("Konto założone! Możesz się zalogować.");
+    if (error) alert("Registration error: " + error.message);
+    else alert("Account created! You can now log in.");
 }
 
 /**
