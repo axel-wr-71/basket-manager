@@ -43,7 +43,6 @@ export const ScheduleView = {
                 return;
             }
 
-            // Główny layout zgodny z Twoim szkicem
             container.innerHTML = `
                 <div class="schedule-view-wrapper" style="padding: 20px; background: #fdfdfd; font-family: 'Inter', sans-serif;">
                     
@@ -171,7 +170,10 @@ export const ScheduleView = {
                 <tbody>
                     ${schedule.map(m => {
                         const isHome = m.home_team_id === teamId;
-                        const typeTag = m.match_type === 'Sparing' ? 'SPR' : 'LIG';
+                        let typeTag = 'LIG';
+                        if (m.match_type === 'Sparing') typeTag = 'SPR';
+                        if (m.match_type === 'Puchar') typeTag = 'PUCH';
+
                         return `
                             <tr style="border-bottom: 1px solid #f9f9f9; transition: all 0.2s;">
                                 <td style="padding: 12px 20px; font-weight: 800; color: #ccc;">${m.week}</td>
@@ -181,7 +183,7 @@ export const ScheduleView = {
                                         <span style="${isHome ? 'color: #fd7e14; font-weight: 800;' : 'color: #333; font-weight: 500;'}">${m.home_team.team_name}</span>
                                         <span style="margin: 0 8px; color: #ddd; font-weight: 300;">vs</span>
                                         <span style="${!isHome ? 'color: #fd7e14; font-weight: 800;' : 'color: #333; font-weight: 500;'}">${m.away_team.team_name}</span>
-                                        <span style="margin-left: 10px; font-size: 0.6rem; background: #f0f0f0; color: #aaa; padding: 2px 5px; border-radius: 3px; font-weight: 800;">${typeTag}</span>
+                                        <span style="margin-left: 10px; font-size: 0.6rem; background: ${typeTag === 'PUCH' ? '#e7f1ff' : '#f0f0f0'}; color: ${typeTag === 'PUCH' ? '#007bff' : '#aaa'}; padding: 2px 5px; border-radius: 3px; font-weight: 800;">${typeTag}</span>
                                     </div>
                                 </td>
                                 <td style="padding: 12px 20px; text-align: center; font-weight: 800; color: #333;">
@@ -197,6 +199,8 @@ export const ScheduleView = {
 
     async fetchTeamSchedule(teamId) {
         if (!teamId) return [];
+        
+        // Pobieramy wszystkie mecze (Liga + Puchar), w których uczestniczy zespół
         const { data, error } = await supabaseClient
             .from('matches')
             .select(`
@@ -209,7 +213,10 @@ export const ScheduleView = {
             .order('week', { ascending: true })
             .order('match_date', { ascending: true });
         
-        if (error) throw error;
+        if (error) {
+            console.error("[ScheduleView] Error fetching schedule:", error);
+            throw error;
+        }
         return data;
     }
 };
