@@ -1,6 +1,5 @@
 // js/app/market_view.js
 import { supabaseClient } from '../auth.js';
-import { calculateMarketValue } from '../core/economy.js';
 
 let currentPage = 1;
 const pageSize = 20;
@@ -15,16 +14,50 @@ let currentFilters = {
     offerType: 'all'
 };
 
-export async function renderMarketView(teamData) {
-    const container = document.getElementById('market-container');
-    if (!container) return;
+// Tymczasowa funkcja obliczająca wartość rynkową (jeśli economy.js nie istnieje)
+function calculateMarketValue(player) {
+    if (!player) return 0;
+    const ovr = calculatePlayerOVR(player);
+    const ageFactor = player.age <= 25 ? 1.5 : player.age <= 30 ? 1.0 : 0.7;
+    return Math.round((ovr * 10000 + (player.salary || 0) * 2) * ageFactor);
+}
+
+function calculatePlayerOVR(player) {
+    if (!player) return 0;
+    
+    const skills = [
+        player.skill_2pt, player.skill_3pt, player.skill_dunk, player.skill_ft,
+        player.skill_passing, player.skill_dribbling, player.skill_stamina,
+        player.skill_rebound, player.skill_block, player.skill_steal,
+        player.skill_1on1_off, player.skill_1on1_def
+    ];
+    
+    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
+    return Math.round((sum / 240) * 100);
+}
+
+export async function renderMarketView(teamData, players = []) {
+    const container = document.getElementById('market-view-container');
+    
+    console.log("[MARKET] Container:", container);
+    console.log("[MARKET] Team data:", teamData);
+    
+    if (!container) {
+        console.error("[MARKET] Container #market-view-container not found!");
+        return;
+    }
+
+    if (!teamData || !teamData.id) {
+        console.error("[MARKET] Invalid team data:", teamData);
+        container.innerHTML = '<div style="padding: 50px; text-align: center; color: red;">Error: Team data missing</div>';
+        return;
+    }
 
     window.currentTeamId = teamData.id;
-    window.currentTeamBalance = teamData.balance;
+    window.currentTeamBalance = teamData.balance || 0;
 
     container.innerHTML = `
         <div class="market-modern-wrapper">
-            <!-- NAGŁÓWEK GŁÓWNY - zgodny z roster_view -->
             <div class="market-management-header" style="padding: 20px 0 30px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0;">
                 <div>
                     <h1 style="margin:0; font-weight:900; color:#1a237e; text-transform:uppercase; font-family: 'Inter', sans-serif; font-size: 1.8rem;">
@@ -32,16 +65,15 @@ export async function renderMarketView(teamData) {
                     </h1>
                     <p style="margin:10px 0 0 0; color:#64748b; font-size: 0.95rem;">
                         Manage your team's finances and sign new talent | 
-                        <span style="color:#1a237e; font-weight:600;">Available funds: $${teamData.balance.toLocaleString()}</span>
+                        <span style="color:#1a237e; font-weight:600;">Available funds: $${(teamData.balance || 0).toLocaleString()}</span>
                     </p>
                 </div>
                 <div style="background:#1a237e; color:white; padding:12px 24px; border-radius:12px; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:8px; box-shadow: 0 4px 12px rgba(26,35,126,0.2);">
                     <span style="font-size: 1.2rem;">💰</span>
-                    $${teamData.balance.toLocaleString()}
+                    $${(teamData.balance || 0).toLocaleString()}
                 </div>
             </div>
 
-            <!-- PANEL FILTRÓW ROZBUDOWANY -->
             <div class="filters-panel" style="background: #fff; border-radius: 12px; padding: 24px; margin: 25px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3 style="margin:0; font-size: 1rem; color:#1a237e; font-weight:800; text-transform:uppercase; letter-spacing: 0.5px;">
@@ -53,7 +85,6 @@ export async function renderMarketView(teamData) {
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr) 2fr; gap: 15px; align-items: end;">
-                    <!-- Pozycja -->
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Position</label>
                         <select id="filter-position" class="filter-select">
@@ -66,7 +97,6 @@ export async function renderMarketView(teamData) {
                         </select>
                     </div>
 
-                    <!-- Wiek -->
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Age Range</label>
                         <div style="display: flex; gap: 8px;">
@@ -78,7 +108,6 @@ export async function renderMarketView(teamData) {
                         </div>
                     </div>
 
-                    <!-- Cena -->
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Price Range ($)</label>
                         <div style="display: flex; gap: 8px;">
@@ -90,7 +119,6 @@ export async function renderMarketView(teamData) {
                         </div>
                     </div>
 
-                    <!-- Potencjał -->
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Potential</label>
                         <select id="filter-potential" class="filter-select">
@@ -108,7 +136,6 @@ export async function renderMarketView(teamData) {
                         </select>
                     </div>
 
-                    <!-- Akcje -->
                     <div style="display: flex; gap: 10px; align-items: end;">
                         <button id="btn-search-market" 
                                 style="background: #1a237e; color: white; border: none; padding: 10px 24px; border-radius: 8px; 
@@ -123,7 +150,6 @@ export async function renderMarketView(teamData) {
                     </div>
                 </div>
 
-                <!-- Typ oferty -->
                 <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
                     <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px; font-weight: 600;">Offer Type</div>
                     <div style="display: flex; gap: 15px;">
@@ -143,7 +169,6 @@ export async function renderMarketView(teamData) {
                 </div>
             </div>
 
-            <!-- STATYSTYKI RYNKU -->
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
                 <div style="background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 10px; padding: 15px; text-align: center;">
                     <div style="font-size: 0.75rem; color: #0369a1; font-weight: 600; margin-bottom: 5px;">Total Players</div>
@@ -163,10 +188,8 @@ export async function renderMarketView(teamData) {
                 </div>
             </div>
 
-            <!-- GRID KART ZAWODNIKÓW -->
             <div id="market-listings" class="market-grid"></div>
 
-            <!-- PAGINACJA -->
             <div class="market-pagination" style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e2e8f0;">
                 <button id="prev-page" class="pag-btn">← Previous Page</button>
                 <div id="page-info" style="font-weight: 600; color: #64748b; font-size: 0.9rem;"></div>
@@ -175,7 +198,6 @@ export async function renderMarketView(teamData) {
         </div>
     `;
 
-    // Event listeners dla filtrów
     document.getElementById('btn-search-market').onclick = () => {
         updateFilters();
         currentPage = 1;
@@ -192,7 +214,6 @@ export async function renderMarketView(teamData) {
         alert('Advanced search options coming soon!');
     };
 
-    // Event listeners dla paginacji
     document.getElementById('prev-page').onclick = () => {
         if (currentPage > 1) {
             currentPage--;
@@ -207,7 +228,6 @@ export async function renderMarketView(teamData) {
         }
     };
 
-    // Event listeners dla radio buttons
     document.querySelectorAll('input[name="offerType"]').forEach(radio => {
         radio.onchange = () => {
             currentFilters.offerType = document.querySelector('input[name="offerType"]:checked').value;
@@ -255,13 +275,11 @@ async function loadMarketData() {
     const list = document.getElementById('market-listings');
     list.innerHTML = '<div class="loader" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #64748b; font-weight: 500;">Analyzing market prospects...</div>';
 
-    // Buduj zapytanie z filtrami
     let query = supabaseClient
         .from('transfer_market')
         .select('*, players(*, potential_definitions(*))')
         .eq('status', 'active');
 
-    // Filtry
     if (currentFilters.position) {
         query = query.eq('players.position', currentFilters.position);
     }
@@ -282,7 +300,6 @@ async function loadMarketData() {
         query = query.eq('type', currentFilters.offerType);
     }
 
-    // Sortowanie
     query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;
@@ -295,10 +312,8 @@ async function loadMarketData() {
 
     allMarketData = data || [];
     
-    // Aktualizuj statystyki
     updateMarketStats(allMarketData);
     
-    // Wyświetl aktualną stronę
     displayCurrentPage();
 }
 
@@ -311,37 +326,19 @@ function updateMarketStats(data) {
         return;
     }
 
-    // Całkowita liczba
     document.getElementById('stat-total').textContent = data.length;
 
-    // Średnia cena
     const avgPrice = Math.round(data.reduce((sum, item) => {
         const price = item.current_price || item.buy_now_price || 0;
         return sum + price;
     }, 0) / data.length);
     document.getElementById('stat-avg-price').textContent = `$${avgPrice.toLocaleString()}`;
 
-    // Najmłodszy gracz
     const youngest = Math.min(...data.map(item => item.players.age || 0));
     document.getElementById('stat-youngest').textContent = youngest;
 
-    // Najwyższy OVR
     const highestOVR = Math.max(...data.map(item => calculatePlayerOVR(item.players) || 0));
     document.getElementById('stat-highest-ovr').textContent = highestOVR;
-}
-
-function calculatePlayerOVR(player) {
-    if (!player) return 0;
-    
-    const skills = [
-        player.skill_2pt, player.skill_3pt, player.skill_dunk, player.skill_ft,
-        player.skill_passing, player.skill_dribbling, player.skill_stamina,
-        player.skill_rebound, player.skill_block, player.skill_steal,
-        player.skill_1on1_off, player.skill_1on1_def
-    ];
-    
-    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
-    return Math.round((sum / 240) * 100);
 }
 
 function displayCurrentPage() {
@@ -362,7 +359,6 @@ function displayCurrentPage() {
         list.innerHTML = pageData.map(item => renderPlayerCard(item)).join('');
     }
 
-    // Aktualizuj informacje o paginacji
     const totalPages = Math.ceil(allMarketData.length / pageSize) || 1;
     document.getElementById('page-info').innerText = `Page ${currentPage} of ${totalPages} • ${allMarketData.length} players`;
     document.getElementById('prev-page').disabled = currentPage === 1;
@@ -375,22 +371,19 @@ function renderPlayerCard(item) {
     const p = item.players;
     if (!p) return '';
 
-    const marketVal = calculateMarketValue ? calculateMarketValue(p) : (p.salary || 0) * 10;
+    const marketVal = calculateMarketValue(p);
     const ovr = calculatePlayerOVR(p);
     const accentColor = getPosColor(p.position);
     const potData = p.potential_definitions || { label: 'Unknown', color: '#94a3b8', icon: '👤' };
     
-    // Dodajemy badge ROOKIE jeśli flaga is_rookie jest true
     const rookieBadge = p.is_rookie ? `<span class="rookie-tag">ROOKIE</span>` : '';
     
-    // Wysokość w stopach
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
     const ft = Math.floor(inchesTotal / 12);
     const inc = Math.round(inchesTotal % 12);
     const heightInFt = heightCm > 0 ? `${ft}'${inc}"` : '--';
 
-    // Umiejętności w formie compact
     const skills = {
         '2PT': p.skill_2pt || 0,
         '3PT': p.skill_3pt || 0,
@@ -406,7 +399,6 @@ function renderPlayerCard(item) {
         'FT': p.skill_ft || 0
     };
 
-    // Dynamiczne przyciski akcji
     let actionButtons = '';
     let priceInfo = '';
     
@@ -442,13 +434,11 @@ function renderPlayerCard(item) {
         actionButtons += `<button class="buy-btn" onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="background: #10b981">BUY NOW</button>`;
     }
 
-    // Progress bar dla OVR
     const ovrPercentage = (ovr / 100) * 100;
     const ovrStyle = getOvrStyle(ovr);
 
     return `
         <div class="player-card" style="position: relative; overflow: hidden;">
-            <!-- Indikator typu oferty -->
             <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
                 ${item.type === 'auction' ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">AUCTION</span>' : ''}
                 ${item.type === 'buy_now' ? '<span style="background: #d1fae5; color: #065f46; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">BUY NOW</span>' : ''}
@@ -457,9 +447,7 @@ function renderPlayerCard(item) {
 
             <div class="card-side-accent" style="background: ${accentColor}"></div>
             <div class="card-main">
-                <!-- Nagłówek karty -->
                 <div class="card-header" style="display: flex; gap: 15px; align-items: flex-start; margin-bottom: 20px;">
-                    <!-- Avatar i podstawowe info -->
                     <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" 
@@ -508,7 +496,6 @@ function renderPlayerCard(item) {
                     </div>
                 </div>
 
-                <!-- Skills Grid -->
                 <div style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
                         ${Object.entries(skills).map(([key, value]) => `
@@ -520,7 +507,6 @@ function renderPlayerCard(item) {
                     </div>
                 </div>
 
-                <!-- Price and Actions -->
                 <div class="card-footer">
                     ${priceInfo}
                     
@@ -566,7 +552,6 @@ function getOvrStyle(ovr) {
     return { bg: '#f8fafc', border: '#e2e8f0', color: '#64748b' };
 }
 
-// Globalne funkcje do obsługi akcji
 window.handleBid = (listingId, currentPrice) => {
     const bidAmount = prompt(`Current bid: $${currentPrice.toLocaleString()}\n\nEnter your bid amount:`, currentPrice + 10000);
     
