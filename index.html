@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Elite Basket League - Zarządzaj swoją drużyną koszykarską</title>
+    <title>Elite Basket League - Manage Your Basketball Team</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/market.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
     <style>
-        /* Reset i podstawy */
+        /* Reset and basics */
         * {
             margin: 0;
             padding: 0;
@@ -26,7 +26,7 @@
             display: none !important; 
         }
         
-        /* Strona startowa - nowy layout */
+        /* Landing page - new layout */
         .landing-hero {
             position: relative;
             width: 100%;
@@ -41,7 +41,7 @@
             flex-direction: column;
         }
         
-        /* Header - minimalistyczny */
+        /* Header - minimalistic */
         .landing-header {
             position: absolute;
             top: 0;
@@ -108,7 +108,7 @@
             box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
         }
         
-        /* Hero content - nowy układ */
+        /* Hero content - new layout */
         .hero-content {
             flex: 1;
             display: flex;
@@ -362,7 +362,7 @@
             font-weight: 600;
         }
         
-        /* Game app section - bez zmian */
+        /* Game app section - unchanged */
         #game-app {
             display: none;
         }
@@ -426,7 +426,7 @@
             display: block;
         }
         
-        /* Responsywność */
+        /* Responsiveness */
         @media (max-width: 1200px) {
             .hero-grid {
                 gap: 3rem;
@@ -510,7 +510,7 @@
             }
         }
         
-        /* Style modalów - zachowane z poprzedniej wersji */
+        /* Modal styles - preserved from previous version */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -703,7 +703,7 @@
 </head>
 <body>
 
-<!-- Strona startowa -->
+<!-- Landing page -->
 <div id="landing-page" class="landing-hero auth-state-pending">
     <header class="landing-header">
         <a href="#" class="logo-container">
@@ -711,93 +711,93 @@
             <div class="logo-text">Elite Buzzer League</div>
         </a>
         <div class="lang-switcher-top">
-            <img src="https://flagcdn.com/w40/pl.png" class="lang-flag active" alt="PL">
-            <img src="https://flagcdn.com/w40/us.png" class="lang-flag" alt="EN">
+            <img src="https://flagcdn.com/w40/us.png" class="lang-flag active" alt="EN">
+            <img src="https://flagcdn.com/w40/pl.png" class="lang-flag" alt="PL">
         </div>
     </header>
     
     <main class="hero-content">
         <div class="hero-grid">
-            <!-- Lewa strona - Opis gry -->
+            <!-- Left side - Game description -->
             <div class="hero-left">
                 <h1 class="main-title">
-                    Zostań legendą<br>
-                    <span class="title-accent">koszykarskiego biznesu</span>
+                    Become a legend<br>
+                    <span class="title-accent">in basketball business</span>
                 </h1>
                 
                 <p class="hero-subtitle">
-                    Elite Buzzer League to najbardziej zaawansowana platforma do zarządzania drużyną koszykarską. 
-                    Rekrutuj talent, trenuj zawodników, zarządzaj finansami i prowadź swoją drużynę do mistrzostwa.
+                    Elite Buzzer League is the most advanced basketball team management platform. 
+                    Recruit talent, train players, manage finances, and lead your team to championship glory.
                 </p>
                 
                 <div class="features-grid">
                     <div class="feature-card">
                         <div class="feature-icon">👥</div>
-                        <h3 class="feature-title">Dynamiczny Rynek</h3>
+                        <h3 class="feature-title">Dynamic Market</h3>
                         <p class="feature-desc">
-                            Kupuj, sprzedawaj i wymieniaj zawodników na realistycznym rynku transferowym
+                            Buy, sell, and trade players on a realistic transfer market with real-time auctions
                         </p>
                     </div>
                     
                     <div class="feature-card">
                         <div class="feature-icon">📊</div>
-                        <h3 class="feature-title">Zaawansowane Statystyki</h3>
+                        <h3 class="feature-title">Advanced Statistics</h3>
                         <p class="feature-desc">
-                            Analizuj każdy aspekt gry za pomocą szczegółowych danych i raportów
+                            Analyze every aspect of the game with detailed player metrics and performance reports
                         </p>
                     </div>
                     
                     <div class="feature-card">
                         <div class="feature-icon">🏆</div>
-                        <h3 class="feature-title">Globalne Rozgrywki</h3>
+                        <h3 class="feature-title">Global Competition</h3>
                         <p class="feature-desc">
-                            Rywalizuj z tysiącami managerów z całego świata w różnych ligach
+                            Compete against thousands of managers worldwide across multiple leagues and tournaments
                         </p>
                     </div>
                     
                     <div class="feature-card">
                         <div class="feature-icon">💎</div>
-                        <h3 class="feature-title">System Rozwoju</h3>
+                        <h3 class="feature-title">Development System</h3>
                         <p class="feature-desc">
-                            Rozwijaj młode talenty i tworz legendy ligi dzięki systemowi treningowemu
+                            Nurture young talents and create league legends through our comprehensive training system
                         </p>
                     </div>
                 </div>
             </div>
             
-            <!-- Prawa strona - Panel logowania/rejestracji -->
+            <!-- Right side - Login/Registration panel -->
             <div class="hero-right">
                 <div class="auth-card">
                     <div class="auth-header">
                         <div class="auth-icon">🏀</div>
-                        <h2 class="auth-title">Dołącz do EBL</h2>
-                        <p class="auth-subtitle">Rozpocznij swoją koszykarską przygodę</p>
+                        <h2 class="auth-title">Join EBL</h2>
+                        <p class="auth-subtitle">Start your basketball management journey</p>
                     </div>
                     
                     <div class="auth-buttons-grid">
                         <button id="btn-login-action" class="btn-auth btn-login">
                             <span class="btn-icon">🔐</span>
-                            Zaloguj się do konta
+                            Login to your account
                         </button>
                         
                         <button id="btn-signup-action" class="btn-auth btn-signup">
                             <span class="btn-icon">⭐</span>
-                            Utwórz nowe konto
+                            Create new account
                         </button>
                     </div>
                     
                     <div class="stats-section">
                         <div class="stat-item">
                             <span class="stat-number">10K+</span>
-                            <span class="stat-label">Aktywnych graczy</span>
+                            <span class="stat-label">Active Players</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-number">24/7</span>
-                            <span class="stat-label">Aktywna rozgrywka</span>
+                            <span class="stat-label">Live Gameplay</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-number">100%</span>
-                            <span class="stat-label">Grywalności</span>
+                            <span class="stat-label">Free to Play</span>
                         </div>
                     </div>
                 </div>
@@ -806,7 +806,7 @@
     </main>
 </div>
 
-<!-- Główna aplikacja (po zalogowaniu) -->
+<!-- Main application (after login) -->
 <div id="game-app" class="auth-state-pending">
     <header class="app-header">
         <div style="display: flex; align-items: center; gap: 20px;">
@@ -823,12 +823,12 @@
                     <span id="display-league-name" style="color: #e65100; font-weight: 800;">---</span>
                 </div>
             </div>
-            <button id="btn-logout-action" class="btn-logout">WYLOGUJ</button>
+            <button id="btn-logout-action" class="btn-logout">LOGOUT</button>
         </div>
     </header>
 
     <div id="main-nav-container" class="nav-container">
-        <div style="padding: 10px; color: #94a3b8; font-size: 0.8rem;">Ładowanie modułów...</div>
+        <div style="padding: 10px; color: #94a3b8; font-size: 0.8rem;">Loading modules...</div>
     </div>
 
     <div id="m-roster" class="tab-content active">
@@ -855,52 +855,52 @@
     </div>
 </div>
 
-<!-- Modale rejestracji i logowania -->
+<!-- Registration and Login Modals -->
 <div id="registerModal" class="modal-overlay hidden">
     <div class="modal-container">
         <div class="modal-header">
-            <h2>🏀 Rejestracja w EBL</h2>
+            <h2>🏀 EBL Registration</h2>
             <button class="modal-close">&times;</button>
         </div>
         
         <form id="registerForm" class="modal-form">
             <div class="form-group">
-                <label for="register-email">Adres Email</label>
-                <input type="email" id="register-email" required placeholder="twoj.email@example.com">
+                <label for="register-email">Email Address</label>
+                <input type="email" id="register-email" required placeholder="your.email@example.com">
             </div>
             
             <div class="form-group">
-                <label for="register-password">Hasło (min. 8 znaków)</label>
+                <label for="register-password">Password (min. 8 characters)</label>
                 <input type="password" id="register-password" minlength="8" required placeholder="********">
                 <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">
-                    Hasło musi zawierać min. 8 znaków
+                    Password must contain at least 8 characters
                 </div>
             </div>
             
             <div class="form-group">
-                <label for="register-username">Nazwa użytkownika</label>
-                <input type="text" id="register-username" required placeholder="np. coach_master">
+                <label for="register-username">Username</label>
+                <input type="text" id="register-username" required placeholder="e.g., coach_master">
                 <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">
-                    Będzie widoczna dla innych graczy
+                    Will be visible to other players
                 </div>
             </div>
             
             <div class="form-group">
-                <label for="register-teamname">Nazwa Twojej drużyny</label>
-                <input type="text" id="register-teamname" required placeholder="np. Warsaw Eagles">
+                <label for="register-teamname">Your Team Name</label>
+                <input type="text" id="register-teamname" required placeholder="e.g., Warsaw Eagles">
             </div>
             
             <div class="form-group">
-                <label for="register-country">Kraj pochodzenia</label>
+                <label for="register-country">Country of Origin</label>
                 <select id="register-country" required>
-                    <option value="">Wybierz kraj...</option>
-                    <option value="PL">🇵🇱 Polska</option>
-                    <option value="US">🇺🇸 Stany Zjednoczone</option>
-                    <option value="ES">🇪🇸 Hiszpania</option>
-                    <option value="FR">🇫🇷 Francja</option>
-                    <option value="DE">🇩🇪 Niemcy</option>
-                    <option value="GR">🇬🇷 Grecja</option>
-                    <option value="IT">🇮🇹 Włochy</option>
+                    <option value="">Select country...</option>
+                    <option value="PL">🇵🇱 Poland</option>
+                    <option value="US">🇺🇸 United States</option>
+                    <option value="ES">🇪🇸 Spain</option>
+                    <option value="FR">🇫🇷 France</option>
+                    <option value="DE">🇩🇪 Germany</option>
+                    <option value="GR">🇬🇷 Greece</option>
+                    <option value="IT">🇮🇹 Italy</option>
                 </select>
             </div>
             
@@ -908,12 +908,12 @@
                 <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                     <input type="checkbox" id="register-terms" required style="margin-top: 3px;">
                     <span style="font-size: 0.9rem;">
-                        Akceptuję 
-                        <a href="#" class="link" onclick="showTerms()">regulamin</a> 
-                        oraz 
-                        <a href="#" class="link" onclick="showPrivacy()">politykę prywatności</a>
+                        I accept the 
+                        <a href="#" class="link" onclick="showTerms()">Terms of Service</a> 
+                        and 
+                        <a href="#" class="link" onclick="showPrivacy()">Privacy Policy</a>
                         *<br>
-                        <small style="color: #64748b;">(wymagane do założenia konta)</small>
+                        <small style="color: #64748b;">(required to create an account)</small>
                     </span>
                 </label>
             </div>
@@ -922,21 +922,21 @@
                 <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
                     <input type="checkbox" id="register-newsletter">
                     <span style="font-size: 0.9rem;">
-                        Chcę otrzymywać newsletter z informacjami o nowościach i promocjach
+                        I want to receive newsletter with news and promotions
                     </span>
                 </label>
             </div>
             
             <button type="submit" class="btn-submit">
-                <span id="register-btn-text">Utwórz konto</span>
+                <span id="register-btn-text">Create Account</span>
                 <span id="register-loading" class="hidden" style="display: none; align-items: center; gap: 5px;">
                     <span class="loading-spinner" style="width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
-                    Rejestracja...
+                    Registering...
                 </span>
             </button>
             
             <div class="form-footer">
-                <p>Masz już konto? <a href="#" class="link" id="switch-to-login">Zaloguj się</a></p>
+                <p>Already have an account? <a href="#" class="link" id="switch-to-login">Login here</a></p>
             </div>
         </form>
         
@@ -947,21 +947,21 @@
 <div id="loginModal" class="modal-overlay hidden">
     <div class="modal-container">
         <div class="modal-header">
-            <h2>🔐 Logowanie do EBL</h2>
+            <h2>🔐 EBL Login</h2>
             <button class="modal-close">&times;</button>
         </div>
         <form id="loginForm" class="modal-form">
             <div class="form-group">
                 <label for="login-email">Email</label>
-                <input type="email" id="login-email" required placeholder="twoj.email@example.com">
+                <input type="email" id="login-email" required placeholder="your.email@example.com">
             </div>
             <div class="form-group">
-                <label for="login-password">Hasło</label>
+                <label for="login-password">Password</label>
                 <input type="password" id="login-password" required placeholder="********">
             </div>
-            <button type="submit" class="btn-submit">Zaloguj się</button>
+            <button type="submit" class="btn-submit">Login</button>
             <div class="form-footer">
-                <p>Nie masz konta? <a href="#" class="link" id="switch-to-register">Zarejestruj się</a></p>
+                <p>Don't have an account? <a href="#" class="link" id="switch-to-register">Register here</a></p>
             </div>
         </form>
         <div id="login-message" class="form-message hidden"></div>
@@ -984,12 +984,12 @@
     };
 
     window.showTerms = function() {
-        alert('Warunki korzystania z serwisu będą dostępne wkrótce.');
+        alert('Terms of Service will be available soon.');
         return false;
     };
     
     window.showPrivacy = function() {
-        alert('Polityka prywatności będzie dostępna wkrótce.');
+        alert('Privacy Policy will be available soon.');
         return false;
     };
 
