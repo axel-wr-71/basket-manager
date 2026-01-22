@@ -301,6 +301,7 @@ async function handleRegister(e) {
         }
         
         // 3. Zaktualizuj drużynę (przypisz użytkownika i zmień nazwę)
+        // USUNIĘTO: updated_at: new Date().toISOString() - ponieważ kolumna nie istnieje w bazie
         const { error: teamUpdateError } = await supabaseClient
             .from('teams')
             .update({
@@ -308,8 +309,8 @@ async function handleRegister(e) {
                 team_name: teamName,
                 country_code: country,
                 is_bot: false,
-                available_for_new_user: false,
-                updated_at: new Date().toISOString()
+                available_for_new_user: false
+                // USUNIĘTO: updated_at
             })
             .eq('id', botTeam.id);
             
