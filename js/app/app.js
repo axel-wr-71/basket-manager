@@ -321,21 +321,23 @@ function initAdminConsole() {
             }
         },
         
-        // Szybka aktualizacja pensji (bez GUI)
+        // Szybka aktualizacja pensji (bez GUI) - POPRAWIŁEM IMPORT
         updateSalaries: async () => {
             if (!confirm("Czy chcesz zaktualizować pensje wszystkich graczy?\nTa operacja może potrwać kilka minut.")) return;
             
             try {
-                // Import funkcji z economy.js
-                const { updateAllPlayerSalaries } = await import('../core/economy.js');
                 console.log("[ADMIN] Rozpoczynam aktualizację pensji...");
                 
-                const result = await updateAllPlayerSalaries();
+                // POPRAWIENIE: Użyj adminUpdateSalaries zamiast updateAllPlayerSalaries
+                const { adminUpdateSalaries } = await import('../core/economy.js');
+                const result = await adminUpdateSalaries();
                 
                 console.log("✅ Wynik aktualizacji:", result);
                 
                 if (result.success) {
                     alert(`✅ Aktualizacja zakończona!\n\nZaktualizowano: ${result.updatedPlayers} graczy\nBez zmian: ${result.unchangedPlayers} graczy\nW sumie: ${result.totalPlayers} graczy`);
+                } else if (result.cancelled) {
+                    alert("❌ Aktualizacja anulowana");
                 } else {
                     alert(`❌ Błąd aktualizacji:\n${result.errors?.join('\n') || result.error}`);
                 }
