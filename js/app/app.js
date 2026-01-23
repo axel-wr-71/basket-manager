@@ -5,6 +5,7 @@ import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
+import { renderLeagueView } from './league_view.js'; // DODANO: import modułu League
 import { ScheduleView } from './schedule_view.js';
 import { RosterActions } from './roster_actions.js';
 
@@ -178,6 +179,7 @@ export async function switchTab(tabId) {
         case 'm-schedule': 
             ScheduleView.render(tabId, window.userTeamId); 
             break;
+        case 'm-league': renderLeagueView(team, players); break; // DODANO: moduł League
     }
 }
 
@@ -220,15 +222,16 @@ function initAdminConsole() {
 
     // Główna funkcja pokazująca panel admina
     async function showAdminPanel(isTestMode = false) {
+        let container;
         try {
-            // W funkcji showAdminPanel w app.js zmień:
-let container = document.getElementById('main-content');
-if (!container) {
-    // Jeśli nie ma, stwórz
-    container = document.createElement('div');
-    container.id = 'admin-panel-container'; // ZMIANA: zamiast 'main-content'
-    document.body.appendChild(container);
-}
+            // Znajdź lub utwórz kontener
+            container = document.getElementById('admin-panel-container');
+            if (!container) {
+                // Jeśli nie ma, stwórz
+                container = document.createElement('div');
+                container.id = 'admin-panel-container';
+                document.body.appendChild(container);
+            }
             
             // Pokaż ładowanie
             container.innerHTML = `
@@ -258,7 +261,6 @@ if (!container) {
         } catch (error) {
             console.error("[ADMIN] Błąd ładowania panelu:", error);
             
-            const container = document.getElementById('main-content');
             if (container) {
                 container.innerHTML = `
                     <div style="padding: 50px; text-align: center;">
@@ -348,9 +350,31 @@ if (!container) {
                 alert("❌ Błąd aktualizacji: " + error.message);
                 return { success: false, error: error.message };
             }
+        },
+        
+        // Aktualizuj wartości rynkowe (dodano z powrotem)
+        updateMarketValues: async () => {
+            if (!confirm("Czy chcesz zaktualizować wartości rynkowe wszystkich graczy?")) return;
+            
+            try {
+                const { adminUpdateMarketValues } = await import('../core/economy.js');
+                console.log("[ADMIN] Rozpoczynam aktualizację wartości rynkowych...");
+                
+                const result = await adminUpdateMarketValues();
+                
+                if (result.success) {
+                    alert(`✅ ${result.message || `Zaktualizowano wartości rynkowe ${result.updatedCount} graczy`}`);
+                } else {
+                    alert(`❌ Błąd: ${result.error || "Nieznany błąd"}`);
+                }
+                
+                return result;
+                
+            } catch (error) {
+                console.error("❌ Błąd:", error);
+                alert("❌ Błąd: " + error.message);
+            }
         }
-        // UWAGA: Usunąłem funkcję updateMarketValues, ponieważ powoduje błąd importu
-        // Jeśli potrzebujesz tę funkcję, sprawdź czy w pliku economy.js istnieje jako adminUpdateMarketValues
     };
 
     // Skrót klawiaturowy (opcjonalnie) - Ctrl+Shift+A
@@ -371,11 +395,11 @@ if (!container) {
         console.log("  __ADMIN.open()    - to samo");
         console.log("  __ADMIN.status()  - status aplikacji");
         console.log("  __ADMIN.updateSalaries() - aktualizuj pensje");
+        console.log("  __ADMIN.updateMarketValues() - aktualizuj wartości"); // DODANO
         console.log("  __ADMIN.testConnection() - test bazy");
         console.log("  __ADMIN.clearCache() - wyczyść cache");
         console.log("");
-        console.log("UWAGA: Funkcja updateMarketValues została tymczasowo wyłączona");
-        console.log("Aby ją przywrócić, dodaj odpowiednią funkcję w economy.js");
+        console.log("Skrót klawiaturowy: Ctrl+Shift+A");
         console.log("==========================================");
     }, 2000);
 }
