@@ -13,21 +13,22 @@ export async function renderLeagueView(team, players) {
     // Pokaż ładowanie
     container.innerHTML = `
         <div style="padding: 30px; text-align: center;">
-            <div style="font-size: 3rem; margin-bottom: 20px;">🏆</div>
-            <h2 style="color: #1a237e;">Ładowanie danych ligi...</h2>
-            <p style="color: #64748b;">Proszę czekać</p>
+            <div style="font-size: 3rem; margin-bottom: 20px;">🏀</div>
+            <h2 style="color: #1a237e;">Ładowanie danych NBA...</h2>
+            <p style="color: #64748b;">Pobieranie statystyk ligowych</p>
         </div>
     `;
     
     try {
         // Pobierz dane ligowe
-        const [standingsData, topPlayersData, leagueStats] = await Promise.all([
+        const [standingsData, topPlayersData, leagueStats, recentGames] = await Promise.all([
             fetchLeagueStandings(),
             fetchTopPlayers(),
-            fetchLeagueStatistics()
+            fetchLeagueStatistics(),
+            fetchRecentGames()
         ]);
         
-        renderLeagueContent(container, standingsData, topPlayersData, leagueStats, team);
+        renderLeagueContent(container, standingsData, topPlayersData, leagueStats, recentGames, team);
         
     } catch (error) {
         console.error("[LEAGUE] Błąd:", error);
@@ -36,7 +37,7 @@ export async function renderLeagueView(team, players) {
                 <h3>❌ Błąd ładowania danych ligi</h3>
                 <p>${error.message}</p>
                 <button onclick="window.switchTab('m-league')" 
-                        style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-top: 20px;">
+                        style="background: #006bb6; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-top: 20px;">
                     Spróbuj ponownie
                 </button>
             </div>
@@ -47,155 +48,283 @@ export async function renderLeagueView(team, players) {
 async function fetchLeagueStandings() {
     console.log("[LEAGUE] Pobieranie tabeli ligowej...");
     
-    // POPRAWIENIE: Usunięto team_abbreviation i form_last_5 które nie istnieją
-    const { data: teams, error } = await supabaseClient
-        .from('teams')
-        .select(`
-            id,
-            team_name,
-            wins,
-            losses,
-            draws,
-            points,
-            goals_scored,
-            goals_conceded
-            ${columnExists('teams', 'team_abbreviation') ? ', team_abbreviation' : ''}
-            ${columnExists('teams', 'form_last_5') ? ', form_last_5' : ''}
-        `)
-        .order('points', { ascending: false })
-        .order('goals_scored - goals_conceded', { ascending: false });
+    // Sprawdź czy mamy tabelę league_standings
+    let standings = [];
+    let useLeagueStandings = false;
     
-    if (error) throw error;
-    
-    // Oblicz dodatkowe statystyki
-    return teams.map((team, index) => ({
-        position: index + 1,
-        ...team,
-        team_abbreviation: team.team_abbreviation || getTeamAbbreviation(team.team_name),
-        form_last_5: team.form_last_5 || '-----',
-        matches: (team.wins || 0) + (team.losses || 0) + (team.draws || 0),
-        goal_difference: (team.goals_scored || 0) - (team.goals_conceded || 0),
-        points_per_game: team.points ? (team.points / ((team.wins || 0) + (team.losses || 0) + (team.draws || 1))).toFixed(2) : 0
-    }));
-}
-
-// Funkcja pomocnicza do sprawdzania czy kolumna istnieje
-async function columnExists(table, column) {
     try {
-        // Próba pobrania z tą kolumną - jeśli błąd, to kolumna nie istnieje
-        const { error } = await supabaseClient
-            .from(table)
-            .select(column)
-            .limit(1);
+        // Próba pobrania z league_standings (jeśli istnieje)
+        const { data: leagueStandings, error: lsError } = await supabaseClient
+            .from('league_standings')
+            .select(`
+                team_id,
+                team_name,
+                wins,
+                losses,
+                points_scored,
+                points_allowed,
+                games_played,
+                streak,
+                home_wins,
+                away_wins,
+                conference,
+                division,
+                teams!inner(team_name, country, league_name)
+            `)
+            .order('wins', { ascending: false })
+            .order('points_scored - points_allowed', { ascending: false });
         
-        return !error;
-    } catch (err) {
-        return false;
+        if (!lsError && leagueStandings && leagueStandings.length > 0) {
+            useLeagueStandings = true;
+            standings = leagueStandings.map((team, index) => ({
+                position: index + 1,
+                id: team.team_id,
+                team_name: team.team_name || team.teams?.team_name,
+                wins: team.wins || 0,
+                losses: team.losses || 0,
+                points_scored: team.points_scored || 0,
+                points_allowed: team.points_allowed || 0,
+                games_played: team.games_played || 0,
+                streak: team.streak || '',
+                home_wins: team.home_wins || 0,
+                away_wins: team.away_wins || 0,
+                conference: team.conference || '',
+                division: team.division || '',
+                win_percentage: team.games_played > 0 ? ((team.wins || 0) / team.games_played).toFixed(3) : '0.000',
+                points_difference: (team.points_scored || 0) - (team.points_allowed || 0)
+            }));
+        }
+    } catch (e) {
+        console.warn("[LEAGUE] Brak tabeli league_standings, używam teams", e);
     }
-}
-
-// Funkcja do generowania skrótu nazwy drużyny
-function getTeamAbbreviation(teamName) {
-    if (!teamName) return '---';
     
-    // Usuń typowe wyrażenia i weź pierwsze litery
-    const words = teamName.replace(/FC|SC|United|City|Club|Team|Basketball|BC/g, '')
-                         .trim()
-                         .split(' ')
-                         .filter(word => word.length > 0);
-    
-    if (words.length >= 2) {
-        // Weź pierwsze litery z pierwszych 2-3 słów
-        return words.slice(0, 2).map(word => word[0]?.toUpperCase() || '').join('');
-    } else if (teamName.length >= 3) {
-        // Weź pierwsze 3 litery z pełnej nazwy
-        return teamName.substring(0, 3).toUpperCase();
-    } else {
-        return teamName.toUpperCase();
+    // Jeśli nie ma league_standings, użyj teams
+    if (!useLeagueStandings) {
+        const { data: teams, error } = await supabaseClient
+            .from('teams')
+            .select(`
+                id,
+                team_name,
+                wins,
+                losses,
+                conference,
+                league_name,
+                country
+            `)
+            .order('wins', { ascending: false })
+            .order('losses', { ascending: true });
+        
+        if (error) {
+            console.error("[LEAGUE] Błąd pobierania teams:", error);
+            throw error;
+        }
+        
+        standings = teams.map((team, index) => ({
+            position: index + 1,
+            id: team.id,
+            team_name: team.team_name,
+            wins: team.wins || 0,
+            losses: team.losses || 0,
+            points_scored: 0, // Brak danych w teams
+            points_allowed: 0,
+            games_played: (team.wins || 0) + (team.losses || 0),
+            streak: '',
+            home_wins: 0,
+            away_wins: 0,
+            conference: team.conference || '',
+            division: '',
+            win_percentage: ((team.wins || 0) / ((team.wins || 0) + (team.losses || 0) || 1)).toFixed(3),
+            points_difference: 0
+        }));
     }
+    
+    return standings;
 }
 
 async function fetchTopPlayers() {
     console.log("[LEAGUE] Pobieranie najlepszych zawodników...");
     
-    // POPRAWIENIE: Uproszczone zapytanie bez statystyk graczy które mogą nie istnieć
-    const { data: players, error } = await supabaseClient
-        .from('players')
-        .select(`
-            id,
-            first_name,
-            last_name,
-            position,
-            overall_rating,
-            potential,
-            age,
-            team_id,
-            teams!inner(team_name)
-        `)
-        .order('overall_rating', { ascending: false })
-        .limit(15);
+    // Najpierw spróbuj pobrać z player_stats jeśli istnieje
+    let topPlayers = [];
     
-    if (error) {
-        console.warn("[LEAGUE] Błąd pobierania graczy:", error);
-        return [];
+    try {
+        const { data: playersStats, error: statsError } = await supabaseClient
+            .from('player_stats')
+            .select(`
+                player_id,
+                points_per_game,
+                rebounds_per_game,
+                assists_per_game,
+                steals_per_game,
+                blocks_per_game,
+                field_goal_percentage,
+                three_point_percentage,
+                free_throw_percentage,
+                games_played,
+                minutes_per_game,
+                players!inner(
+                    id,
+                    first_name,
+                    last_name,
+                    position,
+                    overall_rating,
+                    potential,
+                    age,
+                    height,
+                    weight,
+                    team_id,
+                    teams!inner(team_name)
+                )
+            `)
+            .order('points_per_game', { ascending: false })
+            .limit(20);
+        
+        if (!statsError && playersStats) {
+            topPlayers = playersStats.map(stat => ({
+                id: stat.players.id,
+                first_name: stat.players.first_name,
+                last_name: stat.players.last_name,
+                position: stat.players.position,
+                overall_rating: stat.players.overall_rating,
+                potential: stat.players.potential,
+                age: stat.players.age,
+                height: stat.players.height,
+                weight: stat.players.weight,
+                team_id: stat.players.team_id,
+                team_name: stat.players.teams?.team_name,
+                points_per_game: stat.points_per_game || 0,
+                rebounds_per_game: stat.rebounds_per_game || 0,
+                assists_per_game: stat.assists_per_game || 0,
+                steals_per_game: stat.steals_per_game || 0,
+                blocks_per_game: stat.blocks_per_game || 0,
+                field_goal_percentage: stat.field_goal_percentage || 0,
+                three_point_percentage: stat.three_point_percentage || 0,
+                free_throw_percentage: stat.free_throw_percentage || 0,
+                games_played: stat.games_played || 0,
+                efficiency: calculateEfficiency(stat)
+            }));
+        }
+    } catch (e) {
+        console.warn("[LEAGUE] Brak player_stats, używam players", e);
     }
     
-    // Jeśli masz tabelę player_stats, dodaj ją tutaj
-    return players.map(p => ({
-        ...p,
-        goals: 0,
-        assists: 0,
-        average_rating: p.overall_rating
-    }));
+    // Jeśli nie ma statystyk, pobierz tylko podstawowe dane
+    if (topPlayers.length === 0) {
+        const { data: players, error } = await supabaseClient
+            .from('players')
+            .select(`
+                id,
+                first_name,
+                last_name,
+                position,
+                overall_rating,
+                potential,
+                age,
+                height,
+                weight,
+                team_id,
+                teams!inner(team_name)
+            `)
+            .order('overall_rating', { ascending: false })
+            .limit(20);
+        
+        if (!error && players) {
+            topPlayers = players.map(p => ({
+                ...p,
+                team_name: p.teams?.team_name,
+                points_per_game: 0,
+                rebounds_per_game: 0,
+                assists_per_game: 0,
+                efficiency: p.overall_rating
+            }));
+        }
+    }
+    
+    return topPlayers;
+}
+
+function calculateEfficiency(stats) {
+    const PTS = stats.points_per_game || 0;
+    const REB = stats.rebounds_per_game || 0;
+    const AST = stats.assists_per_game || 0;
+    const STL = stats.steals_per_game || 0;
+    const BLK = stats.blocks_per_game || 0;
+    const FGA = 10; // Przykładowa wartość
+    const FGM = FGA * ((stats.field_goal_percentage || 0) / 100);
+    const TOV = 2; // Przykładowa wartość
+    
+    // Prostego wzór na efficiency
+    return (PTS + REB + AST + STL + BLK - (FGA - FGM) - TOV).toFixed(1);
 }
 
 async function fetchLeagueStatistics() {
     console.log("[LEAGUE] Pobieranie statystyk ligi...");
     
-    const stats = {};
+    const stats = {
+        totalTeams: 0,
+        totalGames: 0,
+        totalPoints: 0,
+        averagePointsPerGame: 0,
+        topScorer: { name: "Brak danych", points_per_game: 0, team: "" },
+        bestTeam: { name: "Brak danych", wins: 0, win_percentage: 0 },
+        bestOffense: { name: "Brak danych", ppg: 0 },
+        bestDefense: { name: "Brak danych", ppg_allowed: 999 },
+        leagueLeaders: {}
+    };
     
     try {
-        // 1. Ogólne statystyki ligi
+        // Statystyki z league_events jeśli istnieje
+        const { data: games, error: gamesError } = await supabaseClient
+            .from('league_events')
+            .select('*')
+            .limit(100);
+        
+        // Liczba drużyn z teams
         const { data: teams, error: teamsError } = await supabaseClient
             .from('teams')
-            .select('wins, losses, draws, goals_scored, goals_conceded');
+            .select('id, team_name, wins, losses');
         
         if (!teamsError && teams) {
-            stats.totalMatches = teams.reduce((sum, t) => sum + (t.wins || 0) + (t.losses || 0) + (t.draws || 0), 0) / 2;
-            stats.totalGoals = teams.reduce((sum, t) => sum + (t.goals_scored || 0), 0);
-            stats.averageGoals = (stats.totalGoals / (stats.totalMatches || 1)).toFixed(2);
             stats.totalTeams = teams.length;
-        }
-        
-        // 2. Najlepszy strzelec (uproszczone)
-        const { data: topScorer, error: scorerError } = await supabaseClient
-            .from('players')
-            .select('first_name, last_name')
-            .order('overall_rating', { ascending: false })
-            .limit(1)
-            .single();
-        
-        if (!scorerError && topScorer) {
-            stats.topScorer = {
-                name: `${topScorer.first_name} ${topScorer.last_name}`,
-                goals: 25 // Przykładowa wartość
+            
+            // Najlepsza drużyna
+            const bestTeam = teams.reduce((best, current) => {
+                const currentWinPct = (current.wins || 0) / ((current.wins || 0) + (current.losses || 0) || 1);
+                const bestWinPct = (best.wins || 0) / ((best.wins || 0) + (best.losses || 0) || 1);
+                return currentWinPct > bestWinPct ? current : best;
+            }, teams[0] || {});
+            
+            stats.bestTeam = {
+                name: bestTeam.team_name,
+                wins: bestTeam.wins || 0,
+                losses: bestTeam.losses || 0,
+                win_percentage: ((bestTeam.wins || 0) / ((bestTeam.wins || 0) + (bestTeam.losses || 0) || 1) * 100).toFixed(1)
             };
+            
+            // Oblicz całkowitą liczbę gier
+            stats.totalGames = teams.reduce((sum, team) => sum + (team.wins || 0) + (team.losses || 0), 0) / 2;
         }
         
-        // 3. Drużyna z najlepszą formą
-        const { data: bestFormTeam, error: formError } = await supabaseClient
-            .from('teams')
-            .select('team_name, wins, losses, draws')
-            .order('wins', { ascending: false })
-            .limit(1)
-            .single();
+        // Najlepszy strzelec z players + player_stats
+        const { data: topScorers, error: scorerError } = await supabaseClient
+            .from('players')
+            .select(`
+                first_name,
+                last_name,
+                team_id,
+                teams!inner(team_name),
+                player_stats(points_per_game)
+            `)
+            .order('overall_rating', { ascending: false })
+            .limit(1);
         
-        if (!formError && bestFormTeam) {
-            const totalGames = (bestFormTeam.wins || 0) + (bestFormTeam.losses || 0) + (bestFormTeam.draws || 0);
-            stats.bestFormTeam = {
-                name: bestFormTeam.team_name,
-                wins: bestFormTeam.wins || 0,
-                winRate: totalGames > 0 ? ((bestFormTeam.wins || 0) / totalGames * 100).toFixed(1) : '0.0'
+        if (!scorerError && topScorers && topScorers.length > 0) {
+            const player = topScorers[0];
+            const points = player.player_stats?.[0]?.points_per_game || 28.5; // Przykładowa wartość
+            stats.topScorer = {
+                name: `${player.first_name} ${player.last_name}`,
+                points_per_game: points.toFixed(1),
+                team: player.teams?.team_name || ""
             };
         }
         
@@ -203,134 +332,262 @@ async function fetchLeagueStatistics() {
         console.warn("[LEAGUE] Błąd pobierania statystyk:", error);
     }
     
-    // Domyślne wartości jeśli brak danych
-    return {
-        totalTeams: stats.totalTeams || 0,
-        totalMatches: stats.totalMatches || 0,
-        totalGoals: stats.totalGoals || 0,
-        averageGoals: stats.averageGoals || '0.00',
-        topScorer: stats.topScorer || { name: "Brak danych", goals: 0 },
-        bestFormTeam: stats.bestFormTeam || { name: "Brak danych", wins: 0, winRate: '0.0' }
-    };
+    return stats;
 }
 
-function renderLeagueContent(container, standings, topPlayers, stats, userTeam) {
-    console.log("[LEAGUE] Renderowanie zawartości...");
+async function fetchRecentGames() {
+    console.log("[LEAGUE] Pobieranie ostatnich meczów...");
+    
+    let recentGames = [];
+    
+    try {
+        // Sprawdź czy istnieje league_events
+        const { data: events, error } = await supabaseClient
+            .from('league_events')
+            .select(`
+                id,
+                event_date,
+                home_team_id,
+                away_team_id,
+                home_score,
+                away_score,
+                event_type,
+                status,
+                home_team:teams!league_events_home_team_id_fkey(team_name),
+                away_team:teams!league_events_away_team_id_fkey(team_name)
+            `)
+            .eq('event_type', 'game')
+            .eq('status', 'completed')
+            .order('event_date', { ascending: false })
+            .limit(10);
+        
+        if (!error && events) {
+            recentGames = events.map(event => ({
+                id: event.id,
+                date: new Date(event.event_date).toLocaleDateString(),
+                home_team: event.home_team?.team_name || 'Team A',
+                away_team: event.away_team?.team_name || 'Team B',
+                home_score: event.home_score || 0,
+                away_score: event.away_score || 0,
+                winner: event.home_score > event.away_score ? 'home' : 'away'
+            }));
+        }
+    } catch (e) {
+        console.warn("[LEAGUE] Brak league_events:", e);
+        // Przykładowe dane
+        recentGames = [
+            {
+                id: 1,
+                date: '2024-01-20',
+                home_team: 'Los Angeles Lakers',
+                away_team: 'Golden State Warriors',
+                home_score: 112,
+                away_score: 108,
+                winner: 'home'
+            },
+            {
+                id: 2,
+                date: '2024-01-19',
+                home_team: 'Boston Celtics',
+                away_team: 'Miami Heat',
+                home_score: 105,
+                away_score: 98,
+                winner: 'home'
+            },
+            {
+                id: 3,
+                date: '2024-01-18',
+                home_team: 'Chicago Bulls',
+                away_team: 'New York Knicks',
+                home_score: 96,
+                away_score: 102,
+                winner: 'away'
+            }
+        ];
+    }
+    
+    return recentGames;
+}
+
+function renderLeagueContent(container, standings, topPlayers, stats, recentGames, userTeam) {
+    console.log("[LEAGUE] Renderowanie zawartości NBA...");
     
     container.innerHTML = `
-        <div class="league-container" style="max-width: 1400px; margin: 0 auto;">
-            <!-- NAGŁÓWEK LIGI -->
-            <div style="background: linear-gradient(135deg, #1a237e, #283593); color: white; padding: 25px; border-radius: 12px 12px 0 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="nba-league-container" style="max-width: 1600px; margin: 0 auto; background: #f8f9fa;">
+            <!-- NAGŁÓWEK NBA -->
+            <div style="background: linear-gradient(135deg, #1d428a, #006bb6); color: white; padding: 30px; border-radius: 12px 12px 0 0; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 10px; right: 20px; font-size: 8rem; opacity: 0.1;">🏀</div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2;">
                     <div>
-                        <h1 style="margin: 0; font-weight: 900; font-size: 2.2rem;">🏆 NBA LEAGUE</h1>
-                        <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 0.95rem;">
-                            Sezon 2023/2024 • Aktualizacja: ${new Date().toLocaleDateString()}
+                        <h1 style="margin: 0; font-weight: 900; font-size: 2.8rem; letter-spacing: -0.5px;">🏀 NBA LEAGUE</h1>
+                        <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 1rem; font-weight: 300;">
+                            2023-24 Season • Updated: ${new Date().toLocaleDateString()}
                         </p>
+                        <div style="display: flex; gap: 20px; margin-top: 15px;">
+                            <div style="background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;">
+                                <span style="font-weight: 600;">Conference:</span> ${userTeam?.conference || 'East'}
+                            </div>
+                            <div style="background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;">
+                                <span style="font-weight: 600;">Your Team:</span> ${userTeam?.team_name || 'No Team'}
+                            </div>
+                        </div>
                     </div>
+                    
                     <div style="text-align: right;">
-                        <div style="font-size: 0.85rem; opacity: 0.8;">Twoja drużyna</div>
-                        <div style="font-size: 1.4rem; font-weight: 800;">${userTeam?.team_name || 'Brak drużyny'}</div>
+                        <div style="font-size: 3rem; margin-bottom: 5px;">${userTeam?.team_name?.substring(0, 2) || 'MY'}</div>
+                        <div style="font-size: 0.85rem; opacity: 0.8; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px;">
+                            MANAGER MODE
+                        </div>
                     </div>
                 </div>
                 
-                <!-- STATYSTYKI LIGI -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 25px;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.85rem; opacity: 0.8;">Drużyny</div>
-                        <div style="font-size: 1.8rem; font-weight: 800;">${stats.totalTeams}</div>
+                <!-- STATYSTYKI LIGI - KARUZELA -->
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-top: 30px;">
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; backdrop-filter: blur(10px);">
+                        <div style="font-size: 0.85rem; opacity: 0.8;">TEAMS</div>
+                        <div style="font-size: 2.2rem; font-weight: 800; margin: 5px 0;">${stats.totalTeams}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">Active</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.85rem; opacity: 0.8;">Mecze</div>
-                        <div style="font-size: 1.8rem; font-weight: 800;">${stats.totalMatches}</div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; backdrop-filter: blur(10px);">
+                        <div style="font-size: 0.85rem; opacity: 0.8;">GAMES</div>
+                        <div style="font-size: 2.2rem; font-weight: 800; margin: 5px 0;">${stats.totalGames}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">Played</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.85rem; opacity: 0.8;">Gole</div>
-                        <div style="font-size: 1.8rem; font-weight: 800;">${stats.totalGoals}</div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; backdrop-filter: blur(10px);">
+                        <div style="font-size: 0.85rem; opacity: 0.8;">PTS LEADER</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; margin: 5px 0;">${stats.topScorer.name}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">${stats.topScorer.points_per_game} PPG</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.85rem; opacity: 0.8;">Śr. gole/mecz</div>
-                        <div style="font-size: 1.8rem; font-weight: 800;">${stats.averageGoals}</div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; backdrop-filter: blur(10px);">
+                        <div style="font-size: 0.85rem; opacity: 0.8;">BEST TEAM</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; margin: 5px 0;">${stats.bestTeam.name}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">${stats.bestTeam.win_percentage}% WINS</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; text-align: center; backdrop-filter: blur(10px);">
+                        <div style="font-size: 0.85rem; opacity: 0.8;">YOUR RECORD</div>
+                        <div style="font-size: 1.5rem; font-weight: 800; margin: 5px 0;">${userTeam?.wins || 0}-${userTeam?.losses || 0}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">${userTeam ? (((userTeam.wins || 0) / ((userTeam.wins || 0) + (userTeam.losses || 0) || 1) * 100).toFixed(1)) : '0.0'}%</div>
                     </div>
                 </div>
             </div>
             
             <!-- GŁÓWNA ZAWARTOŚĆ -->
-            <div style="display: grid; grid-template-columns: 1fr 400px; gap: 25px; padding: 25px; background: #f8fafc;">
+            <div style="display: grid; grid-template-columns: 1fr 400px; gap: 25px; padding: 25px;">
                 
-                <!-- LEWA KOLUMNA: TABELA LIGOWA -->
+                <!-- LEWA KOLUMNA -->
                 <div>
-                    <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <!-- TABELA LIGOWA -->
+                    <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 25px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h2 style="margin: 0; color: #1a237e; font-weight: 800; font-size: 1.4rem;">
-                                📊 TABELA LIGOWA
+                            <h2 style="margin: 0; color: #1d428a; font-weight: 900; font-size: 1.6rem; display: flex; align-items: center; gap: 10px;">
+                                <span style="background: #006bb6; color: white; padding: 5px 10px; border-radius: 6px; font-size: 1.2rem;">🏆</span>
+                                NBA STANDINGS
                             </h2>
-                            <div style="font-size: 0.85rem; color: #64748b;">
-                                Aktualizacja: ${new Date().toLocaleDateString()}
+                            <div style="display: flex; gap: 10px;">
+                                <button class="conference-btn active" style="background: #006bb6; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
+                                    All
+                                </button>
+                                <button class="conference-btn" style="background: #e8f4fd; color: #006bb6; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
+                                    East
+                                </button>
+                                <button class="conference-btn" style="background: #e8f4fd; color: #006bb6; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
+                                    West
+                                </button>
                             </div>
                         </div>
                         
                         <div id="league-standings-table" style="overflow-x: auto;">
-                            ${renderStandingsTable(standings, userTeam?.id)}
+                            ${renderNBATable(standings, userTeam?.id)}
                         </div>
                     </div>
                     
-                    <!-- LEGENDA -->
-                    <div style="margin-top: 15px; font-size: 0.8rem; color: #64748b; display: flex; gap: 15px; flex-wrap: wrap;">
-                        <div><span style="color: #10b981;">●</span> Awans - Liga Mistrzów</div>
-                        <div><span style="color: #3b82f6;">●</span> Liga Europy</div>
-                        <div><span style="color: #ef4444;">●</span> Spadek</div>
-                        <div><span style="color: #f59e0b;">●</span> Twoja drużyna</div>
+                    <!-- OSTATNIE MECZE -->
+                    <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+                        <h2 style="margin: 0 0 20px 0; color: #1d428a; font-weight: 900; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #e74c3c; color: white; padding: 5px 10px; border-radius: 6px; font-size: 1rem;">🔥</span>
+                            RECENT GAMES
+                        </h2>
+                        
+                        <div id="recent-games-list">
+                            ${renderRecentGames(recentGames)}
+                        </div>
                     </div>
                 </div>
                 
-                <!-- PRAWA KOLUMNA: NAJLEPSI ZAWODNICY -->
+                <!-- PRAWA KOLUMNA -->
                 <div>
-                    <!-- NAJLEPSZY STRZELEC -->
-                    <div style="background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                        <h3 style="margin: 0 0 20px 0; color: #1a237e; font-weight: 800; font-size: 1.2rem;">
-                            👑 NAJLEPSZY STRZELEC
+                    <!-- NAJLEPSZY ZAWODNIK -->
+                    <div style="background: linear-gradient(135deg, #ff6b6b, #ff8e53); color: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 15px 0; font-weight: 900; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: white; color: #ff6b6b; padding: 5px 10px; border-radius: 50%;">👑</span>
+                            PLAYER OF THE WEEK
                         </h3>
-                        <div style="text-align: center; padding: 15px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 8px;">
-                            <div style="font-size: 2.5rem; margin-bottom: 10px;">⚽</div>
-                            <div style="font-size: 1.3rem; font-weight: 800; color: #92400e;">${stats.topScorer.name}</div>
-                            <div style="font-size: 2rem; font-weight: 900; color: #d97706;">${stats.topScorer.goals} GOLI</div>
+                        <div style="text-align: center; padding: 20px 0;">
+                            <div style="width: 80px; height: 80px; background: white; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #ff6b6b;">
+                                🏀
+                            </div>
+                            <div style="font-size: 1.4rem; font-weight: 900; margin-bottom: 5px;">${stats.topScorer.name.split(' ')[0] || 'Player'}</div>
+                            <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 15px;">${stats.topScorer.team || 'Team'}</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px;">
+                                <div>
+                                    <div style="font-size: 1.8rem; font-weight: 900;">${stats.topScorer.points_per_game}</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.9;">PPG</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.8rem; font-weight: 900;">${topPlayers[0]?.rebounds_per_game || '7.2'}</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.9;">RPG</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.8rem; font-weight: 900;">${topPlayers[0]?.assists_per_game || '6.5'}</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.9;">APG</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- TOP 5 ZAWODNIKÓW -->
-                    <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                        <h3 style="margin: 0 0 20px 0; color: #1a237e; font-weight: 800; font-size: 1.2rem;">
-                            ⭐ TOP 5 ZAWODNIKÓW LIGI
+                    <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 25px;">
+                        <h3 style="margin: 0 0 20px 0; color: #1d428a; font-weight: 900; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #1d428a; color: white; padding: 5px 10px; border-radius: 6px; font-size: 1rem;">⭐</span>
+                            TOP 5 PLAYERS
                         </h3>
+                        
                         <div id="top-players-list">
                             ${renderTopPlayersList(topPlayers.slice(0, 5))}
                         </div>
                         
-                        <!-- LINK DO PEŁNEJ LISTY -->
                         ${topPlayers.length > 5 ? `
                             <div style="text-align: center; margin-top: 20px;">
                                 <button id="btn-show-all-players" 
-                                        style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 8px 16px; 
-                                               border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
-                                    Pokaż wszystkich (${topPlayers.length})
+                                        style="background: #f8f9fa; color: #495057; border: 2px solid #dee2e6; padding: 10px 20px; 
+                                               border-radius: 25px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.3s;"
+                                        onmouseover="this.style.background='#e9ecef'; this.style.borderColor='#1d428a';"
+                                        onmouseout="this.style.background='#f8f9fa'; this.style.borderColor='#dee2e6';">
+                                    View All Players (${topPlayers.length})
                                 </button>
                             </div>
                         ` : ''}
                     </div>
                     
-                    <!-- STATYSTYKI DRUŻYN -->
-                    <div style="background: white; border-radius: 12px; padding: 25px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                        <h3 style="margin: 0 0 20px 0; color: #1a237e; font-weight: 800; font-size: 1.2rem;">
-                            📈 NAJLEPSZA DRUŻYNA
+                    <!-- STATYSTYKI LIGOWE -->
+                    <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+                        <h3 style="margin: 0 0 20px 0; color: #1d428a; font-weight: 900; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #10b981; color: white; padding: 5px 10px; border-radius: 6px; font-size: 1rem;">📈</span>
+                            LEAGUE STATS
                         </h3>
-                        <div style="text-align: center;">
-                            <div style="font-size: 3rem; margin-bottom: 10px;">🏅</div>
-                            <div style="font-size: 1.2rem; font-weight: 800; color: #1a237e;">${stats.bestFormTeam.name}</div>
-                            <div style="color: #64748b; margin: 5px 0;">${stats.bestFormTeam.wins} zwycięstw</div>
-                            <div style="background: #10b981; color: white; padding: 5px 15px; border-radius: 20px; 
-                                        display: inline-block; font-weight: 700; font-size: 0.9rem;">
-                                ${stats.bestFormTeam.winRate}% WINS
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 1rem; color: #6c757d; margin-bottom: 5px;">Best Record</div>
+                                <div style="font-size: 1.1rem; font-weight: 900; color: #1d428a;">${stats.bestTeam.name}</div>
+                                <div style="font-size: 0.9rem; color: #10b981; font-weight: 700;">${stats.bestTeam.wins}-${stats.bestTeam.losses}</div>
+                            </div>
+                            
+                            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="font-size: 1rem; color: #6c757d; margin-bottom: 5px;">Home Wins</div>
+                                <div style="font-size: 1.8rem; font-weight: 900; color: #1d428a;">${standings.reduce((sum, team) => sum + (team.home_wins || 0), 0)}</div>
+                                <div style="font-size: 0.8rem; color: #6c757d;">Total</div>
                             </div>
                         </div>
                     </div>
@@ -338,118 +595,140 @@ function renderLeagueContent(container, standings, topPlayers, stats, userTeam) 
             </div>
             
             <!-- STOPKA -->
-            <div style="background: #1a237e; color: white; padding: 15px; border-radius: 0 0 12px 12px; text-align: center; font-size: 0.8rem;">
-                <p style="margin: 0;">© 2024 NBA Manager • Dane statystyczne aktualne na dzień ${new Date().toLocaleDateString()}</p>
-                <p style="margin: 5px 0 0 0; opacity: 0.7;">Kliknij przycisk odśwież, aby zaktualizować dane</p>
-                <button onclick="window.switchTab('m-league')" 
-                        style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 5px 15px; 
-                               border-radius: 20px; margin-top: 10px; font-size: 0.8rem; cursor: pointer;">
-                    🔄 Odśwież dane ligi
-                </button>
+            <div style="background: #1a1a1a; color: white; padding: 20px; border-radius: 0 0 12px 12px; text-align: center; font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto;">
+                    <div style="text-align: left;">
+                        <div style="font-weight: 700; color: #006bb6; font-size: 1.1rem;">NBA Manager Pro</div>
+                        <div style="opacity: 0.7; margin-top: 5px;">© 2024 NBA Basketball Association</div>
+                    </div>
+                    <div>
+                        <button onclick="window.switchTab('m-league')" 
+                                style="background: #006bb6; color: white; border: none; padding: 10px 25px; 
+                                       border-radius: 25px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <span>🔄</span> Refresh League Data
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         
         <!-- MODAL Z PEŁNĄ LISTĄ ZAWODNIKÓW -->
         <div id="modal-top-players" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-                                           background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
-            <div style="background: white; border-radius: 12px; width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto;">
-                <div style="padding: 25px; border-bottom: 1px solid #e2e8f0;">
+                                           background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+            <div style="background: white; border-radius: 16px; width: 90%; max-width: 1000px; max-height: 85vh; overflow-y: auto; position: relative;">
+                <div style="padding: 30px; border-bottom: 1px solid #e9ecef; background: #1d428a; color: white; border-radius: 16px 16px 0 0;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0; color: #1a237e;">⭐ Wszyscy najlepsi zawodnicy</h3>
-                        <button id="btn-close-modal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">
+                        <h3 style="margin: 0; font-size: 1.8rem; font-weight: 900;">🏀 NBA Player Rankings</h3>
+                        <button id="btn-close-modal" style="background: rgba(255,255,255,0.2); color: white; border: none; width: 40px; height: 40px; 
+                                 border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                             ×
                         </button>
                     </div>
+                    <p style="margin: 10px 0 0 0; opacity: 0.8; font-size: 0.95rem;">Top ${topPlayers.length} players by performance</p>
                 </div>
                 <div style="padding: 25px;" id="modal-players-content">
-                    ${renderAllTopPlayers(topPlayers)}
+                    ${renderAllNBAPlayers(topPlayers)}
                 </div>
             </div>
         </div>
     `;
     
-    // Dodaj event listeners tylko jeśli są przyciski
-    initLeagueEventListeners(topPlayers);
+    // Dodaj event listeners
+    initNBAEventListeners(topPlayers);
 }
 
-function renderStandingsTable(standings, userTeamId) {
+function renderNBATable(standings, userTeamId) {
     if (!standings || standings.length === 0) {
-        return '<p style="color: #64748b; text-align: center; padding: 40px;">Brak danych tabeli ligowej</p>';
+        return `
+            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">🏀</div>
+                <h3 style="margin: 0 0 10px 0;">No Standings Data</h3>
+                <p>League standings will appear here once games are played.</p>
+            </div>
+        `;
     }
     
     return `
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Segoe UI', sans-serif;">
             <thead>
-                <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                    <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #64748b; width: 50px;">#</th>
-                    <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #64748b;">DRUŻYNA</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 40px;">M</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 40px;">W</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 40px;">R</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 40px;">P</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 50px;">BR</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 50px;">+/-</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 60px;">PKT</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b; width: 80px;">FORMA</th>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 15px; text-align: left; font-weight: 700; color: #495057; width: 50px;">#</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 700; color: #495057;">TEAM</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 40px;">W</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 40px;">L</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 60px;">PCT</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 60px;">GB</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 50px;">HOME</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 50px;">AWAY</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 80px;">L10</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057; width: 70px;">STREAK</th>
                 </tr>
             </thead>
             <tbody>
                 ${standings.map((team, index) => {
-                    // Określ kolor wiersza na podstawie pozycji
-                    let rowClass = '';
-                    let positionIndicator = '';
+                    // Oblicz GB (Games Behind)
+                    const firstTeamWins = standings[0]?.wins || 0;
+                    const firstTeamLosses = standings[0]?.losses || 0;
+                    const teamWins = team.wins || 0;
+                    const teamLosses = team.losses || 0;
+                    const gamesBehind = ((firstTeamWins - teamWins) + (teamLosses - firstTeamLosses)) / 2;
                     
+                    // Określ kolor wiersza
+                    let rowStyle = '';
                     if (team.id === userTeamId) {
-                        rowClass = 'style="background: #fffbeb;"';
-                        positionIndicator = '<span style="color: #f59e0b; margin-right: 5px;">●</span>';
-                    } else if (index < 4) {
-                        rowClass = 'style="background: #f0fdf4;"';
-                        positionIndicator = '<span style="color: #10b981; margin-right: 5px;">●</span>';
-                    } else if (index < 6) {
-                        rowClass = 'style="background: #f0f9ff;"';
-                        positionIndicator = '<span style="color: #3b82f6; margin-right: 5px;">●</span>';
-                    } else if (index >= standings.length - 3) {
-                        rowClass = 'style="background: #fef2f2;"';
-                        positionIndicator = '<span style="color: #ef4444; margin-right: 5px;">●</span>';
+                        rowStyle = 'background: linear-gradient(90deg, rgba(29,66,138,0.05), rgba(0,107,182,0.08)); font-weight: 700;';
+                    } else if (index < 8) {
+                        rowStyle = 'background: rgba(16, 185, 129, 0.05);';
                     }
                     
-                    // Generuj formę (ostatnie 5 meczów) - jeśli nie ma danych, pokaż puste
-                    const formHtml = team.form_last_5 && team.form_last_5 !== '-----' ? 
-                        team.form_last_5.split('').map(result => {
-                            if (result === 'W') return '<span style="color: #10b981; font-weight: 800;">W</span>';
-                            if (result === 'D') return '<span style="color: #f59e0b; font-weight: 800;">D</span>';
-                            if (result === 'L') return '<span style="color: #ef4444; font-weight: 800;">L</span>';
-                            return '<span style="color: #64748b;">-</span>';
-                        }).join('') : '<span style="color: #64748b;">-----</span>';
+                    // Generuj formę z ostatnich 10
+                    const last10 = generateLast10Form(team);
                     
                     return `
-                        <tr ${rowClass} style="border-bottom: 1px solid #e2e8f0; ${team.id === userTeamId ? 'font-weight: 700;' : ''}">
-                            <td style="padding: 12px 15px; color: #475569;">${positionIndicator}${team.position}</td>
-                            <td style="padding: 12px 15px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="width: 30px; height: 30px; background: #e2e8f0; border-radius: 6px; 
-                                                display: flex; align-items: center; justify-content: center; font-weight: 700; 
-                                                color: #475569; font-size: 0.9rem;">
-                                        ${team.team_abbreviation}
+                        <tr style="${rowStyle} border-bottom: 1px solid #e9ecef; ${team.id === userTeamId ? 'border-left: 4px solid #006bb6;' : ''}">
+                            <td style="padding: 15px; color: #495057; font-weight: ${team.id === userTeamId ? '900' : '600'};">
+                                ${index < 8 ? 
+                                    `<span style="color: #10b981; margin-right: 5px;">●</span>` : 
+                                    `<span style="color: #adb5bd; margin-right: 5px;">○</span>`}
+                                ${team.position}
+                            </td>
+                            <td style="padding: 15px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 36px; height: 36px; background: ${team.id === userTeamId ? '#006bb6' : '#e9ecef'}; 
+                                                border-radius: 8px; display: flex; align-items: center; justify-content: center; 
+                                                font-weight: 900; color: ${team.id === userTeamId ? 'white' : '#495057'}; font-size: 0.9rem;">
+                                        ${getTeamInitials(team.team_name)}
                                     </div>
                                     <div>
-                                        <div style="font-weight: 600; color: #1a237e;">${team.team_name}</div>
-                                        ${team.id === userTeamId ? 
-                                            '<div style="font-size: 0.75rem; color: #f59e0b; font-weight: 600;">TWOJA DRUŻYNA</div>' : ''}
+                                        <div style="font-weight: ${team.id === userTeamId ? '900' : '700'}; color: #212529;">
+                                            ${team.team_name}
+                                        </div>
+                                        ${team.conference ? 
+                                            `<div style="font-size: 0.75rem; color: #6c757d;">${team.conference}${team.division ? ` • ${team.division}` : ''}</div>` : 
+                                            ''}
                                     </div>
                                 </div>
                             </td>
-                            <td style="padding: 12px 15px; text-align: center; color: #475569;">${team.matches}</td>
-                            <td style="padding: 12px 15px; text-align: center; color: #10b981; font-weight: 600;">${team.wins || 0}</td>
-                            <td style="padding: 12px 15px; text-align: center; color: #f59e0b; font-weight: 600;">${team.draws || 0}</td>
-                            <td style="padding: 12px 15px; text-align: center; color: #ef4444; font-weight: 600;">${team.losses || 0}</td>
-                            <td style="padding: 12px 15px; text-align: center; color: #475569;">${team.goals_scored || 0}:${team.goals_conceded || 0}</td>
-                            <td style="padding: 12px 15px; text-align: center; color: #475569; font-weight: 600;">
-                                ${team.goal_difference > 0 ? '+' : ''}${team.goal_difference}
+                            <td style="padding: 15px; text-align: center; font-weight: 700; color: #10b981;">${team.wins}</td>
+                            <td style="padding: 15px; text-align: center; font-weight: 700; color: #e74c3c;">${team.losses}</td>
+                            <td style="padding: 15px; text-align: center; font-weight: 700; color: #212529;">${team.win_percentage}</td>
+                            <td style="padding: 15px; text-align: center; color: #6c757d; font-weight: 600;">
+                                ${gamesBehind === 0 ? '—' : gamesBehind.toFixed(1)}
                             </td>
-                            <td style="padding: 12px 15px; text-align: center; font-weight: 800; color: #1a237e;">${team.points || 0}</td>
-                            <td style="padding: 12px 15px; text-align: center; font-family: monospace; font-weight: 600;">
-                                ${formHtml}
+                            <td style="padding: 15px; text-align: center; color: #212529; font-weight: 600;">${team.home_wins || '0'}-0</td>
+                            <td style="padding: 15px; text-align: center; color: #212529; font-weight: 600;">${team.away_wins || '0'}-0</td>
+                            <td style="padding: 15px; text-align: center;">
+                                <div style="display: flex; gap: 2px; justify-content: center;">
+                                    ${last10.split('').map(char => 
+                                        `<span style="display: inline-block; width: 14px; height: 14px; border-radius: 2px; 
+                                          background: ${char === 'W' ? '#10b981' : char === 'L' ? '#e74c3c' : '#adb5bd'};"></span>`
+                                    ).join('')}
+                                </div>
+                            </td>
+                            <td style="padding: 15px; text-align: center;">
+                                <span style="font-weight: 700; color: ${team.streak?.startsWith('W') ? '#10b981' : '#e74c3c'}">
+                                    ${team.streak || '—'}
+                                </span>
                             </td>
                         </tr>
                     `;
@@ -459,69 +738,173 @@ function renderStandingsTable(standings, userTeamId) {
     `;
 }
 
-function renderTopPlayersList(players) {
-    if (!players || players.length === 0) {
-        return '<p style="color: #64748b; text-align: center; padding: 20px;">Brak danych zawodników</p>';
+function renderRecentGames(games) {
+    if (!games || games.length === 0) {
+        return `
+            <div style="text-align: center; padding: 30px; color: #6c757d;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">🏀</div>
+                <p>No recent games found.</p>
+            </div>
+        `;
     }
     
-    return players.map((player, index) => `
-        <div style="display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #f1f5f9; 
-                    ${index === 0 ? 'background: linear-gradient(90deg, #fffbeb, #fef3c7); border-radius: 8px;' : ''}">
-            <div style="width: 30px; height: 30px; background: ${index === 0 ? '#f59e0b' : '#e2e8f0'}; 
-                        color: ${index === 0 ? 'white' : '#475569'}; border-radius: 50%; 
-                        display: flex; align-items: center; justify-content: center; font-weight: 800; margin-right: 12px;">
-                ${index + 1}
+    return games.map(game => `
+        <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #e9ecef; 
+                    transition: background 0.3s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+            <div style="flex: 1; text-align: right;">
+                <div style="font-weight: 700; color: #212529; margin-bottom: 4px;">${game.home_team}</div>
+                <div style="font-size: 0.85rem; color: #6c757d;">Home</div>
             </div>
+            
+            <div style="width: 100px; text-align: center;">
+                <div style="font-size: 1.8rem; font-weight: 900; color: #212529; line-height: 1;">
+                    <span style="color: ${game.winner === 'home' ? '#10b981' : '#6c757d'}">${game.home_score}</span>
+                    <span style="color: #adb5bd; margin: 0 5px;">-</span>
+                    <span style="color: ${game.winner === 'away' ? '#10b981' : '#6c757d'}">${game.away_score}</span>
+                </div>
+                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 4px;">FINAL</div>
+            </div>
+            
             <div style="flex: 1;">
-                <div style="font-weight: 700; color: #1a237e;">${player.first_name} ${player.last_name}</div>
-                <div style="font-size: 0.85rem; color: #64748b; display: flex; gap: 10px;">
-                    <span>${player.position || 'N/A'}</span>
-                    <span>•</span>
-                    <span>${player.teams?.team_name || 'Brak drużyny'}</span>
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-weight: 800; color: #3b82f6; font-size: 1.1rem;">
-                    ${player.average_rating ? player.average_rating.toFixed(1) : player.overall_rating}
-                </div>
-                <div style="font-size: 0.8rem; color: #64748b;">
-                    ${player.goals || 0}G ${player.assists || 0}A
-                </div>
+                <div style="font-weight: 700; color: #212529; margin-bottom: 4px;">${game.away_team}</div>
+                <div style="font-size: 0.85rem; color: #6c757d;">Away</div>
             </div>
         </div>
     `).join('');
 }
 
-function renderAllTopPlayers(players) {
+function renderTopPlayersList(players) {
     if (!players || players.length === 0) {
-        return '<p style="color: #64748b; text-align: center; padding: 40px;">Brak danych zawodników</p>';
+        return '<p style="color: #6c757d; text-align: center; padding: 20px;">No player data available</p>';
+    }
+    
+    return players.map((player, index) => {
+        const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#1d428a', '#1d428a'];
+        const rankBgColors = ['#fff9db', '#f8f9fa', '#fef3e9', '#e8f4fd', '#e8f4fd'];
+        
+        return `
+            <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #e9ecef; 
+                        ${index < 3 ? `background: ${rankBgColors[index]}; border-radius: 8px; margin-bottom: 8px;` : ''}"
+                 onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='${index < 3 ? rankBgColors[index] : 'white'}'">
+                <div style="position: relative; width: 40px; height: 40px; margin-right: 15px;">
+                    <div style="width: 40px; height: 40px; background: ${rankBgColors[index]}; 
+                                border: 2px solid ${rankColors[index]}; border-radius: 50%; 
+                                display: flex; align-items: center; justify-content: center; font-weight: 900; 
+                                color: ${rankColors[index]};">
+                        ${index + 1}
+                    </div>
+                </div>
+                
+                <div style="flex: 1;">
+                    <div style="font-weight: 800; color: #212529; font-size: 1rem;">
+                        ${player.first_name} ${player.last_name}
+                    </div>
+                    <div style="font-size: 0.85rem; color: #6c757d; display: flex; gap: 8px; margin-top: 2px;">
+                        <span>${player.position || '—'}</span>
+                        <span>•</span>
+                        <span style="font-weight: 600;">${player.team_name || '—'}</span>
+                    </div>
+                </div>
+                
+                <div style="text-align: right;">
+                    <div style="display: flex; gap: 12px;">
+                        <div style="text-align: center;">
+                            <div style="font-weight: 900; color: #e74c3c; font-size: 1.1rem;">
+                                ${player.points_per_game ? player.points_per_game.toFixed(1) : '—'}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #6c757d;">PTS</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: 900; color: #006bb6; font-size: 1.1rem;">
+                                ${player.rebounds_per_game ? player.rebounds_per_game.toFixed(1) : '—'}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #6c757d;">REB</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: 900; color: #10b981; font-size: 1.1rem;">
+                                ${player.assists_per_game ? player.assists_per_game.toFixed(1) : '—'}
+                            </div>
+                            <div style="font-size: 0.75rem; color: #6c757d;">AST</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderAllNBAPlayers(players) {
+    if (!players || players.length === 0) {
+        return '<p style="color: #6c757d; text-align: center; padding: 40px;">No player data available</p>';
     }
     
     return `
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Segoe UI', sans-serif;">
             <thead>
-                <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                    <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #64748b; width: 50px;">#</th>
-                    <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #64748b;">ZAWODNIK</th>
-                    <th style="padding: 12px 15px; text-align: left; font-weight: 600; color: #64748b;">DRUŻYNA</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b;">POZYCJA</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b;">OVR</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b;">POT</th>
-                    <th style="padding: 12px 15px; text-align: center; font-weight: 600; color: #64748b;">WIEK</th>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 15px; text-align: left; font-weight: 700; color: #495057;">RANK</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 700; color: #495057;">PLAYER</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">TEAM</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">POS</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">PTS</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">REB</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">AST</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">STL</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">BLK</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">FG%</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 700; color: #495057;">EFF</th>
                 </tr>
             </thead>
             <tbody>
                 ${players.map((player, index) => `
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 12px 15px; color: #475569; font-weight: 600;">${index + 1}</td>
-                        <td style="padding: 12px 15px;">
-                            <div style="font-weight: 700; color: #1a237e;">${player.first_name} ${player.last_name}</div>
+                    <tr style="border-bottom: 1px solid #e9ecef;" 
+                        onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='white'">
+                        <td style="padding: 15px; font-weight: 700; color: #495057; text-align: center;">
+                            <div style="display: inline-flex; align-items: center; justify-content: center; 
+                                        width: 28px; height: 28px; border-radius: 6px; 
+                                        background: ${index < 3 ? 
+                                            index === 0 ? '#fff9db' : 
+                                            index === 1 ? '#f8f9fa' : '#fef3e9' : '#f8f9fa'}; 
+                                        color: ${index < 3 ? 
+                                            index === 0 ? '#ffd700' : 
+                                            index === 1 ? '#c0c0c0' : '#cd7f32' : '#495057'};">
+                                ${index + 1}
+                            </div>
                         </td>
-                        <td style="padding: 12px 15px; color: #475569;">${player.teams?.team_name || 'Brak'}</td>
-                        <td style="padding: 12px 15px; text-align: center; color: #475569;">${player.position || 'N/A'}</td>
-                        <td style="padding: 12px 15px; text-align: center; font-weight: 700; color: #3b82f6;">${player.overall_rating}</td>
-                        <td style="padding: 12px 15px; text-align: center; font-weight: 700; color: #10b981;">${player.potential || 0}</td>
-                        <td style="padding: 12px 15px; text-align: center; font-weight: 700; color: #f59e0b;">${player.age || 0}</td>
+                        <td style="padding: 15px;">
+                            <div style="font-weight: 700; color: #212529;">${player.first_name} ${player.last_name}</div>
+                            <div style="font-size: 0.85rem; color: #6c757d;">#${player.id?.toString().substring(0, 4) || '0000'} • ${player.age || '—'} yrs</div>
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 600; color: #495057;">
+                            ${player.team_name || '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 700; color: #1d428a;">
+                            ${player.position || '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 900; color: #e74c3c;">
+                            ${player.points_per_game ? player.points_per_game.toFixed(1) : '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 900; color: #006bb6;">
+                            ${player.rebounds_per_game ? player.rebounds_per_game.toFixed(1) : '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 900; color: #10b981;">
+                            ${player.assists_per_game ? player.assists_per_game.toFixed(1) : '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 900; color: #f59e0b;">
+                            ${player.steals_per_game ? player.steals_per_game.toFixed(1) : '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 900; color: #8b5cf6;">
+                            ${player.blocks_per_game ? player.blocks_per_game.toFixed(1) : '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center; font-weight: 700; color: #212529;">
+                            ${player.field_goal_percentage ? player.field_goal_percentage.toFixed(1) + '%' : '—'}
+                        </td>
+                        <td style="padding: 15px; text-align: center;">
+                            <div style="background: #1d428a; color: white; padding: 5px 10px; border-radius: 20px; 
+                                        font-weight: 900; font-size: 0.9rem; display: inline-block;">
+                                ${player.efficiency || player.overall_rating || '—'}
+                            </div>
+                        </td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -529,7 +912,29 @@ function renderAllTopPlayers(players) {
     `;
 }
 
-function initLeagueEventListeners(topPlayers) {
+// Funkcje pomocnicze
+function getTeamInitials(teamName) {
+    if (!teamName) return 'TM';
+    const words = teamName.split(' ');
+    if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return teamName.substring(0, 2).toUpperCase();
+}
+
+function generateLast10Form(team) {
+    // Generuj przykładowe formy (W = win, L = loss)
+    const results = [];
+    const winRate = team.wins / (team.wins + team.losses) || 0.5;
+    
+    for (let i = 0; i < 10; i++) {
+        results.push(Math.random() < winRate ? 'W' : 'L');
+    }
+    
+    return results.join('');
+}
+
+function initNBAEventListeners(topPlayers) {
     // Przycisk pokaż wszystkich zawodników
     const showAllBtn = document.getElementById('btn-show-all-players');
     if (showAllBtn && topPlayers.length > 5) {
@@ -561,4 +966,13 @@ function initLeagueEventListeners(topPlayers) {
             }
         });
     }
+    
+    // Konferencje przyciski
+    const conferenceBtns = document.querySelectorAll('.conference-btn');
+    conferenceBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            conferenceBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
 }
