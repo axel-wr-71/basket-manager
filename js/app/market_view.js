@@ -14,25 +14,94 @@ let currentFilters = {
     offerType: 'all'
 };
 
+// Funkcje pomocnicze z roster_view.js
+function getFlagUrl(countryCode) {
+    if (!countryCode) return '';
+    const code = String(countryCode).toLowerCase().trim();
+    const finalCode = (code === 'el') ? 'gr' : code;
+    return `assets/flags/${finalCode}.png`;
+}
+
+function getPositionStyle(pos) {
+    const styles = {
+        'PG': '#1e40af', 
+        'SG': '#5b21b6', 
+        'SF': '#065f46', 
+        'PF': '#9a3412', 
+        'C': '#F5AD27' 
+    };
+    return styles[pos] || '#334155';
+}
+
+function getOvrStyle(ovr) {
+    if (ovr >= 90) return { bg: '#fffbeb', border: '#f59e0b', color: '#92400e' };
+    if (ovr >= 80) return { bg: '#f0fdf4', border: '#22c55e', color: '#166534' };
+    if (ovr >= 70) return { bg: '#f0f9ff', border: '#3b82f6', color: '#1e3a8a' };
+    if (ovr >= 60) return { bg: '#fff7ed', border: '#fdba74', color: '#9a3412' };
+    if (ovr >= 50) return { bg: '#f0fdf4', border: '#22c55e', color: '#5b21b6' };
+    if (ovr >= 40) return { bg: '#f0f9ff', border: '#3b82f6', color: '#065f46' };
+    if (ovr >= 30) return { bg: '#fff7ed', border: '#fdba74', color: '#1e40af' };
+    return { bg: '#f8fafc', border: '#e2e8f0', color: '#64748b' };
+}
+
+function calculateOVR(p) {
+    const skills = [
+        p.skill_2pt, p.skill_3pt, p.skill_dunk, p.skill_ft, p.skill_passing, 
+        p.skill_dribbling, p.skill_stamina, p.skill_rebound, p.skill_block, 
+        p.skill_steal, p.skill_1on1_off, p.skill_1on1_def
+    ];
+    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
+    return Math.round((sum / 240) * 100);
+}
+
 function calculateMarketValue(player) {
     if (!player) return 0;
-    const ovr = calculatePlayerOVR(player);
+    const ovr = calculateOVR(player);
     const ageFactor = player.age <= 25 ? 1.5 : player.age <= 30 ? 1.0 : 0.7;
     return Math.round((ovr * 10000 + (player.salary || 0) * 2) * ageFactor);
 }
 
-function calculatePlayerOVR(player) {
-    if (!player) return 0;
+// Funkcja generująca opcje potencjału na podstawie globalnych definicji
+function generatePotentialOptions() {
+    const defaultOptions = `
+        <option value="">All Levels</option>
+        <option value="GOAT">G.O.A.T. 🐐</option>
+        <option value="Elite Franchise">Elite Franchise ★</option>
+        <option value="Franchise Player">Franchise Player ★</option>
+        <option value="All-Star Caliber">All-Star Caliber</option>
+        <option value="Starter">Starter</option>
+        <option value="Sixth Man">Sixth Man</option>
+        <option value="Rotation Player">Rotation Player</option>
+        <option value="Deep Bench">Deep Bench</option>
+        <option value="Project Player">Project Player</option>
+        <option value="High Prospect">High Prospect</option>
+    `;
     
-    const skills = [
-        player.skill_2pt, player.skill_3pt, player.skill_dunk, player.skill_ft,
-        player.skill_passing, player.skill_dribbling, player.skill_stamina,
-        player.skill_rebound, player.skill_block, player.skill_steal,
-        player.skill_1on1_off, player.skill_1on1_def
-    ];
+    if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
+        const options = Object.values(window.potentialDefinitions)
+            .sort((a, b) => b.order_index - a.order_index)
+            .map(def => `<option value="${def.label}">${def.label} ${def.emoji || ''}</option>`)
+            .join('');
+        return `<option value="">All Levels</option>${options}`;
+    }
     
-    const sum = skills.reduce((a, b) => (a || 0) + (b || 0), 0);
-    return Math.round((sum / 240) * 100);
+    return defaultOptions;
+}
+
+// Funkcja pobierająca dane potencjału zgodnie z roster_view.js
+function getPotentialData(potentialId) {
+    if (window.getPotentialData) {
+        return window.getPotentialData(potentialId);
+    }
+    
+    // Fallback data jeśli funkcja nie jest dostępna
+    const fallbackData = {
+        label: potentialId || 'Unknown',
+        color: '#94a3b8',
+        icon: '👤'
+    };
+    
+    return fallbackData;
 }
 
 export async function renderMarketView(teamData, players = []) {
@@ -75,12 +144,15 @@ export async function renderMarketView(teamData, players = []) {
                     <h3 style="margin:0; font-size: 1rem; color:#1a237e; font-weight:800; text-transform:uppercase; letter-spacing: 0.5px;">
                         Player Search Filters
                     </h3>
+                    <button id="btn-reset-filters" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                        Reset All Filters
+                    </button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 15px; align-items: end;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr) 2fr; gap: 15px; align-items: end;">
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Position</label>
-                        <select id="filter-position" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white;">
+                        <select id="filter-position" class="filter-select">
                             <option value="">All Positions</option>
                             <option value="PG">Point Guard (PG)</option>
                             <option value="SG">Shooting Guard (SG)</option>
@@ -94,10 +166,10 @@ export async function renderMarketView(teamData, players = []) {
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Age Range</label>
                         <div style="display: flex; gap: 8px;">
                             <input id="filter-min-age" type="number" min="18" max="35" placeholder="Min" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
                             <span style="color: #94a3b8; align-self: center;">-</span>
                             <input id="filter-max-age" type="number" min="18" max="35" placeholder="Max" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
                         </div>
                     </div>
 
@@ -105,38 +177,30 @@ export async function renderMarketView(teamData, players = []) {
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Price Range ($)</label>
                         <div style="display: flex; gap: 8px;">
                             <input id="filter-min-price" type="number" min="0" placeholder="Min" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
                             <span style="color: #94a3b8; align-self: center;">-</span>
                             <input id="filter-max-price" type="number" min="0" placeholder="Max" 
-                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
                         </div>
                     </div>
 
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Potential</label>
-                        <select id="filter-potential" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white;">
-                            <option value="">All Levels</option>
-                            <option value="GOAT">G.O.A.T. 🐐</option>
-                            <option value="Elite Franchise">Elite Franchise ★</option>
-                            <option value="Franchise Player">Franchise Player ★</option>
-                            <option value="All-Star Caliber">All-Star Caliber</option>
-                            <option value="Starter">Starter</option>
-                            <option value="Sixth Man">Sixth Man</option>
-                            <option value="Rotation Player">Rotation Player</option>
-                            <option value="Deep Bench">Deep Bench</option>
-                            <option value="Project Player">Project Player</option>
-                            <option value="High Prospect">High Prospect</option>
+                        <select id="filter-potential" class="filter-select">
+                            ${generatePotentialOptions()}
                         </select>
                     </div>
 
                     <div style="display: flex; gap: 10px; align-items: end;">
-                        <button id="btn-reset-filters" 
-                                style="background: #f1f5f9; color: #64748b; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
-                            Reset All Filters
-                        </button>
                         <button id="btn-search-market" 
-                                style="background: #1a237e; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; white-space: nowrap;">
-                            🔍 Search
+                                style="background: #1a237e; color: white; border: none; padding: 10px 24px; border-radius: 8px; 
+                                       font-weight: 700; cursor: pointer; font-size: 0.9rem; flex: 1; transition: all 0.2s;">
+                            🔍 Search Players
+                        </button>
+                        <button id="btn-advanced-search" 
+                                style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; 
+                                       font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                            ⚙️
                         </button>
                     </div>
                 </div>
@@ -179,7 +243,7 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
             </div>
 
-            <div id="market-listings" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;"></div>
+            <div id="market-listings" class="market-grid"></div>
 
             <div class="market-pagination" style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e2e8f0;">
                 <button id="prev-page" class="pag-btn">← Previous Page</button>
@@ -199,6 +263,10 @@ export async function renderMarketView(teamData, players = []) {
         resetFilters();
         currentPage = 1;
         loadMarketData();
+    };
+
+    document.getElementById('btn-advanced-search').onclick = () => {
+        alert('Advanced search options coming soon!');
     };
 
     document.getElementById('prev-page').onclick = () => {
@@ -264,7 +332,7 @@ async function loadMarketData() {
 
     let query = supabaseClient
         .from('transfer_market')
-        .select('*, players(*, potential_definitions(*))')
+        .select('*, players(*)')
         .eq('status', 'active');
 
     if (currentFilters.position) {
@@ -280,7 +348,8 @@ async function loadMarketData() {
     }
 
     if (currentFilters.potential) {
-        query = query.eq('players.potential_definitions.label', currentFilters.potential);
+        // Używamy etykiety z potencjału, nie ID
+        query = query.ilike('players.potential', `%${currentFilters.potential}%`);
     }
 
     if (currentFilters.offerType !== 'all') {
@@ -299,6 +368,7 @@ async function loadMarketData() {
 
     allMarketData = data || [];
     
+    // Filtrowanie po cenie (client-side)
     allMarketData = allMarketData.filter(item => {
         let price;
         if (item.type === 'auction') {
@@ -342,7 +412,7 @@ function updateMarketStats(data) {
     const youngest = Math.min(...data.map(item => item.players.age || 0));
     document.getElementById('stat-youngest').textContent = youngest;
 
-    const highestOVR = Math.max(...data.map(item => calculatePlayerOVR(item.players) || 0));
+    const highestOVR = Math.max(...data.map(item => calculateOVR(item.players) || 0));
     document.getElementById('stat-highest-ovr').textContent = highestOVR;
 }
 
@@ -377,9 +447,9 @@ function renderPlayerCard(item) {
     if (!p) return '';
 
     const marketVal = calculateMarketValue(p);
-    const ovr = calculatePlayerOVR(p);
-    const accentColor = getPosColor(p.position);
-    const potData = p.potential_definitions || { label: p.potential || 'Unknown', color: '#94a3b8', icon: '👤' };
+    const ovr = calculateOVR(p);
+    const accentColor = getPositionStyle(p.position);
+    const potData = getPotentialData(p.potential);
     
     const rookieBadge = p.is_rookie ? `<span class="rookie-tag" style="background: #fef3c7; color: #92400e; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">ROOKIE</span>` : '';
     
@@ -403,6 +473,9 @@ function renderPlayerCard(item) {
         '1v1D': p.skill_1on1_def || 0,
         'FT': p.skill_ft || 0
     };
+
+    const countryCode = p.country || p.nationality || "";
+    const flagUrl = getFlagUrl(countryCode);
 
     let actionButtons = '';
     let priceInfo = '';
@@ -443,7 +516,7 @@ function renderPlayerCard(item) {
     const ovrStyle = getOvrStyle(ovr);
 
     return `
-        <div class="player-card" style="position: relative; overflow: hidden; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div class="player-card" style="position: relative; overflow: hidden; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px;">
             <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
                 ${item.type === 'auction' ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">AUCTION</span>' : ''}
                 ${item.type === 'buy_now' ? '<span style="background: #d1fae5; color: #065f46; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">BUY NOW</span>' : ''}
@@ -452,11 +525,11 @@ function renderPlayerCard(item) {
 
             <div class="card-side-accent" style="position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: ${accentColor}; border-radius: 16px 0 0 16px;"></div>
             <div class="card-main" style="padding: 25px; padding-left: 30px;">
-                <div class="card-header" style="display: flex; gap: 15px; align-items: flex-start; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                <div class="card-header" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" 
-                                 style="width: 80px; height: 80px; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); border-radius: 12px; border: 3px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                 style="width: 85px; height: 85px; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); border-radius: 12px; border: 3px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             <div style="width: 100%;">
                                 <div style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
                                     <div style="height: 100%; width: ${ovrPercentage}%; background: ${ovrStyle.border};"></div>
@@ -468,33 +541,36 @@ function renderPlayerCard(item) {
                         </div>
                         
                         <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                                <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #1a237e;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800; color: #1a237e;">
                                     ${p.first_name} ${p.last_name}
                                 </h3>
+                                ${flagUrl ? `<img src="${flagUrl}" style="width: 24px; height: auto; border-radius: 2px; border: 1px solid #e2e8f0;">` : ''}
                                 ${rookieBadge}
                             </div>
                             
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
-                                <span class="p-pos-tag" style="background: ${accentColor}; color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; font-weight: 800;">${p.position}</span>
-                                <span style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #475569; font-weight: 600;">
-                                    <span style="color: ${potData.color}; font-size: 1rem;">${potData.icon}</span>
-                                    ${potData.label}
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                                <div style="${getPositionStyle(p.position)}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    ${p.position}
+                                </div>
+                                <span style="display: flex; align-items: center; gap: 6px; font-size: 0.95rem; color: #475569; font-weight: 600;">
+                                    <span style="color: ${potData.color}; font-size: 1.1rem;">${potData.icon}</span>
+                                    <span style="border-bottom: 3px solid ${potData.color}; padding-bottom: 2px;">${potData.label}</span>
                                 </span>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.85rem; color: #64748b;">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.9rem; color: #64748b; margin-top: 10px;">
                                 <div>
-                                    <div style="font-weight: 600; color: #475569;">Age</div>
-                                    <div style="font-weight: 800; color: #1a237e; font-size: 1rem;">${p.age}</div>
+                                    <div style="font-weight: 600; color: #475569; font-size: 0.8rem;">Age</div>
+                                    <div style="font-weight: 800; color: #1a237e; font-size: 1.1rem;">${p.age}</div>
                                 </div>
                                 <div>
-                                    <div style="font-weight: 600; color: #475569;">Height</div>
-                                    <div style="font-weight: 800; color: #1a237e; font-size: 1rem;">${heightInFt}</div>
+                                    <div style="font-weight: 600; color: #475569; font-size: 0.8rem;">Height</div>
+                                    <div style="font-weight: 800; color: #1a237e; font-size: 1.1rem;">${heightInFt}</div>
                                 </div>
                                 <div>
-                                    <div style="font-weight: 600; color: #475569;">Salary</div>
-                                    <div style="font-weight: 800; color: #1a237e; font-size: 1rem;">$${(p.salary || 0).toLocaleString()}</div>
+                                    <div style="font-weight: 600; color: #475569; font-size: 0.8rem;">Salary</div>
+                                    <div style="font-weight: 800; color: #1a237e; font-size: 1.1rem;">$${(p.salary || 0).toLocaleString()}</div>
                                 </div>
                             </div>
                         </div>
@@ -502,10 +578,10 @@ function renderPlayerCard(item) {
                 </div>
 
                 <div style="margin: 20px 0; padding: 18px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
                         ${Object.entries(skills).map(([key, value]) => `
-                            <div style="text-align: center; padding: 10px; background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'}; border-radius: 8px;">
-                                <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; margin-bottom: 4px;">${key}</div>
+                            <div style="text-align: center; padding: 10px; background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'}; border-radius: 8px; border: 1px solid ${value >= 15 ? '#a7f3d0' : value >= 10 ? '#fde68a' : '#e5e7eb'};">
+                                <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; margin-bottom: 4px; text-transform: uppercase;">${key}</div>
                                 <div style="font-size: 1.1rem; font-weight: 800; color: #1a237e;">${value}</div>
                             </div>
                         `).join('')}
@@ -518,14 +594,14 @@ function renderPlayerCard(item) {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
                         <div>
                             <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Market Value</div>
-                            <div style="font-size: 1.2rem; font-weight: 800; color: #059669;">$${marketVal.toLocaleString()}</div>
+                            <div style="font-size: 1.3rem; font-weight: 800; color: #059669;">$${marketVal.toLocaleString()}</div>
                         </div>
                         
                         <div class="action-container" style="display: flex; gap: 12px;">
                             ${actionButtons}
                             <button onclick="showPlayerDetails('${p.id}')" 
-                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
-                                👁️ Details
+                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 1rem;">👁️</span> Details
                             </button>
                         </div>
                     </div>
@@ -533,28 +609,6 @@ function renderPlayerCard(item) {
             </div>
         </div>
     `;
-}
-
-function getPosColor(pos) {
-    const colors = { 
-        'PG': '#3b82f6', 
-        'SG': '#60a5fa', 
-        'SF': '#f59e0b', 
-        'PF': '#fb923c', 
-        'C': '#10b981' 
-    };
-    return colors[pos] || '#94a3b8';
-}
-
-function getOvrStyle(ovr) {
-    if (ovr >= 90) return { bg: '#fffbeb', border: '#f59e0b', color: '#92400e' };
-    if (ovr >= 80) return { bg: '#f0fdf4', border: '#22c55e', color: '#166534' };
-    if (ovr >= 70) return { bg: '#f0f9ff', border: '#3b82f6', color: '#1e3a8a' };
-    if (ovr >= 60) return { bg: '#fff7ed', border: '#fdba74', color: '#9a3412' };
-    if (ovr >= 50) return { bg: '#f0fdf4', border: '#22c55e', color: '#5b21b6' };
-    if (ovr >= 40) return { bg: '#f0f9ff', border: '#3b82f6', color: '#065f46' };
-    if (ovr >= 30) return { bg: '#fff7ed', border: '#fdba74', color: '#1e40af' };
-    return { bg: '#f8fafc', border: '#e2e8f0', color: '#64748b' };
 }
 
 window.handleBid = (listingId, currentPrice) => {
