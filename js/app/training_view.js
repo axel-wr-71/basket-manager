@@ -1,4 +1,6 @@
+// training_view.js
 import { supabaseClient } from '../auth.js';
+import { executeTraining } from './executeTraining.js'; // ← NOWY IMPORT
 
 // --- KONFIGURACJA I LABELE ---
 
@@ -35,7 +37,8 @@ function getTrainingDayInfo(dayName) {
 
     return {
         formattedDate: trainingDate.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' }),
-        isLocked: isLocked
+        isLocked: isLocked,
+        isPast: diffInHours < 0
     };
 }
 
@@ -145,15 +148,18 @@ export async function renderTrainingView(team, players) {
 function renderDayColumn(day, info, currentFocus, teamId) {
     const bgColor = day === 'Monday' ? '#1a237e' : '#1e293b';
     const accentColor = day === 'Monday' ? '#ffab40' : '#38bdf8';
+    const dayLower = day.toLowerCase();
+    const hasFocus = currentFocus && currentFocus !== 'none';
+    
     return `
         <div style="background: ${bgColor}; border-radius: 24px; padding: 25px; color: white; ${info.isLocked ? 'opacity: 0.8;' : ''}">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3 style="margin:0; text-transform: uppercase; color: ${accentColor}; font-size: 0.8rem;">${day} (${info.formattedDate})</h3>
                 ${info.isLocked ? '<span style="font-size: 0.6rem; background: #ef4444; padding: 4px 8px; border-radius: 6px; font-weight:900;">LOCKED</span>' : ''}
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
                 ${AVAILABLE_DRILLS.map(d => `
-                    <button onclick="window.selectDrill('${teamId}', '${day.toLowerCase()}', '${d.id}')"
+                    <button onclick="window.selectDrill('${teamId}', '${dayLower}', '${d.id}')"
                         ${info.isLocked ? 'disabled' : ''}
                         style="padding: 10px; border-radius: 12px; border: 1px solid ${currentFocus === d.id ? accentColor : 'rgba(255,255,255,0.1)'}; 
                         background: ${currentFocus === d.id ? accentColor : 'rgba(255,255,255,0.05)'}; 
@@ -162,6 +168,38 @@ function renderDayColumn(day, info, currentFocus, teamId) {
                     </button>
                 `).join('')}
             </div>
+            
+            ${hasFocus && !info.isLocked && !info.isPast ? `
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                    <button onclick="window.runTraining('${teamId}', '${dayLower}')"
+                        style="width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        🏀 EXECUTE TODAY'S TRAINING
+                    </button>
+                    <p style="font-size: 0.6rem; color: rgba(255,255,255,0.6); margin-top: 8px; text-align: center;">
+                        Apply skill gains to all active players
+                    </p>
+                </div>
+            ` : ''}
+            
+            ${hasFocus && info.isPast ? `
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 12px;">
+                        <p style="font-size: 0.65rem; color: rgba(255,255,255,0.8); margin: 0; text-align: center;">
+                            ⚠️ Training day has passed. Update focus for next week.
+                        </p>
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${!hasFocus && !info.isLocked ? `
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                    <div style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; padding: 12px;">
+                        <p style="font-size: 0.65rem; color: rgba(255,255,255,0.8); margin: 0; text-align: center;">
+                            📝 Select a drill above to plan training
+                        </p>
+                    </div>
+                </div>
+            ` : ''}
         </div>
     `;
 }
@@ -241,6 +279,8 @@ function renderSeasonalCard(p, currentSeason) {
     `;
 }
 
+// --- FUNKCJE GLOBALNE WINDOW ---
+
 window.saveSeasonalFocus = async function(playerId, currentSeason) {
     const skill = document.getElementById(`seasonal-choice-${playerId}`).value;
     if(!confirm(`Assign this focus for Season ${currentSeason}?`)) return;
@@ -265,4 +305,34 @@ window.selectDrill = async (teamId, day, drillId) => {
     const dbColumn = day === 'monday' ? 'monday_training_focus' : 'friday_training_focus';
     const { error } = await supabaseClient.from('teams').update({ [dbColumn]: drillId }).eq('id', teamId);
     if (!error) location.reload();
+};
+
+window.runTraining = async function(teamId, day) {
+    const dayName = day === 'monday' ? 'Monday' : 'Friday';
+    
+    if (!confirm(`Execute ${dayName} training?\n\nThis will apply skill gains to all active players and cannot be undone.`)) {
+        return;
+    }
+    
+    // Pokaż loader
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '⏳ Processing...';
+    button.disabled = true;
+    
+    // Uruchom trening
+    const result = await executeTraining(teamId, day);
+    
+    if (result.success) {
+        alert(`✅ ${result.message}\n\n• Drill: ${result.drill}\n• Players trained: ${result.playerCount}\n• Average skill gain: +${result.averageGain.toFixed(2)}`);
+        
+        // Odśwież stronę po 2 sekundach
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    } else {
+        alert(`❌ ${result.message}`);
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }
 };
