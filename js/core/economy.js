@@ -126,3 +126,181 @@ export async function processWeeklyFinances(teamId) {
         return { success: false, error: err.message };
     }
 }
+
+/**
+ * AKTUALIZACJA PENSJI WSZYSTKICH ZAWODNIKÓW (PANEL ADMINA)
+ */
+export async function adminUpdateSalaries() {
+    console.log("[ADMIN] Rozpoczynam masową aktualizację pensji...");
+    
+    try {
+        // 1. Pobierz wszystkich zawodników
+        const { data: players, error: fetchError } = await supabaseClient
+            .from('players')
+            .select('*');
+            
+        if (fetchError) throw fetchError;
+        
+        if (!players || players.length === 0) {
+            return { 
+                success: true, 
+                updatedPlayers: 0, 
+                unchangedPlayers: 0, 
+                totalPlayers: 0,
+                message: "Brak graczy do aktualizacji" 
+            };
+        }
+        
+        // 2. Przetwarzaj partiami (po 50 na raz)
+        const BATCH_SIZE = 50;
+        let updatedCount = 0;
+        let unchangedCount = 0;
+        let errors = [];
+        
+        for (let i = 0; i < players.length; i += BATCH_SIZE) {
+            const batch = players.slice(i, i + BATCH_SIZE);
+            
+            // 3. Dla każdego gracza oblicz nową pensję
+            const updatePromises = batch.map(async (player) => {
+                const newSalary = calculatePlayerDynamicWage(player);
+                
+                // Sprawdź czy pensja się zmieniła
+                if (newSalary === player.salary) {
+                    unchangedCount++;
+                    return null;
+                }
+                
+                // Aktualizuj w bazie
+                const { error } = await supabaseClient
+                    .from('players')
+                    .update({ 
+                        salary: newSalary,
+                        last_salary_update: new Date().toISOString()
+                    })
+                    .eq('id', player.id);
+                    
+                if (error) {
+                    errors.push(`Gracz ${player.id} (${player.first_name} ${player.last_name}): ${error.message}`);
+                    return null;
+                }
+                
+                updatedCount++;
+                return { id: player.id, oldSalary: player.salary, newSalary };
+            });
+            
+            // Czekaj na partię
+            await Promise.all(updatePromises);
+            
+            // Postęp
+            console.log(`[ADMIN] Przetworzono ${Math.min(i + BATCH_SIZE, players.length)}/${players.length} graczy...`);
+        }
+        
+        // 4. Zwróć wynik
+        const result = {
+            success: errors.length === 0,
+            updatedPlayers: updatedCount,
+            unchangedPlayers: unchangedCount,
+            totalPlayers: players.length,
+            errors: errors.length > 0 ? errors : undefined
+        };
+        
+        console.log("[ADMIN] Aktualizacja pensji zakończona:", result);
+        return result;
+        
+    } catch (error) {
+        console.error("[ADMIN] Błąd aktualizacji pensji:", error);
+        return { 
+            success: false, 
+            error: error.message,
+            updatedPlayers: 0,
+            unchangedPlayers: 0,
+            totalPlayers: 0
+        };
+    }
+}
+
+/**
+ * AKTUALIZACJA WARTOŚCI RYNKOWYCH WSZYSTKICH ZAWODNIKÓW (PANEL ADMINA)
+ */
+export async function adminUpdateMarketValues() {
+    console.log("[ADMIN] Rozpoczynam masową aktualizację wartości rynkowych...");
+    
+    try {
+        // 1. Pobierz wszystkich zawodników
+        const { data: players, error: fetchError } = await supabaseClient
+            .from('players')
+            .select('*');
+            
+        if (fetchError) throw fetchError;
+        
+        if (!players || players.length === 0) {
+            return { 
+                success: true, 
+                updatedCount: 0, 
+                totalCount: 0,
+                message: "Brak graczy do aktualizacji" 
+            };
+        }
+        
+        // 2. Przetwarzaj partiami
+        const BATCH_SIZE = 50;
+        let updatedCount = 0;
+        let errors = [];
+        
+        for (let i = 0; i < players.length; i += BATCH_SIZE) {
+            const batch = players.slice(i, i + BATCH_SIZE);
+            
+            // 3. Dla każdego gracza oblicz nową wartość rynkową
+            const updatePromises = batch.map(async (player) => {
+                const newMarketValue = calculateMarketValue(player);
+                
+                // Aktualizuj w bazie
+                const { error } = await supabaseClient
+                    .from('players')
+                    .update({ 
+                        market_value: newMarketValue,
+                        last_market_value_update: new Date().toISOString()
+                    })
+                    .eq('id', player.id);
+                    
+                if (error) {
+                    errors.push(`Gracz ${player.id}: ${error.message}`);
+                    return null;
+                }
+                
+                updatedCount++;
+                return { id: player.id, oldValue: player.market_value, newValue: newMarketValue };
+            });
+            
+            // Czekaj na partię
+            await Promise.all(updatePromises);
+            
+            // Postęp
+            console.log(`[ADMIN] Przetworzono ${Math.min(i + BATCH_SIZE, players.length)}/${players.length} graczy...`);
+        }
+        
+        // 4. Zwróć wynik
+        const result = {
+            success: errors.length === 0,
+            updatedCount: updatedCount,
+            totalCount: players.length,
+            errors: errors.length > 0 ? errors : undefined,
+            message: `Zaktualizowano wartości rynkowe ${updatedCount} graczy z ${players.length}`
+        };
+        
+        console.log("[ADMIN] Aktualizacja wartości rynkowych zakończona:", result);
+        return result;
+        
+    } catch (error) {
+        console.error("[ADMIN] Błąd aktualizacji wartości rynkowych:", error);
+        return { 
+            success: false, 
+            error: error.message,
+            updatedCount: 0,
+            totalCount: 0
+        };
+    }
+}
+
+// ALIAS dla kompatybilności wstecznej (dla starego kodu w app.js)
+export const updateAllPlayerMarketValues = adminUpdateMarketValues;
