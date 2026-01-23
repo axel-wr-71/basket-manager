@@ -14,7 +14,6 @@ let currentFilters = {
     offerType: 'all'
 };
 
-// Tymczasowa funkcja obliczająca wartość rynkową (jeśli economy.js nie istnieje)
 function calculateMarketValue(player) {
     if (!player) return 0;
     const ovr = calculatePlayerOVR(player);
@@ -38,9 +37,6 @@ function calculatePlayerOVR(player) {
 
 export async function renderMarketView(teamData, players = []) {
     const container = document.getElementById('market-view-container');
-    
-    console.log("[MARKET] Container:", container);
-    console.log("[MARKET] Team data:", teamData);
     
     if (!container) {
         console.error("[MARKET] Container #market-view-container not found!");
@@ -79,15 +75,12 @@ export async function renderMarketView(teamData, players = []) {
                     <h3 style="margin:0; font-size: 1rem; color:#1a237e; font-weight:800; text-transform:uppercase; letter-spacing: 0.5px;">
                         Player Search Filters
                     </h3>
-                    <button id="btn-reset-filters" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
-                        Reset All Filters
-                    </button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr) 2fr; gap: 15px; align-items: end;">
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 15px; align-items: end;">
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Position</label>
-                        <select id="filter-position" class="filter-select">
+                        <select id="filter-position" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white;">
                             <option value="">All Positions</option>
                             <option value="PG">Point Guard (PG)</option>
                             <option value="SG">Shooting Guard (SG)</option>
@@ -101,10 +94,10 @@ export async function renderMarketView(teamData, players = []) {
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Age Range</label>
                         <div style="display: flex; gap: 8px;">
                             <input id="filter-min-age" type="number" min="18" max="35" placeholder="Min" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
                             <span style="color: #94a3b8; align-self: center;">-</span>
                             <input id="filter-max-age" type="number" min="18" max="35" placeholder="Max" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
                         </div>
                     </div>
 
@@ -112,16 +105,16 @@ export async function renderMarketView(teamData, players = []) {
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Price Range ($)</label>
                         <div style="display: flex; gap: 8px;">
                             <input id="filter-min-price" type="number" min="0" placeholder="Min" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
                             <span style="color: #94a3b8; align-self: center;">-</span>
                             <input id="filter-max-price" type="number" min="0" placeholder="Max" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;">
                         </div>
                     </div>
 
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Potential</label>
-                        <select id="filter-potential" class="filter-select">
+                        <select id="filter-potential" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white;">
                             <option value="">All Levels</option>
                             <option value="GOAT">G.O.A.T. 🐐</option>
                             <option value="Elite Franchise">Elite Franchise ★</option>
@@ -137,15 +130,13 @@ export async function renderMarketView(teamData, players = []) {
                     </div>
 
                     <div style="display: flex; gap: 10px; align-items: end;">
-                        <button id="btn-search-market" 
-                                style="background: #1a237e; color: white; border: none; padding: 10px 24px; border-radius: 8px; 
-                                       font-weight: 700; cursor: pointer; font-size: 0.9rem; flex: 1; transition: all 0.2s;">
-                            🔍 Search Players
+                        <button id="btn-reset-filters" 
+                                style="background: #f1f5f9; color: #64748b; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
+                            Reset All Filters
                         </button>
-                        <button id="btn-advanced-search" 
-                                style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; 
-                                       font-weight: 600; cursor: pointer; font-size: 0.85rem;">
-                            ⚙️
+                        <button id="btn-search-market" 
+                                style="background: #1a237e; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; white-space: nowrap;">
+                            🔍 Search
                         </button>
                     </div>
                 </div>
@@ -188,7 +179,7 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
             </div>
 
-            <div id="market-listings" class="market-grid"></div>
+            <div id="market-listings" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;"></div>
 
             <div class="market-pagination" style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e2e8f0;">
                 <button id="prev-page" class="pag-btn">← Previous Page</button>
@@ -208,10 +199,6 @@ export async function renderMarketView(teamData, players = []) {
         resetFilters();
         currentPage = 1;
         loadMarketData();
-    };
-
-    document.getElementById('btn-advanced-search').onclick = () => {
-        alert('Advanced search options coming soon!');
     };
 
     document.getElementById('prev-page').onclick = () => {
@@ -312,6 +299,24 @@ async function loadMarketData() {
 
     allMarketData = data || [];
     
+    allMarketData = allMarketData.filter(item => {
+        let price;
+        if (item.type === 'auction') {
+            price = item.current_price;
+        } else if (item.type === 'buy_now') {
+            price = item.buy_now_price;
+        } else if (item.type === 'both') {
+            price = Math.min(item.current_price || Infinity, item.buy_now_price || Infinity);
+            if (price === Infinity) price = 0;
+        } else {
+            price = 0;
+        }
+
+        if (currentFilters.minPrice && price < currentFilters.minPrice) return false;
+        if (currentFilters.maxPrice && price > currentFilters.maxPrice) return false;
+        return true;
+    });
+    
     updateMarketStats(allMarketData);
     
     displayCurrentPage();
@@ -374,9 +379,9 @@ function renderPlayerCard(item) {
     const marketVal = calculateMarketValue(p);
     const ovr = calculatePlayerOVR(p);
     const accentColor = getPosColor(p.position);
-    const potData = p.potential_definitions || { label: 'Unknown', color: '#94a3b8', icon: '👤' };
+    const potData = p.potential_definitions || { label: p.potential || 'Unknown', color: '#94a3b8', icon: '👤' };
     
-    const rookieBadge = p.is_rookie ? `<span class="rookie-tag">ROOKIE</span>` : '';
+    const rookieBadge = p.is_rookie ? `<span class="rookie-tag" style="background: #fef3c7; color: #92400e; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">ROOKIE</span>` : '';
     
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
@@ -406,57 +411,57 @@ function renderPlayerCard(item) {
         const bidPrice = item.current_price || 0;
         const bidEnds = item.auction_ends ? new Date(item.auction_ends).toLocaleDateString() : 'Soon';
         priceInfo = `
-            <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+            <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <span style="font-size: 0.75rem; color: #92400e; font-weight: 600;">Auction Price</span>
-                    <span style="font-size: 1.1rem; font-weight: 800; color: #d97706;">$${bidPrice.toLocaleString()}</span>
+                    <span style="font-size: 0.8rem; color: #92400e; font-weight: 600;">Auction Price</span>
+                    <span style="font-size: 1.2rem; font-weight: 800; color: #d97706;">$${bidPrice.toLocaleString()}</span>
                 </div>
-                <div style="font-size: 0.7rem; color: #b45309; display: flex; align-items: center; gap: 4px;">
+                <div style="font-size: 0.75rem; color: #b45309; display: flex; align-items: center; gap: 6px;">
                     <span>⏱️</span> Ends: ${bidEnds}
                 </div>
             </div>
         `;
-        actionButtons += `<button class="bid-btn" onclick="handleBid('${item.id}', ${bidPrice})" style="background: ${accentColor}">BID NOW</button>`;
+        actionButtons += `<button class="bid-btn" onclick="handleBid('${item.id}', ${bidPrice})" style="background: ${accentColor}; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem;">BID NOW</button>`;
     }
     
     if (item.type === 'buy_now' || item.type === 'both') {
         const buyNowPrice = item.buy_now_price || 0;
         if (item.type === 'buy_now') {
             priceInfo = `
-                <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+                <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.75rem; color: #065f46; font-weight: 600;">Buy Now Price</span>
-                        <span style="font-size: 1.1rem; font-weight: 800; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
+                        <span style="font-size: 0.8rem; color: #065f46; font-weight: 600;">Buy Now Price</span>
+                        <span style="font-size: 1.2rem; font-weight: 800; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
                     </div>
                 </div>
             `;
         }
-        actionButtons += `<button class="buy-btn" onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="background: #10b981">BUY NOW</button>`;
+        actionButtons += `<button class="buy-btn" onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem;">BUY NOW</button>`;
     }
 
     const ovrPercentage = (ovr / 100) * 100;
     const ovrStyle = getOvrStyle(ovr);
 
     return `
-        <div class="player-card" style="position: relative; overflow: hidden;">
+        <div class="player-card" style="position: relative; overflow: hidden; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
             <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
-                ${item.type === 'auction' ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">AUCTION</span>' : ''}
-                ${item.type === 'buy_now' ? '<span style="background: #d1fae5; color: #065f46; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">BUY NOW</span>' : ''}
-                ${item.type === 'both' ? '<span style="background: #dbeafe; color: #1e40af; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">BOTH</span>' : ''}
+                ${item.type === 'auction' ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">AUCTION</span>' : ''}
+                ${item.type === 'buy_now' ? '<span style="background: #d1fae5; color: #065f46; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">BUY NOW</span>' : ''}
+                ${item.type === 'both' ? '<span style="background: #dbeafe; color: #1e40af; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">BOTH</span>' : ''}
             </div>
 
-            <div class="card-side-accent" style="background: ${accentColor}"></div>
-            <div class="card-main">
+            <div class="card-side-accent" style="position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: ${accentColor}; border-radius: 16px 0 0 16px;"></div>
+            <div class="card-main" style="padding: 25px; padding-left: 30px;">
                 <div class="card-header" style="display: flex; gap: 15px; align-items: flex-start; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.last_name}" 
-                                 style="width: 70px; height: 70px; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); border-radius: 12px; border: 3px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                 style="width: 80px; height: 80px; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); border-radius: 12px; border: 3px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             <div style="width: 100%;">
-                                <div style="height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                                <div style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
                                     <div style="height: 100%; width: ${ovrPercentage}%; background: ${ovrStyle.border};"></div>
                                 </div>
-                                <div style="text-align: center; font-size: 0.7rem; font-weight: 700; color: ${ovrStyle.color}; margin-top: 4px;">
+                                <div style="text-align: center; font-size: 0.75rem; font-weight: 800; color: ${ovrStyle.color}; margin-top: 5px;">
                                     OVR: ${ovr}
                                 </div>
                             </div>
@@ -464,44 +469,44 @@ function renderPlayerCard(item) {
                         
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
-                                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 800; color: #1a237e;">
+                                <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: #1a237e;">
                                     ${p.first_name} ${p.last_name}
                                 </h3>
                                 ${rookieBadge}
                             </div>
                             
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
-                                <span class="p-pos-tag" style="background: ${accentColor}">${p.position}</span>
-                                <span style="display: flex; align-items: center; gap: 4px; font-size: 0.85rem; color: #475569; font-weight: 600;">
-                                    <span style="color: ${potData.color};">${potData.icon}</span>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+                                <span class="p-pos-tag" style="background: ${accentColor}; color: white; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; font-weight: 800;">${p.position}</span>
+                                <span style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #475569; font-weight: 600;">
+                                    <span style="color: ${potData.color}; font-size: 1rem;">${potData.icon}</span>
                                     ${potData.label}
                                 </span>
                             </div>
                             
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.8rem; color: #64748b;">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.85rem; color: #64748b;">
                                 <div>
                                     <div style="font-weight: 600; color: #475569;">Age</div>
-                                    <div style="font-weight: 800; color: #1a237e;">${p.age}</div>
+                                    <div style="font-weight: 800; color: #1a237e; font-size: 1rem;">${p.age}</div>
                                 </div>
                                 <div>
                                     <div style="font-weight: 600; color: #475569;">Height</div>
-                                    <div style="font-weight: 800; color: #1a237e;">${heightInFt}</div>
+                                    <div style="font-weight: 800; color: #1a237e; font-size: 1rem;">${heightInFt}</div>
                                 </div>
                                 <div>
                                     <div style="font-weight: 600; color: #475569;">Salary</div>
-                                    <div style="font-weight: 800; color: #1a237e;">$${(p.salary || 0).toLocaleString()}</div>
+                                    <div style="font-weight: 800; color: #1a237e; font-size: 1rem;">$${(p.salary || 0).toLocaleString()}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                <div style="margin: 20px 0; padding: 18px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                         ${Object.entries(skills).map(([key, value]) => `
-                            <div style="text-align: center; padding: 8px; background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'}; border-radius: 6px;">
-                                <div style="font-size: 0.6rem; color: #64748b; font-weight: 600; margin-bottom: 2px;">${key}</div>
-                                <div style="font-size: 1rem; font-weight: 800; color: #1a237e;">${value}</div>
+                            <div style="text-align: center; padding: 10px; background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'}; border-radius: 8px;">
+                                <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; margin-bottom: 4px;">${key}</div>
+                                <div style="font-size: 1.1rem; font-weight: 800; color: #1a237e;">${value}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -510,16 +515,16 @@ function renderPlayerCard(item) {
                 <div class="card-footer">
                     ${priceInfo}
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
                         <div>
-                            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">Market Value</div>
-                            <div style="font-size: 1.1rem; font-weight: 800; color: #059669;">$${marketVal.toLocaleString()}</div>
+                            <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Market Value</div>
+                            <div style="font-size: 1.2rem; font-weight: 800; color: #059669;">$${marketVal.toLocaleString()}</div>
                         </div>
                         
-                        <div class="action-container" style="display: flex; gap: 10px;">
+                        <div class="action-container" style="display: flex; gap: 12px;">
                             ${actionButtons}
                             <button onclick="showPlayerDetails('${p.id}')" 
-                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">
+                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
                                 👁️ Details
                             </button>
                         </div>
