@@ -1,6 +1,5 @@
 // training_view.js
 import { supabaseClient } from '../auth.js';
-import { executeTraining } from './executeTraining.js'; // ← NOWY IMPORT
 
 // --- KONFIGURACJA I LABELE ---
 
@@ -42,7 +41,7 @@ function getTrainingDayInfo(dayName) {
     };
 }
 
-// --- RENDEROWANIE WIDOKU ---
+// --- GŁÓWNA FUNKCJA RENDERUJĄCA ---
 
 export async function renderTrainingView(team, players) {
     const container = document.getElementById('training-view-container');
@@ -143,6 +142,30 @@ export async function renderTrainingView(team, players) {
         </div>
     `;
     container.innerHTML = html;
+    
+    // Rejestrujemy funkcję refresh dla globalnego dostępu
+    window.refreshTrainingView = async () => {
+        // Ponownie pobierz zaktualizowane dane
+        const { data: updatedTeam } = await supabaseClient
+            .from('teams')
+            .select('*')
+            .eq('id', team.id)
+            .single();
+            
+        const { data: updatedPlayers } = await supabaseClient
+            .from('players')
+            .select('*')
+            .eq('team_id', team.id);
+            
+        // Zaktualizuj gameState
+        if (window.gameState) {
+            window.gameState.team = updatedTeam;
+            window.gameState.players = updatedPlayers || [];
+        }
+        
+        // Ponownie renderuj widok
+        await renderTrainingView(updatedTeam, updatedPlayers || []);
+    };
 }
 
 function renderDayColumn(day, info, currentFocus, teamId) {
@@ -159,7 +182,7 @@ function renderDayColumn(day, info, currentFocus, teamId) {
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
                 ${AVAILABLE_DRILLS.map(d => `
-                    <button onclick="window.selectDrill('${teamId}', '${dayLower}', '${d.id}')"
+                    <button onclick="handleSelectDrill('${teamId}', '${dayLower}', '${d.id}')"
                         ${info.isLocked ? 'disabled' : ''}
                         style="padding: 10px; border-radius: 12px; border: 1px solid ${currentFocus === d.id ? accentColor : 'rgba(255,255,255,0.1)'}; 
                         background: ${currentFocus === d.id ? accentColor : 'rgba(255,255,255,0.05)'}; 
@@ -171,7 +194,7 @@ function renderDayColumn(day, info, currentFocus, teamId) {
             
             ${hasFocus && !info.isLocked && !info.isPast ? `
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
-                    <button onclick="window.runTraining('${teamId}', '${dayLower}')"
+                    <button onclick="handleRunTraining('${teamId}', '${dayLower}')"
                         style="width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         🏀 EXECUTE TODAY'S TRAINING
                     </button>
@@ -270,7 +293,7 @@ function renderSeasonalCard(p, currentSeason) {
                 <select id="seasonal-choice-${p.id}" ${isLocked ? 'disabled' : ''} style="flex: 1; padding: 8px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.7rem; font-weight: 700;">
                     ${Object.keys(SKILL_LABELS).map(key => `<option value="skill_${key}" ${currentFocus === 'skill_'+key ? 'selected' : ''}>${SKILL_LABELS[key]}</option>`).join('')}
                 </select>
-                <button onclick="window.saveSeasonalFocus('${p.id}', ${currentSeason})" ${isLocked ? 'disabled' : ''} 
+                <button onclick="handleSaveSeasonalFocus('${p.id}', ${currentSeason})" ${isLocked ? 'disabled' : ''} 
                     style="background: ${isLocked ? '#f1f5f9' : '#1e293b'}; color: ${isLocked ? '#94a3b8' : 'white'}; padding: 8px 12px; border-radius: 10px; border: none; font-weight: 800; font-size: 0.65rem; cursor: pointer;">
                     ${isLocked ? 'DONE' : 'SET'}
                 </button>
@@ -279,9 +302,9 @@ function renderSeasonalCard(p, currentSeason) {
     `;
 }
 
-// --- FUNKCJE GLOBALNE WINDOW ---
+// --- FUNKCJE OBSŁUGI EVENTÓW ---
 
-window.saveSeasonalFocus = async function(playerId, currentSeason) {
+async function handleSaveSeasonalFocus(playerId, currentSeason) {
     const skill = document.getElementById(`seasonal-choice-${playerId}`).value;
     if(!confirm(`Assign this focus for Season ${currentSeason}?`)) return;
     try {
@@ -290,24 +313,40 @@ window.saveSeasonalFocus = async function(playerId, currentSeason) {
             training_locked_season: currentSeason
         }).eq('id', playerId);
         if (error) throw error;
+        
         await supabaseClient.from('player_training_history').insert({
             player_id: playerId,
             season_number: currentSeason,
             skill_focused: skill
         });
-        location.reload(); 
+        
+        // Zamiast location.reload(), używamy refreshTrainingView
+        if (window.refreshTrainingView) {
+            await window.refreshTrainingView();
+        } else {
+            alert("Changes saved! Manually refresh to see updates.");
+        }
     } catch (err) {
         alert("Error: " + err.message);
     }
-};
+}
 
-window.selectDrill = async (teamId, day, drillId) => {
+async function handleSelectDrill(teamId, day, drillId) {
     const dbColumn = day === 'monday' ? 'monday_training_focus' : 'friday_training_focus';
     const { error } = await supabaseClient.from('teams').update({ [dbColumn]: drillId }).eq('id', teamId);
-    if (!error) location.reload();
-};
+    if (!error) {
+        // Zamiast location.reload(), używamy refreshTrainingView
+        if (window.refreshTrainingView) {
+            await window.refreshTrainingView();
+        } else {
+            alert("Training focus updated! Manually refresh to see changes.");
+        }
+    } else {
+        alert("Error: " + error.message);
+    }
+}
 
-window.runTraining = async function(teamId, day) {
+async function handleRunTraining(teamId, day) {
     const dayName = day === 'monday' ? 'Monday' : 'Friday';
     
     if (!confirm(`Execute ${dayName} training?\n\nThis will apply skill gains to all active players and cannot be undone.`)) {
@@ -320,19 +359,39 @@ window.runTraining = async function(teamId, day) {
     button.innerHTML = '⏳ Processing...';
     button.disabled = true;
     
-    // Uruchom trening
-    const result = await executeTraining(teamId, day);
-    
-    if (result.success) {
-        alert(`✅ ${result.message}\n\n• Drill: ${result.drill}\n• Players trained: ${result.playerCount}\n• Average skill gain: +${result.averageGain.toFixed(2)}`);
+    try {
+        // Dynamicznie importujemy funkcję executeTraining
+        const { executeTraining } = await import('./executeTraining.js');
         
-        // Odśwież stronę po 2 sekundach
-        setTimeout(() => {
-            location.reload();
-        }, 2000);
-    } else {
-        alert(`❌ ${result.message}`);
+        // Uruchom trening
+        const result = await executeTraining(teamId, day);
+        
+        if (result.success) {
+            alert(`✅ ${result.message}\n\n• Drill: ${result.drill}\n• Players trained: ${result.playerCount}\n• Average skill gain: +${result.averageGain.toFixed(2)}`);
+            
+            // Odśwież widok treningu po 1 sekundzie
+            setTimeout(() => {
+                if (window.refreshTrainingView) {
+                    window.refreshTrainingView();
+                } else {
+                    alert("Training completed! Please manually refresh to see changes.");
+                }
+            }, 1000);
+        } else {
+            alert(`❌ ${result.message}`);
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    } catch (error) {
+        console.error("Training execution error:", error);
+        alert(`❌ Error executing training: ${error.message}`);
         button.innerHTML = originalText;
         button.disabled = false;
     }
-};
+}
+
+// --- REJESTRACJA FUNKCJI GLOBALNYCH ---
+
+window.handleSaveSeasonalFocus = handleSaveSeasonalFocus;
+window.handleSelectDrill = handleSelectDrill;
+window.handleRunTraining = handleRunTraining;
