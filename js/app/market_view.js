@@ -80,7 +80,7 @@ function generatePotentialOptions() {
     if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
         const options = Object.values(window.potentialDefinitions)
             .sort((a, b) => b.order_index - a.order_index)
-            .map(def => `<option value="${def.label}">${def.label} ${def.emoji || ''}</option>`)
+            .map(def => `<option value="${def.id}">${def.label} ${def.emoji || ''}</option>`)
             .join('');
         return `<option value="">All Levels</option>${options}`;
     }
@@ -152,7 +152,7 @@ export async function renderMarketView(teamData, players = []) {
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr) 2fr; gap: 15px; align-items: end;">
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Position</label>
-                        <select id="filter-position" class="filter-select">
+                        <select id="filter-position" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: white;">
                             <option value="">All Positions</option>
                             <option value="PG">Point Guard (PG)</option>
                             <option value="SG">Shooting Guard (SG)</option>
@@ -166,10 +166,10 @@ export async function renderMarketView(teamData, players = []) {
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Age Range</label>
                         <div style="display: flex; gap: 8px;">
                             <input id="filter-min-age" type="number" min="18" max="35" placeholder="Min" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
                             <span style="color: #94a3b8; align-self: center;">-</span>
                             <input id="filter-max-age" type="number" min="18" max="35" placeholder="Max" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
                         </div>
                     </div>
 
@@ -177,28 +177,28 @@ export async function renderMarketView(teamData, players = []) {
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Price Range ($)</label>
                         <div style="display: flex; gap: 8px;">
                             <input id="filter-min-price" type="number" min="0" placeholder="Min" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
                             <span style="color: #94a3b8; align-self: center;">-</span>
                             <input id="filter-max-price" type="number" min="0" placeholder="Max" 
-                                   style="width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem;">
+                                   style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
                         </div>
                     </div>
 
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 6px; font-weight: 600;">Potential</label>
-                        <select id="filter-potential" class="filter-select">
+                        <select id="filter-potential" class="filter-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; background: white;">
                             ${generatePotentialOptions()}
                         </select>
                     </div>
 
                     <div style="display: flex; gap: 10px; align-items: end;">
                         <button id="btn-search-market" 
-                                style="background: #1a237e; color: white; border: none; padding: 10px 24px; border-radius: 8px; 
+                                style="background: #1a237e; color: white; border: none; padding: 12px 24px; border-radius: 8px; 
                                        font-weight: 700; cursor: pointer; font-size: 0.9rem; flex: 1; transition: all 0.2s;">
                             🔍 Search Players
                         </button>
                         <button id="btn-advanced-search" 
-                                style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 8px; 
+                                style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 15px; border-radius: 8px; 
                                        font-weight: 600; cursor: pointer; font-size: 0.85rem;">
                             ⚙️
                         </button>
@@ -243,12 +243,12 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
             </div>
 
-            <div id="market-listings" class="market-grid"></div>
+            <div id="market-listings" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px;"></div>
 
-            <div class="market-pagination" style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e2e8f0;">
-                <button id="prev-page" class="pag-btn">← Previous Page</button>
+            <div class="market-pagination" style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e2e8f0; display: flex; justify-content: center; align-items: center; gap: 20px;">
+                <button id="prev-page" class="pag-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">← Previous Page</button>
                 <div id="page-info" style="font-weight: 600; color: #64748b; font-size: 0.9rem;"></div>
-                <button id="next-page" class="pag-btn">Next Page →</button>
+                <button id="next-page" class="pag-btn" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem;">Next Page →</button>
             </div>
         </div>
     `;
@@ -297,13 +297,15 @@ export async function renderMarketView(teamData, players = []) {
 function updateFilters() {
     currentFilters = {
         position: document.getElementById('filter-position').value,
-        minAge: document.getElementById('filter-min-age').value,
-        maxAge: document.getElementById('filter-max-age').value,
-        minPrice: document.getElementById('filter-min-price').value,
-        maxPrice: document.getElementById('filter-max-price').value,
+        minAge: parseInt(document.getElementById('filter-min-age').value) || '',
+        maxAge: parseInt(document.getElementById('filter-max-age').value) || '',
+        minPrice: parseInt(document.getElementById('filter-min-price').value) || '',
+        maxPrice: parseInt(document.getElementById('filter-max-price').value) || '',
         potential: document.getElementById('filter-potential').value,
         offerType: document.querySelector('input[name="offerType"]:checked').value
     };
+    
+    console.log('Updated filters:', currentFilters);
 }
 
 function resetFilters() {
@@ -330,66 +332,85 @@ async function loadMarketData() {
     const list = document.getElementById('market-listings');
     list.innerHTML = '<div class="loader" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #64748b; font-weight: 500;">Analyzing market prospects...</div>';
 
-    let query = supabaseClient
-        .from('transfer_market')
-        .select('*, players(*)')
-        .eq('status', 'active');
+    try {
+        // Najpierw pobierz wszystkich zawodników z rynku z podstawowymi informacjami
+        let query = supabaseClient
+            .from('transfer_market')
+            .select('*, players!inner(*)')
+            .eq('status', 'active');
 
-    if (currentFilters.position) {
-        query = query.eq('players.position', currentFilters.position);
-    }
-
-    if (currentFilters.minAge) {
-        query = query.gte('players.age', currentFilters.minAge);
-    }
-
-    if (currentFilters.maxAge) {
-        query = query.lte('players.age', currentFilters.maxAge);
-    }
-
-    if (currentFilters.potential) {
-        // Używamy etykiety z potencjału, nie ID
-        query = query.ilike('players.potential', `%${currentFilters.potential}%`);
-    }
-
-    if (currentFilters.offerType !== 'all') {
-        query = query.eq('type', currentFilters.offerType);
-    }
-
-    query = query.order('created_at', { ascending: false });
-
-    const { data, error } = await query;
-    
-    if (error) {
-        console.error("Supabase Error:", error);
-        list.innerHTML = `<div class="error" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #ef4444; font-weight: 500;">Error: ${error.message}</div>`;
-        return;
-    }
-
-    allMarketData = data || [];
-    
-    // Filtrowanie po cenie (client-side)
-    allMarketData = allMarketData.filter(item => {
-        let price;
-        if (item.type === 'auction') {
-            price = item.current_price;
-        } else if (item.type === 'buy_now') {
-            price = item.buy_now_price;
-        } else if (item.type === 'both') {
-            price = Math.min(item.current_price || Infinity, item.buy_now_price || Infinity);
-            if (price === Infinity) price = 0;
-        } else {
-            price = 0;
+        // Filtry muszą być zastosowane inaczej - poprzez osobne zapytanie do players
+        // lub przez pobranie wszystkich danych i filtrowanie po stronie klienta
+        
+        // Pobieramy wszystkie dane
+        const { data, error } = await query.order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error("Supabase Error:", error);
+            list.innerHTML = `<div class="error" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #ef4444; font-weight: 500;">Error: ${error.message}</div>`;
+            return;
         }
 
-        if (currentFilters.minPrice && price < currentFilters.minPrice) return false;
-        if (currentFilters.maxPrice && price > currentFilters.maxPrice) return false;
-        return true;
-    });
-    
-    updateMarketStats(allMarketData);
-    
-    displayCurrentPage();
+        allMarketData = data || [];
+        
+        // Filtrowanie po stronie klienta (tymczasowe rozwiązanie)
+        allMarketData = allMarketData.filter(item => {
+            const player = item.players;
+            
+            // Filtruj pozycję
+            if (currentFilters.position && player.position !== currentFilters.position) {
+                return false;
+            }
+            
+            // Filtruj wiek
+            if (currentFilters.minAge && player.age < currentFilters.minAge) {
+                return false;
+            }
+            if (currentFilters.maxAge && player.age > currentFilters.maxAge) {
+                return false;
+            }
+            
+            // Filtruj potencjał (używając window.getPotentialData)
+            if (currentFilters.potential) {
+                const potData = getPotentialData(player.potential);
+                if (potData.label !== currentFilters.potential && 
+                    player.potential !== currentFilters.potential) {
+                    return false;
+                }
+            }
+            
+            // Filtruj typ oferty
+            if (currentFilters.offerType !== 'all' && item.type !== currentFilters.offerType) {
+                return false;
+            }
+            
+            // Filtruj cenę
+            let price;
+            if (item.type === 'auction') {
+                price = item.current_price;
+            } else if (item.type === 'buy_now') {
+                price = item.buy_now_price;
+            } else if (item.type === 'both') {
+                price = Math.min(item.current_price || Infinity, item.buy_now_price || Infinity);
+                if (price === Infinity) price = 0;
+            } else {
+                price = 0;
+            }
+
+            if (currentFilters.minPrice && price < currentFilters.minPrice) return false;
+            if (currentFilters.maxPrice && price > currentFilters.maxPrice) return false;
+            
+            return true;
+        });
+        
+        console.log('Filtered data:', allMarketData.length, 'items');
+        updateMarketStats(allMarketData);
+        displayCurrentPage();
+        
+    } catch (error) {
+        console.error("Error loading market data:", error);
+        list.innerHTML = `<div class="error" style="grid-column: 1/-1; text-align: center; padding: 60px; color: #ef4444; font-weight: 500;">Error loading market data</div>`;
+    }
 }
 
 function updateMarketStats(data) {
@@ -436,8 +457,12 @@ function displayCurrentPage() {
 
     const totalPages = Math.ceil(allMarketData.length / pageSize) || 1;
     document.getElementById('page-info').innerText = `Page ${currentPage} of ${totalPages} • ${allMarketData.length} players`;
-    document.getElementById('prev-page').disabled = currentPage === 1;
-    document.getElementById('next-page').disabled = end >= allMarketData.length;
+    
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (prevBtn) prevBtn.disabled = currentPage === 1;
+    if (nextBtn) nextBtn.disabled = end >= allMarketData.length;
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -451,7 +476,7 @@ function renderPlayerCard(item) {
     const accentColor = getPositionStyle(p.position);
     const potData = getPotentialData(p.potential);
     
-    const rookieBadge = p.is_rookie ? `<span class="rookie-tag" style="background: #fef3c7; color: #92400e; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; font-weight: 800;">ROOKIE</span>` : '';
+    const rookieBadge = p.is_rookie ? `<span class="rookie-tag" style="background: #fef3c7; color: #92400e; font-size: 0.7rem; padding: 4px 10px; border-radius: 4px; font-weight: 800; display: inline-block; margin-left: 8px;">ROOKIE</span>` : '';
     
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
@@ -487,14 +512,14 @@ function renderPlayerCard(item) {
             <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <span style="font-size: 0.8rem; color: #92400e; font-weight: 600;">Auction Price</span>
-                    <span style="font-size: 1.2rem; font-weight: 800; color: #d97706;">$${bidPrice.toLocaleString()}</span>
+                    <span style="font-size: 1.3rem; font-weight: 800; color: #d97706;">$${bidPrice.toLocaleString()}</span>
                 </div>
                 <div style="font-size: 0.75rem; color: #b45309; display: flex; align-items: center; gap: 6px;">
                     <span>⏱️</span> Ends: ${bidEnds}
                 </div>
             </div>
         `;
-        actionButtons += `<button class="bid-btn" onclick="handleBid('${item.id}', ${bidPrice})" style="background: ${accentColor}; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem;">BID NOW</button>`;
+        actionButtons += `<button class="bid-btn" onclick="handleBid('${item.id}', ${bidPrice})" style="background: ${accentColor}; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; flex: 1;">BID NOW</button>`;
     }
     
     if (item.type === 'buy_now' || item.type === 'both') {
@@ -504,20 +529,20 @@ function renderPlayerCard(item) {
                 <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 0.8rem; color: #065f46; font-weight: 600;">Buy Now Price</span>
-                        <span style="font-size: 1.2rem; font-weight: 800; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
+                        <span style="font-size: 1.3rem; font-weight: 800; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
                     </div>
                 </div>
             `;
         }
-        actionButtons += `<button class="buy-btn" onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem;">BUY NOW</button>`;
+        actionButtons += `<button class="buy-btn" onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="background: #10b981; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; flex: 1;">BUY NOW</button>`;
     }
 
     const ovrPercentage = (ovr / 100) * 100;
     const ovrStyle = getOvrStyle(ovr);
 
     return `
-        <div class="player-card" style="position: relative; overflow: hidden; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px;">
-            <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
+        <div class="player-card" style="position: relative; overflow: hidden; background: white; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div style="position: absolute; top: 15px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 5px;">
                 ${item.type === 'auction' ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">AUCTION</span>' : ''}
                 ${item.type === 'buy_now' ? '<span style="background: #d1fae5; color: #065f46; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">BUY NOW</span>' : ''}
                 ${item.type === 'both' ? '<span style="background: #dbeafe; color: #1e40af; font-size: 0.65rem; padding: 4px 10px; border-radius: 4px; font-weight: 800;">BOTH</span>' : ''}
@@ -541,7 +566,7 @@ function renderPlayerCard(item) {
                         </div>
                         
                         <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap;">
                                 <h3 style="margin: 0; font-size: 1.4rem; font-weight: 800; color: #1a237e;">
                                     ${p.first_name} ${p.last_name}
                                 </h3>
@@ -550,7 +575,7 @@ function renderPlayerCard(item) {
                             </div>
                             
                             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
-                                <div style="${getPositionStyle(p.position)}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <div style="background: ${accentColor}; color: white; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 0.8rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                                     ${p.position}
                                 </div>
                                 <span style="display: flex; align-items: center; gap: 6px; font-size: 0.95rem; color: #475569; font-weight: 600;">
@@ -597,10 +622,10 @@ function renderPlayerCard(item) {
                             <div style="font-size: 1.3rem; font-weight: 800; color: #059669;">$${marketVal.toLocaleString()}</div>
                         </div>
                         
-                        <div class="action-container" style="display: flex; gap: 12px;">
+                        <div class="action-container" style="display: flex; gap: 12px; flex-wrap: wrap;">
                             ${actionButtons}
                             <button onclick="showPlayerDetails('${p.id}')" 
-                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                                    style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
                                 <span style="font-size: 1rem;">👁️</span> Details
                             </button>
                         </div>
