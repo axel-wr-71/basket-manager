@@ -12,8 +12,16 @@ let currentFilters = {
     maxSalary: '',
     minPrice: '',
     maxPrice: '',
-    potential: '',
-    offerType: 'all'
+    potential: [],
+    offerType: 'all',
+    lastMinute: false
+};
+
+// Licznik ofert według typu
+let offerCounts = {
+    all: 0,
+    auction: 0,
+    buy_now: 0
 };
 
 // Funkcje pomocnicze
@@ -84,10 +92,9 @@ function getPotentialData(potentialId) {
     return fallbackMap[potentialId] || { label: 'Unknown', color: '#94a3b8', icon: '👤' };
 }
 
-// Generowanie opcji potencjału dla przycisków
-function generatePotentialButtons() {
+// Generowanie opcji potencjału dla checkboxów
+function generatePotentialCheckboxes() {
     const potentials = [
-        { id: '', label: 'All Potential', emoji: '🌟', color: '#94a3b8' },
         { id: 'GOAT', label: 'G.O.A.T.', emoji: '🐐', color: '#f59e0b' },
         { id: 'Elite Franchise', label: 'Elite Franchise', emoji: '★', color: '#8b5cf6' },
         { id: 'Franchise Player', label: 'Franchise Player', emoji: '★', color: '#3b82f6' },
@@ -101,26 +108,202 @@ function generatePotentialButtons() {
     ];
     
     return potentials.map(pot => `
-        <button type="button" class="potential-btn ${currentFilters.potential === pot.id ? 'active' : ''}" 
-                data-potential="${pot.id}" style="
-            background: ${currentFilters.potential === pot.id ? pot.color + '20' : '#f8fafc'};
-            color: ${currentFilters.potential === pot.id ? pot.color : '#64748b'};
-            border: 2px solid ${currentFilters.potential === pot.id ? pot.color : '#e2e8f0'};
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.8rem;
+        <label class="potential-checkbox" style="
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 10px;
+            cursor: pointer;
+            padding: 10px 14px;
+            background: ${currentFilters.potential.includes(pot.id) ? pot.color + '20' : '#f8fafc'};
+            border: 2px solid ${currentFilters.potential.includes(pot.id) ? pot.color : '#e2e8f0'};
+            border-radius: 8px;
             transition: all 0.2s;
-            white-space: nowrap;
+            user-select: none;
+            flex: 1;
+            min-width: 180px;
         ">
-            <span style="font-size: 0.9rem;">${pot.emoji}</span>
-            ${pot.label}
-        </button>
+            <input type="checkbox" value="${pot.id}" 
+                   ${currentFilters.potential.includes(pot.id) ? 'checked' : ''}
+                   style="transform: scale(1.2); accent-color: ${pot.color};">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1rem;">${pot.emoji}</span>
+                <span style="font-weight: 600; color: ${pot.color}; font-size: 0.85rem;">${pot.label}</span>
+            </div>
+        </label>
     `).join('');
+}
+
+// Funkcja do renderowania popupu Buy Now
+function renderBuyNowModal(listingId, price, player) {
+    return `
+        <div id="buynow-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+        ">
+            <div style="
+                background: white;
+                border-radius: 16px;
+                max-width: 450px;
+                width: 100%;
+                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+                position: relative;
+            ">
+                <!-- Nagłówek -->
+                <div style="
+                    background: linear-gradient(135deg, #059669 0%, #065f46 100%);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 16px 16px 0 0;
+                    position: relative;
+                ">
+                    <button onclick="closeBuyNowModal()" style="
+                        position: absolute;
+                        top: 15px;
+                        right: 15px;
+                        background: rgba(255, 255, 255, 0.2);
+                        color: white;
+                        border: none;
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">✕</button>
+                    
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: rgba(255, 255, 255, 0.2);
+                            border-radius: 10px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 1.5rem;
+                        ">🏀</div>
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.3rem; font-weight: 800;">BUY NOW</h2>
+                            <p style="margin: 4px 0 0 0; opacity: 0.9; font-size: 0.85rem;">
+                                ${player.first_name} ${player.last_name}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Zawartość -->
+                <div style="padding: 24px;">
+                    <!-- Informacje o zakupie -->
+                    <div style="
+                        background: #d1fae5;
+                        border: 2px solid #34d399;
+                        border-radius: 10px;
+                        padding: 16px;
+                        margin-bottom: 20px;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: #065f46; font-weight: 600; text-transform: uppercase;">Buy Now Price</div>
+                                <div style="font-size: 1.8rem; font-weight: 900; color: #059669;">$${price.toLocaleString()}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.75rem; color: #065f46; font-weight: 600; text-transform: uppercase;">Your Balance</div>
+                                <div style="font-size: 1.4rem; font-weight: 900; color: #1a237e;">$${window.currentTeamBalance.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div style="
+                            background: rgba(5, 150, 105, 0.1);
+                            border-radius: 6px;
+                            padding: 8px 12px;
+                            font-size: 0.8rem;
+                            color: #065f46;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                        ">
+                            <span>💰</span>
+                            <strong>Instant purchase:</strong> No bidding required
+                        </div>
+                    </div>
+                    
+                    <!-- Podgląd -->
+                    <div id="buynow-preview" style="
+                        background: #f0f9ff;
+                        border: 2px solid #bae6fd;
+                        border-radius: 10px;
+                        padding: 16px;
+                        margin-bottom: 20px;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">Purchase Amount</div>
+                                <div id="preview-buynow-amount" style="font-size: 1.6rem; font-weight: 900; color: #0c4a6e;">$${price.toLocaleString()}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.75rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">New Balance</div>
+                                <div id="preview-new-balance" style="font-size: 1.3rem; font-weight: 900; color: ${window.currentTeamBalance - price >= 0 ? '#059669' : '#ef4444'};">$${(window.currentTeamBalance - price).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div id="buynow-warning" style="
+                            font-size: 0.8rem;
+                            color: ${window.currentTeamBalance - price >= 0 ? '#059669' : '#ef4444'};
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            margin-top: 8px;
+                        ">
+                            ${window.currentTeamBalance - price >= 0 ? 
+                                '✅ Sufficient funds available' : 
+                                '❌ Insufficient funds'}
+                        </div>
+                    </div>
+                    
+                    <!-- Przyciski akcji -->
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="closeBuyNowModal()" style="
+                            flex: 1;
+                            background: #f1f5f9;
+                            color: #64748b;
+                            border: 2px solid #e2e8f0;
+                            padding: 14px;
+                            border-radius: 10px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            font-size: 0.9rem;
+                            transition: all 0.2s;
+                        ">
+                            Cancel
+                        </button>
+                        <button onclick="confirmBuyNow('${listingId}', ${price})" id="confirm-buynow-btn" style="
+                            flex: 1;
+                            background: ${window.currentTeamBalance - price >= 0 ? 'linear-gradient(135deg, #059669 0%, #065f46 100%)' : '#94a3b8'};
+                            color: white;
+                            border: none;
+                            padding: 14px;
+                            border-radius: 10px;
+                            font-weight: 800;
+                            cursor: ${window.currentTeamBalance - price >= 0 ? 'pointer' : 'not-allowed'};
+                            font-size: 0.9rem;
+                            transition: all 0.2s;
+                        ">
+                            CONFIRM PURCHASE
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Funkcja do renderowania popupu licytacji
@@ -349,6 +532,15 @@ function renderBidModal(listingId, currentPrice, player) {
     `;
 }
 
+// Funkcja do aktualizacji liczników ofert
+function updateOfferCounts(data) {
+    offerCounts = {
+        all: data.length,
+        auction: data.filter(item => item.type === 'auction' || item.type === 'both').length,
+        buy_now: data.filter(item => item.type === 'buy_now' || item.type === 'both').length
+    };
+}
+
 // Renderowanie głównego widoku
 export async function renderMarketView(teamData, players = []) {
     const container = document.getElementById('market-view-container');
@@ -528,13 +720,31 @@ export async function renderMarketView(teamData, players = []) {
                     </div>
                 </div>
 
-                <!-- Filtry potencjału jako przyciski -->
+                <!-- Filtry potencjału jako checkboxy -->
                 <div style="margin-bottom: 20px;">
-                    <div style="font-size: 0.75rem; color: #475569; margin-bottom: 10px; font-weight: 600; text-transform: uppercase;">
-                        Potential
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="font-size: 0.75rem; color: #475569; font-weight: 600; text-transform: uppercase;">
+                            Potential
+                        </div>
+                        <button id="btn-select-all-potential" style="
+                            background: #f8fafc;
+                            color: #64748b;
+                            border: 1px solid #e2e8f0;
+                            padding: 6px 12px;
+                            border-radius: 6px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            font-size: 0.7rem;
+                            display: flex;
+                            align-items: center;
+                            gap: 4px;
+                            transition: all 0.2s;
+                        ">
+                            <span>✓</span> Select All
+                        </button>
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 100px; overflow-y: auto; padding-right: 8px;">
-                        ${generatePotentialButtons()}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; max-height: 180px; overflow-y: auto; padding-right: 8px;">
+                        ${generatePotentialCheckboxes()}
                     </div>
                 </div>
 
@@ -619,12 +829,12 @@ export async function renderMarketView(teamData, players = []) {
                     </div>
                 </div>
 
-                <!-- Filtry checkbox -->
+                <!-- Filtry checkbox z ofertami -->
                 <div style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
                     <div style="font-size: 0.8rem; color: #475569; margin-bottom: 12px; font-weight: 600;">
                         Offer Type
                     </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
                         <label class="checkbox-modern" style="
                             display: flex;
                             align-items: center;
@@ -650,7 +860,7 @@ export async function renderMarketView(teamData, players = []) {
                                 padding: 3px 6px;
                                 border-radius: 4px;
                                 font-weight: 700;
-                            ">Default</div>
+                            ">(${offerCounts.all})</div>
                         </label>
                         
                         <label class="checkbox-modern" style="
@@ -678,7 +888,7 @@ export async function renderMarketView(teamData, players = []) {
                                 padding: 3px 6px;
                                 border-radius: 4px;
                                 font-weight: 700;
-                            ">🏷️ Bid</div>
+                            ">🏷️ (${offerCounts.auction})</div>
                         </label>
                         
                         <label class="checkbox-modern" style="
@@ -706,7 +916,44 @@ export async function renderMarketView(teamData, players = []) {
                                 padding: 3px 6px;
                                 border-radius: 4px;
                                 font-weight: 700;
-                            ">⚡ Instant</div>
+                            ">(${offerCounts.buy_now})</div>
+                        </label>
+                    </div>
+                    
+                    <!-- Last Minute Filter -->
+                    <div style="margin-top: 15px;">
+                        <label class="lastminute-checkbox" style="
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            cursor: pointer;
+                            padding: 12px 16px;
+                            background: ${currentFilters.lastMinute ? '#fee2e2' : '#f8fafc'};
+                            border: 2px solid ${currentFilters.lastMinute ? '#ef4444' : '#e2e8f0'};
+                            border-radius: 8px;
+                            transition: all 0.2s;
+                            user-select: none;
+                            width: fit-content;
+                        ">
+                            <input type="checkbox" id="filter-last-minute" ${currentFilters.lastMinute ? 'checked' : ''}
+                                   style="transform: scale(1.2); accent-color: #ef4444;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="
+                                    width: 32px;
+                                    height: 32px;
+                                    background: ${currentFilters.lastMinute ? '#ef4444' : '#e2e8f0'};
+                                    color: ${currentFilters.lastMinute ? 'white' : '#64748b'};
+                                    border-radius: 6px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 1rem;
+                                ">⏰</div>
+                                <div>
+                                    <div style="font-weight: 700; color: #475569; font-size: 0.9rem;">Last Minute</div>
+                                    <div style="font-size: 0.75rem; color: #64748b;">Offers ending in less than 1 hour</div>
+                                </div>
+                            </div>
                         </label>
                     </div>
                 </div>
@@ -734,7 +981,7 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
             </div>
 
-            <!-- Statystyki -->
+            <!-- Statystyki (6 boxów) -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
                 <div style="
                     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -776,12 +1023,34 @@ export async function renderMarketView(teamData, players = []) {
                     <div style="font-size: 0.75rem; color: #a21caf; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Highest OVR</div>
                     <div id="stat-highest-ovr" style="font-size: 1.6rem; font-weight: 900; color: #86198f;">0</div>
                 </div>
+                <div style="
+                    background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%);
+                    border: 1px solid #fdba74;
+                    border-radius: 10px;
+                    padding: 16px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 0.75rem; color: #9a3412; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">G.O.A.T.</div>
+                    <div id="stat-goat" style="font-size: 1.6rem; font-weight: 900; color: #92400e;">0</div>
+                    <div style="font-size: 0.65rem; color: #b45309; margin-top: 4px;">Highest potential players</div>
+                </div>
+                <div style="
+                    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+                    border: 1px solid #a5b4fc;
+                    border-radius: 10px;
+                    padding: 16px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 0.75rem; color: #3730a3; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">Total Value</div>
+                    <div id="stat-total-value" style="font-size: 1.6rem; font-weight: 900; color: #1e40af;">$0</div>
+                    <div style="font-size: 0.65rem; color: #4f46e5; margin-top: 4px;">Market value sum</div>
+                </div>
             </div>
 
-            <!-- Lista ofert w grid 3 kolumny (dla lepszej czytelności) -->
+            <!-- Lista ofert w grid 4 kolumny -->
             <div id="market-listings" style="
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(4, 1fr);
                 gap: 16px;
                 margin-bottom: 32px;
             "></div>
@@ -869,6 +1138,52 @@ export async function renderMarketView(teamData, players = []) {
         }
     };
 
+    // Event listener dla przycisku Select All (potencjał)
+    document.getElementById('btn-select-all-potential').onclick = () => {
+        const checkboxes = document.querySelectorAll('.potential-checkbox input[type="checkbox"]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        
+        checkboxes.forEach(cb => {
+            cb.checked = !allChecked;
+            const potId = cb.value;
+            const potData = getPotentialData(potId);
+            const label = cb.closest('.potential-checkbox');
+            
+            if (cb.checked) {
+                label.style.background = potData.color + '20';
+                label.style.borderColor = potData.color;
+            } else {
+                label.style.background = '#f8fafc';
+                label.style.borderColor = '#e2e8f0';
+            }
+        });
+        
+        updateFilters();
+        currentPage = 1;
+        loadMarketData();
+    };
+
+    // Event listeners dla checkboxów potencjału
+    document.querySelectorAll('.potential-checkbox input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            const potId = checkbox.value;
+            const potData = getPotentialData(potId);
+            const label = checkbox.closest('.potential-checkbox');
+            
+            if (checkbox.checked) {
+                label.style.background = potData.color + '20';
+                label.style.borderColor = potData.color;
+            } else {
+                label.style.background = '#f8fafc';
+                label.style.borderColor = '#e2e8f0';
+            }
+            
+            updateFilters();
+            currentPage = 1;
+            loadMarketData();
+        });
+    });
+
     // Event listeners dla przycisków pozycji
     document.querySelectorAll('.position-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -889,24 +1204,21 @@ export async function renderMarketView(teamData, players = []) {
         });
     });
 
-    // Event listeners dla przycisków potencjału
-    document.querySelectorAll('.potential-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const potential = btn.dataset.potential;
-            currentFilters.potential = potential;
-            
-            // Aktualizuj wygląd przycisków
-            document.querySelectorAll('.potential-btn').forEach(b => {
-                const potId = b.dataset.potential;
-                const potData = getPotentialData(potId);
-                b.style.background = currentFilters.potential === potId ? potData.color + '20' : '#f8fafc';
-                b.style.color = currentFilters.potential === potId ? potData.color : '#64748b';
-                b.style.borderColor = currentFilters.potential === potId ? potData.color : '#e2e8f0';
-            });
-            
-            currentPage = 1;
-            loadMarketData();
-        });
+    // Event listener dla Last Minute filter
+    document.getElementById('filter-last-minute').addEventListener('change', function() {
+        currentFilters.lastMinute = this.checked;
+        const label = this.closest('.lastminute-checkbox');
+        
+        if (this.checked) {
+            label.style.background = '#fee2e2';
+            label.style.borderColor = '#ef4444';
+        } else {
+            label.style.background = '#f8fafc';
+            label.style.borderColor = '#e2e8f0';
+        }
+        
+        currentPage = 1;
+        loadMarketData();
     });
 
     // Hover effects dla checkboxów
@@ -953,6 +1265,10 @@ export async function renderMarketView(teamData, players = []) {
 }
 
 function updateFilters() {
+    // Zbierz zaznaczone potencjały
+    const potentialCheckboxes = document.querySelectorAll('.potential-checkbox input[type="checkbox"]:checked');
+    const selectedPotentials = Array.from(potentialCheckboxes).map(cb => cb.value);
+    
     currentFilters = {
         position: currentFilters.position,
         minAge: parseInt(document.getElementById('filter-min-age').value) || '',
@@ -961,8 +1277,9 @@ function updateFilters() {
         maxSalary: parseInt(document.getElementById('filter-max-salary').value) || '',
         minPrice: parseInt(document.getElementById('filter-min-price').value) || '',
         maxPrice: parseInt(document.getElementById('filter-max-price').value) || '',
-        potential: currentFilters.potential,
-        offerType: document.querySelector('input[name="offerType"]:checked').value
+        potential: selectedPotentials,
+        offerType: document.querySelector('input[name="offerType"]:checked').value,
+        lastMinute: currentFilters.lastMinute
     };
     
     console.log('Updated filters:', currentFilters);
@@ -985,20 +1302,13 @@ function resetFilters() {
         }
     });
     
-    // Resetuj przyciski potencjału
-    currentFilters.potential = '';
-    document.querySelectorAll('.potential-btn').forEach(btn => {
-        const potId = btn.dataset.potential;
-        if (potId === '') {
-            btn.style.background = '#94a3b820';
-            btn.style.color = '#94a3b8';
-            btn.style.borderColor = '#94a3b8';
-        } else {
-            const potData = getPotentialData(potId);
-            btn.style.background = '#f8fafc';
-            btn.style.color = '#64748b';
-            btn.style.borderColor = '#e2e8f0';
-        }
+    // Resetuj checkboxy potencjału
+    currentFilters.potential = [];
+    document.querySelectorAll('.potential-checkbox input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+        const label = checkbox.closest('.potential-checkbox');
+        label.style.background = '#f8fafc';
+        label.style.borderColor = '#e2e8f0';
     });
     
     // Resetuj inputy numeryczne
@@ -1008,6 +1318,16 @@ function resetFilters() {
     
     // Resetuj radio buttons
     document.querySelector('input[name="offerType"][value="all"]').checked = true;
+    
+    // Resetuj Last Minute filter
+    currentFilters.lastMinute = false;
+    const lastMinuteCheckbox = document.getElementById('filter-last-minute');
+    if (lastMinuteCheckbox) {
+        lastMinuteCheckbox.checked = false;
+        const label = lastMinuteCheckbox.closest('.lastminute-checkbox');
+        label.style.background = '#f8fafc';
+        label.style.borderColor = '#e2e8f0';
+    }
     
     // Zaktualizuj wygląd checkboxów
     document.querySelectorAll('.checkbox-modern').forEach(label => {
@@ -1030,8 +1350,9 @@ function resetFilters() {
         maxSalary: '',
         minPrice: '',
         maxPrice: '',
-        potential: '',
-        offerType: 'all'
+        potential: [],
+        offerType: 'all',
+        lastMinute: false
     };
 }
 
@@ -1076,6 +1397,12 @@ async function loadMarketData() {
 
         allMarketData = data || [];
         
+        // Aktualizuj liczniki ofert
+        updateOfferCounts(allMarketData);
+        
+        // Aktualizuj liczniki w interfejsie
+        updateOfferCountsInUI();
+        
         // Filtrowanie danych
         allMarketData = allMarketData.filter(item => {
             const player = item.players;
@@ -1102,25 +1429,41 @@ async function loadMarketData() {
                 return false;
             }
             
-            // Filtruj potencjał
-            if (currentFilters.potential && player.potential !== currentFilters.potential) {
-                return false;
+            // Filtruj potencjał (teraz wielokrotny wybór)
+            if (currentFilters.potential.length > 0) {
+                if (!currentFilters.potential.includes(player.potential)) {
+                    return false;
+                }
             }
             
             // Filtruj typ oferty
-            if (currentFilters.offerType !== 'all' && item.type !== currentFilters.offerType) {
-                return false;
+            if (currentFilters.offerType !== 'all') {
+                if (currentFilters.offerType === 'auction' && item.type !== 'auction' && item.type !== 'both') {
+                    return false;
+                }
+                if (currentFilters.offerType === 'buy_now' && item.type !== 'buy_now' && item.type !== 'both') {
+                    return false;
+                }
+            }
+            
+            // Filtruj Last Minute (mniej niż 1h do końca)
+            if (currentFilters.lastMinute && item.auction_ends) {
+                const now = new Date();
+                const endsAt = new Date(item.auction_ends);
+                const timeLeft = endsAt - now;
+                const oneHour = 60 * 60 * 1000;
+                
+                if (timeLeft > oneHour || timeLeft < 0) {
+                    return false;
+                }
             }
             
             // Filtruj cenę
             let price;
-            if (item.type === 'auction') {
-                price = item.current_price;
+            if (item.type === 'auction' || item.type === 'both') {
+                price = item.current_price || 0;
             } else if (item.type === 'buy_now') {
-                price = item.buy_now_price;
-            } else if (item.type === 'both') {
-                price = Math.min(item.current_price || Infinity, item.buy_now_price || Infinity);
-                if (price === Infinity) price = 0;
+                price = item.buy_now_price || 0;
             } else {
                 price = 0;
             }
@@ -1147,12 +1490,25 @@ async function loadMarketData() {
     }
 }
 
+function updateOfferCountsInUI() {
+    // Aktualizuj liczniki w przyciskach
+    const allCount = document.querySelector('input[name="offerType"][value="all"]')?.closest('.checkbox-modern')?.querySelector('div:last-child');
+    const auctionCount = document.querySelector('input[name="offerType"][value="auction"]')?.closest('.checkbox-modern')?.querySelector('div:last-child');
+    const buyNowCount = document.querySelector('input[name="offerType"][value="buy_now"]')?.closest('.checkbox-modern')?.querySelector('div:last-child');
+    
+    if (allCount) allCount.textContent = `(${offerCounts.all})`;
+    if (auctionCount) auctionCount.textContent = `🏷️ (${offerCounts.auction})`;
+    if (buyNowCount) buyNowCount.textContent = `(${offerCounts.buy_now})`;
+}
+
 function updateMarketStats(data) {
     if (data.length === 0) {
         document.getElementById('stat-total').textContent = '0';
         document.getElementById('stat-avg-price').textContent = '$0';
         document.getElementById('stat-youngest').textContent = '0';
         document.getElementById('stat-highest-ovr').textContent = '0';
+        document.getElementById('stat-goat').textContent = '0';
+        document.getElementById('stat-total-value').textContent = '$0';
         return;
     }
 
@@ -1160,10 +1516,11 @@ function updateMarketStats(data) {
     document.getElementById('stat-total').textContent = data.length.toLocaleString();
 
     // Average price
-    const avgPrice = Math.round(data.reduce((sum, item) => {
+    const totalPrice = data.reduce((sum, item) => {
         const price = item.current_price || item.buy_now_price || 0;
         return sum + price;
-    }, 0) / data.length);
+    }, 0);
+    const avgPrice = Math.round(totalPrice / data.length);
     document.getElementById('stat-avg-price').textContent = `$${avgPrice.toLocaleString()}`;
 
     // Youngest player
@@ -1173,6 +1530,16 @@ function updateMarketStats(data) {
     // Highest OVR
     const highestOVR = Math.max(...data.map(item => calculateOVR(item.players) || 0));
     document.getElementById('stat-highest-ovr').textContent = highestOVR;
+
+    // G.O.A.T. count
+    const goatCount = data.filter(item => item.players.potential === 'GOAT').length;
+    document.getElementById('stat-goat').textContent = goatCount;
+
+    // Total market value
+    const totalValue = data.reduce((sum, item) => {
+        return sum + calculateMarketValue(item.players);
+    }, 0);
+    document.getElementById('stat-total-value').textContent = `$${Math.round(totalValue / 1000)}K`;
 }
 
 function displayCurrentPage() {
@@ -1280,7 +1647,7 @@ function renderPlayerCard(item) {
                 font-weight: 700;
                 border: 1px solid #34d399;
                 white-space: nowrap;
-            ">⚡ BUY NOW</span>
+            ">BUY NOW</span>
         `;
     } else if (item.type === 'both') {
         offerTypeBadge = `
@@ -1293,7 +1660,7 @@ function renderPlayerCard(item) {
                 font-weight: 700;
                 border: 1px solid #818cf8;
                 white-space: nowrap;
-            ">🏷️⚡ BOTH</span>
+            ">🏷️ BUY NOW</span>
         `;
     }
     
@@ -1342,6 +1709,22 @@ function renderPlayerCard(item) {
             minute: '2-digit'
         }) : 'Soon';
         
+        // Sprawdź czy oferta kończy się w ciągu godziny (Last Minute)
+        const isLastMinute = item.auction_ends ? (new Date(item.auction_ends) - new Date()) < (60 * 60 * 1000) : false;
+        const lastMinuteBadge = isLastMinute ? `
+            <div style="
+                background: #fee2e2;
+                color: #dc2626;
+                font-size: 0.6rem;
+                padding: 1px 4px;
+                border-radius: 4px;
+                font-weight: 700;
+                border: 1px solid #fca5a5;
+                display: inline-block;
+                margin-left: 6px;
+            ">⏰ LAST MINUTE</div>
+        ` : '';
+        
         priceInfo += `
             <div style="
                 background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
@@ -1351,7 +1734,10 @@ function renderPlayerCard(item) {
                 margin-bottom: 10px;
             ">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                    <span style="font-size: 0.65rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Current Bid</span>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.65rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Current Bid</span>
+                        ${lastMinuteBadge}
+                    </div>
                     <span style="font-size: 1rem; font-weight: 900; color: #b45309;">$${bidPrice.toLocaleString()}</span>
                 </div>
                 <div style="font-size: 0.65rem; color: #b45309; display: flex; align-items: center; gap: 4px; font-weight: 600;">
@@ -1395,7 +1781,7 @@ function renderPlayerCard(item) {
             `;
         }
         actionButtons += `
-            <button onclick="handleBuyNow('${item.id}', ${buyNowPrice})" style="
+            <button onclick="handleBuyNow('${item.id}', ${buyNowPrice}, '${p.id}')" style="
                 background: linear-gradient(135deg, #059669 0%, #065f46 100%);
                 color: white;
                 border: none;
@@ -1407,7 +1793,7 @@ function renderPlayerCard(item) {
                 flex: 1;
                 transition: all 0.2s;
                 box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
-            ">BUY NOW ⚡</button>
+            ">BUY NOW</button>
         `;
     }
 
@@ -1720,15 +2106,27 @@ window.handleBid = async (listingId, currentPrice, playerId) => {
     updateBidPreview(currentPrice + 10000);
 };
 
-window.handleBuyNow = async (listingId, price) => {
+window.handleBuyNow = async (listingId, price, playerId) => {
+    // Znajdź zawodnika
+    const listing = allMarketData.find(item => item.id === listingId);
+    if (!listing) {
+        alert("❌ Player listing not found!");
+        return;
+    }
+    
+    const player = listing.players;
+    
+    // Renderuj modal Buy Now
+    const modalHtml = renderBuyNowModal(listingId, price, player);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+window.confirmBuyNow = async (listingId, price) => {
     if (price > window.currentTeamBalance) {
         alert(`💰 Insufficient funds!\nYou have: $${window.currentTeamBalance.toLocaleString()}\nRequired: $${price.toLocaleString()}`);
         return;
     }
     
-    const confirmBuy = confirm(`🏀 Purchase Player\n\nBuy this player immediately for $${price.toLocaleString()}?\n\nYour balance will be: $${(window.currentTeamBalance - price).toLocaleString()}`);
-    if (!confirmBuy) return;
-
     if (!window.currentTeamId) {
         alert("❌ Error: Team ID not found. Please refresh the page.");
         return;
@@ -1743,11 +2141,13 @@ window.handleBuyNow = async (listingId, price) => {
         if (error) throw error;
 
         alert(`🎉 Congratulations!\nThe player has joined your team.\n\nNew balance: $${(window.currentTeamBalance - price).toLocaleString()}`);
+        closeBuyNowModal();
         location.reload();
 
     } catch (err) {
         console.error("Purchase Error:", err.message);
         alert("❌ Transaction failed: " + err.message);
+        closeBuyNowModal();
     }
 };
 
@@ -1764,7 +2164,9 @@ window.showPlayerProfile = async (playerId) => {
         
         // Użyj funkcji z roster_actions.js
         if (window.RosterActions && window.RosterActions.showProfile) {
-            window.RosterActions.showProfile(player);
+            window.RosterActions.showProfile(player, {
+                hideSections: ['season-focus', 'development-history']
+            });
         } else {
             alert("❌ Profile viewer not available. Please make sure roster_actions.js is loaded.");
         }
@@ -1778,6 +2180,11 @@ window.showPlayerProfile = async (playerId) => {
 // Funkcje pomocnicze dla modali
 window.closeBidModal = () => {
     const modal = document.getElementById('bid-modal');
+    if (modal) modal.remove();
+};
+
+window.closeBuyNowModal = () => {
+    const modal = document.getElementById('buynow-modal');
     if (modal) modal.remove();
 };
 
@@ -1905,12 +2312,12 @@ style.textContent = `
         box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
     }
     
-    .potential-btn:hover:not(.active) {
+    .potential-checkbox:hover, .lastminute-checkbox:hover {
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
     }
     
-    #bid-modal {
+    #bid-modal, #buynow-modal {
         animation: fadeIn 0.3s ease;
     }
     
@@ -1919,26 +2326,26 @@ style.textContent = `
         to { opacity: 1; }
     }
     
-    /* Dla bardzo dużych ekranów (4 kolumny) */
-    @media (min-width: 2000px) {
+    /* Dla bardzo dużych ekranów (5 kolumn) */
+    @media (min-width: 2200px) {
         #market-listings {
-            grid-template-columns: repeat(4, 1fr) !important;
+            grid-template-columns: repeat(5, 1fr) !important;
             gap: 18px !important;
         }
     }
     
-    /* Dla ekranów 1600px+ (3 kolumny - domyślne) */
+    /* Dla ekranów 1600px+ (4 kolumny - domyślne) */
     @media (max-width: 1600px) {
         #market-listings {
-            grid-template-columns: repeat(3, 1fr) !important;
+            grid-template-columns: repeat(4, 1fr) !important;
             gap: 14px !important;
         }
     }
     
-    /* Dla tabletów (2 kolumny) */
+    /* Dla tabletów (3 kolumny) */
     @media (max-width: 1200px) {
         #market-listings {
-            grid-template-columns: repeat(2, 1fr) !important;
+            grid-template-columns: repeat(3, 1fr) !important;
             gap: 12px !important;
         }
         
@@ -1954,6 +2361,14 @@ style.textContent = `
         
         .market-management-header > div:first-child {
             text-align: center;
+        }
+    }
+    
+    /* Dla mniejszych tabletów (2 kolumny) */
+    @media (max-width: 900px) {
+        #market-listings {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
         }
     }
     
@@ -1980,7 +2395,7 @@ style.textContent = `
             min-width: 100% !important;
         }
         
-        .position-btn, .potential-btn {
+        .position-btn, .potential-checkbox {
             padding: 6px 10px !important;
             font-size: 0.75rem !important;
         }
@@ -2006,7 +2421,7 @@ style.textContent = `
             padding-left: 16px !important;
         }
         
-        .position-btn, .potential-btn {
+        .position-btn, .potential-checkbox {
             padding: 5px 8px !important;
             font-size: 0.7rem !important;
         }
@@ -2014,6 +2429,10 @@ style.textContent = `
         #btn-search-market {
             padding: 12px 24px !important;
             font-size: 0.85rem !important;
+        }
+        
+        .potential-checkbox {
+            min-width: 100% !important;
         }
     }
 `;
