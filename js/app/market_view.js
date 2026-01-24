@@ -11,7 +11,6 @@ let currentFilters = {
     minPrice: '',
     maxPrice: '',
     potential: '',
-    nationality: '',
     offerType: 'all'
 };
 
@@ -419,7 +418,7 @@ export async function renderMarketView(teamData, players = []) {
                     </button>
                 </div>
 
-                <!-- Grid filtrów - dodano narodowość -->
+                <!-- Grid filtrów - USUNIĘTO NARODOWOŚĆ -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
                     <!-- Pozycja -->
                     <div class="filter-group">
@@ -498,7 +497,7 @@ export async function renderMarketView(teamData, players = []) {
                         </div>
                     </div>
 
-                    <!-- Potencjał -->
+                    <!-- Potencjał (PRZENIESIONY w miejsce narodowości) -->
                     <div class="filter-group">
                         <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
                             Potential
@@ -515,44 +514,6 @@ export async function renderMarketView(teamData, players = []) {
                             cursor: pointer;
                         ">
                             ${generatePotentialOptions()}
-                        </select>
-                    </div>
-
-                    <!-- Narodowość -->
-                    <div class="filter-group">
-                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
-                            Nationality
-                        </label>
-                        <select id="filter-nationality" class="filter-select" style="
-                            width: 100%;
-                            padding: 12px 16px;
-                            border: 2px solid #e2e8f0;
-                            border-radius: 10px;
-                            font-size: 0.9rem;
-                            background: white;
-                            color: #334155;
-                            transition: all 0.2s;
-                            cursor: pointer;
-                        ">
-                            <option value="">All Nationalities</option>
-                            <option value="US">United States 🇺🇸</option>
-                            <option value="GB">United Kingdom 🇬🇧</option>
-                            <option value="ES">Spain 🇪🇸</option>
-                            <option value="FR">France 🇫🇷</option>
-                            <option value="DE">Germany 🇩🇪</option>
-                            <option value="IT">Italy 🇮🇹</option>
-                            <option value="GR">Greece 🇬🇷</option>
-                            <option value="RS">Serbia 🇷🇸</option>
-                            <option value="LT">Lithuania 🇱🇹</option>
-                            <option value="HR">Croatia 🇭🇷</option>
-                            <option value="SI">Slovenia 🇸🇮</option>
-                            <option value="AU">Australia 🇦🇺</option>
-                            <option value="CA">Canada 🇨🇦</option>
-                            <option value="CN">China 🇨🇳</option>
-                            <option value="BR">Brazil 🇧🇷</option>
-                            <option value="AR">Argentina 🇦🇷</option>
-                            <option value="TR">Turkey 🇹🇷</option>
-                            <option value="PL">Poland 🇵🇱</option>
                         </select>
                     </div>
                 </div>
@@ -720,7 +681,7 @@ export async function renderMarketView(teamData, players = []) {
             <div id="market-listings" style="
                 display: grid;
                 grid-template-columns: repeat(4, 1fr);
-                gap: 25px;
+                gap: 20px;
                 margin-bottom: 40px;
             "></div>
 
@@ -858,7 +819,6 @@ function updateFilters() {
         minPrice: parseInt(document.getElementById('filter-min-price').value) || '',
         maxPrice: parseInt(document.getElementById('filter-max-price').value) || '',
         potential: document.getElementById('filter-potential').value,
-        nationality: document.getElementById('filter-nationality').value,
         offerType: document.querySelector('input[name="offerType"]:checked').value
     };
     
@@ -869,7 +829,6 @@ function resetFilters() {
     // Resetuj selecty
     document.getElementById('filter-position').value = '';
     document.getElementById('filter-potential').value = '';
-    document.getElementById('filter-nationality').value = '';
     
     // Resetuj inputy numeryczne
     ['filter-min-age', 'filter-max-age', 'filter-min-price', 'filter-max-price'].forEach(id => {
@@ -899,7 +858,6 @@ function resetFilters() {
         minPrice: '',
         maxPrice: '',
         potential: '',
-        nationality: '',
         offerType: 'all'
     };
 }
@@ -965,14 +923,6 @@ async function loadMarketData() {
             // Filtruj potencjał
             if (currentFilters.potential && player.potential !== currentFilters.potential) {
                 return false;
-            }
-            
-            // Filtruj narodowość
-            if (currentFilters.nationality) {
-                const playerCountry = player.country || player.nationality || "";
-                if (playerCountry !== currentFilters.nationality) {
-                    return false;
-                }
             }
             
             // Filtruj typ oferty
@@ -1108,21 +1058,21 @@ function renderPlayerCard(item) {
     const posStyle = getPositionStyle(p.position);
     const potData = getPotentialData(p.potential);
     
-    // Etykieta Rookie (przeniesiona pod OVR)
+    // Etykieta Rookie
     const rookieBadge = p.is_rookie ? `
         <span style="
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             color: #92400e;
             font-size: 0.6rem;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-weight: 900;
+            padding: 3px 6px;
+            border-radius: 8px;
+            font-weight: 700;
             border: 1px solid #fcd34d;
             white-space: nowrap;
         ">ROOKIE</span>
     ` : '';
     
-    // Etykieta typu oferty (przeniesiona pod OVR)
+    // Etykieta typu oferty
     let offerTypeBadge = '';
     if (item.type === 'auction') {
         offerTypeBadge = `
@@ -1130,9 +1080,9 @@ function renderPlayerCard(item) {
                 background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
                 color: #92400e;
                 font-size: 0.6rem;
-                padding: 3px 8px;
-                border-radius: 10px;
-                font-weight: 900;
+                padding: 3px 6px;
+                border-radius: 8px;
+                font-weight: 700;
                 border: 1px solid #fcd34d;
                 white-space: nowrap;
             ">🏷️ AUCTION</span>
@@ -1143,9 +1093,9 @@ function renderPlayerCard(item) {
                 background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
                 color: #065f46;
                 font-size: 0.6rem;
-                padding: 3px 8px;
-                border-radius: 10px;
-                font-weight: 900;
+                padding: 3px 6px;
+                border-radius: 8px;
+                font-weight: 700;
                 border: 1px solid #34d399;
                 white-space: nowrap;
             ">⚡ BUY NOW</span>
@@ -1156,9 +1106,9 @@ function renderPlayerCard(item) {
                 background: linear-gradient(135deg, #dbeafe 0%, #a5b4fc 100%);
                 color: #1e40af;
                 font-size: 0.6rem;
-                padding: 3px 8px;
-                border-radius: 10px;
-                font-weight: 900;
+                padding: 3px 6px;
+                border-radius: 8px;
+                font-weight: 700;
                 border: 1px solid #818cf8;
                 white-space: nowrap;
             ">🏷️⚡ BOTH</span>
@@ -1207,15 +1157,15 @@ function renderPlayerCard(item) {
             <div style="
                 background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
                 border: 2px solid #fcd34d;
-                border-radius: 12px;
-                padding: 14px;
-                margin-bottom: 15px;
+                border-radius: 10px;
+                padding: 12px;
+                margin-bottom: 12px;
             ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <span style="font-size: 0.75rem; color: #92400e; font-weight: 800; text-transform: uppercase;">Current Bid</span>
-                    <span style="font-size: 1.4rem; font-weight: 900; color: #b45309;">$${bidPrice.toLocaleString()}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 0.7rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Current Bid</span>
+                    <span style="font-size: 1.2rem; font-weight: 900; color: #b45309;">$${bidPrice.toLocaleString()}</span>
                 </div>
-                <div style="font-size: 0.75rem; color: #b45309; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                <div style="font-size: 0.7rem; color: #b45309; display: flex; align-items: center; gap: 4px; font-weight: 600;">
                     <span>⏱️</span> Ends: ${bidEnds}
                 </div>
             </div>
@@ -1225,14 +1175,14 @@ function renderPlayerCard(item) {
                 background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
                 color: white;
                 border: none;
-                padding: 12px 20px;
-                border-radius: 10px;
-                font-weight: 900;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-weight: 800;
                 cursor: pointer;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
                 flex: 1;
                 transition: all 0.2s;
-                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+                box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2);
             ">BID NOW</button>
         `;
     }
@@ -1244,13 +1194,13 @@ function renderPlayerCard(item) {
                 <div style="
                     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
                     border: 2px solid #34d399;
-                    border-radius: 12px;
-                    padding: 14px;
-                    margin-bottom: 15px;
+                    border-radius: 10px;
+                    padding: 12px;
+                    margin-bottom: 12px;
                 ">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.75rem; color: #065f46; font-weight: 800; text-transform: uppercase;">Buy Now</span>
-                        <span style="font-size: 1.4rem; font-weight: 900; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
+                        <span style="font-size: 0.7rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Buy Now</span>
+                        <span style="font-size: 1.2rem; font-weight: 900; color: #059669;">$${buyNowPrice.toLocaleString()}</span>
                     </div>
                 </div>
             `;
@@ -1260,14 +1210,14 @@ function renderPlayerCard(item) {
                 background: linear-gradient(135deg, #059669 0%, #065f46 100%);
                 color: white;
                 border: none;
-                padding: 12px 20px;
-                border-radius: 10px;
-                font-weight: 900;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-weight: 800;
                 cursor: pointer;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
                 flex: 1;
                 transition: all 0.2s;
-                box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+                box-shadow: 0 4px 8px rgba(5, 150, 105, 0.2);
             ">BUY NOW ⚡</button>
         `;
     }
@@ -1280,9 +1230,9 @@ function renderPlayerCard(item) {
             position: relative;
             overflow: hidden;
             background: white;
-            border-radius: 18px;
-            border: 2px solid #e2e8f0;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
             height: 100%;
             display: flex;
@@ -1294,53 +1244,53 @@ function renderPlayerCard(item) {
                 left: 0;
                 top: 0;
                 bottom: 0;
-                width: 8px;
+                width: 6px;
                 background: ${posStyle.bg};
-                border-radius: 18px 0 0 18px;
+                border-radius: 14px 0 0 14px;
             "></div>
 
             <!-- Główna zawartość -->
-            <div style="padding: 25px; padding-left: 35px; flex: 1; display: flex; flex-direction: column;">
+            <div style="padding: 18px; padding-left: 24px; flex: 1; display: flex; flex-direction: column;">
                 <!-- Nagłówek z avatarami -->
-                <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                     <!-- Avatar i OVR z etykietami -->
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 100px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 80px;">
                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${p.first_name}${p.last_name}" 
                              style="
-                                width: 90px;
-                                height: 90px;
+                                width: 70px;
+                                height: 70px;
                                 background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-                                border-radius: 16px;
-                                border: 4px solid white;
-                                box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+                                border-radius: 12px;
+                                border: 3px solid white;
+                                box-shadow: 0 4px 8px rgba(0,0,0,0.08);
                              ">
                         <div style="width: 100%; text-align: center;">
                             <!-- Pasek OVR -->
                             <div style="
-                                height: 10px;
+                                height: 8px;
                                 background: #e5e7eb;
-                                border-radius: 5px;
+                                border-radius: 4px;
                                 overflow: hidden;
-                                margin-bottom: 8px;
+                                margin-bottom: 6px;
                             ">
                                 <div style="height: 100%; width: ${ovrPercentage}%; background: ${ovrStyle.border};"></div>
                             </div>
                             <!-- Wartość OVR -->
                             <div style="
-                                font-size: 0.85rem;
+                                font-size: 0.75rem;
                                 font-weight: 900;
                                 color: ${ovrStyle.color};
                                 background: ${ovrStyle.bg};
-                                padding: 4px 12px;
-                                border-radius: 20px;
+                                padding: 3px 10px;
+                                border-radius: 16px;
                                 display: inline-block;
-                                border: 2px solid ${ovrStyle.border};
-                                margin-bottom: 8px;
+                                border: 1px solid ${ovrStyle.border};
+                                margin-bottom: 6px;
                             ">
                                 OVR: ${ovr}
                             </div>
                             <!-- Etykiety Rookie i typu oferty -->
-                            <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                            <div style="display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;">
                                 ${rookieBadge}
                                 ${offerTypeBadge}
                             </div>
@@ -1350,67 +1300,67 @@ function renderPlayerCard(item) {
                     <!-- Informacje o graczu -->
                     <div style="flex: 1;">
                         <!-- Imię i nazwisko -->
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                            <h3 style="margin: 0; font-size: 1.5rem; font-weight: 900; color: #1a237e; line-height: 1.2;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #1a237e; line-height: 1.2;">
                                 ${p.first_name} ${p.last_name}
                             </h3>
                             ${flagUrl ? `
                                 <img src="${flagUrl}" style="
-                                    width: 28px;
+                                    width: 22px;
                                     height: auto;
-                                    border-radius: 4px;
-                                    border: 2px solid #e2e8f0;
+                                    border-radius: 3px;
+                                    border: 1px solid #e2e8f0;
                                 ">
                             ` : ''}
                         </div>
 
                         <!-- Pozycja i potencjał -->
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
                             <div style="
                                 background: ${posStyle.bg};
                                 color: ${posStyle.text};
-                                width: 44px;
-                                height: 44px;
+                                width: 34px;
+                                height: 34px;
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                border-radius: 12px;
+                                border-radius: 8px;
                                 font-weight: 900;
-                                font-size: 1rem;
-                                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                                font-size: 0.9rem;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                             ">
                                 ${p.position}
                             </div>
                             <span style="
                                 display: flex;
                                 align-items: center;
-                                gap: 8px;
-                                font-size: 0.95rem;
+                                gap: 6px;
+                                font-size: 0.85rem;
                                 color: ${potData.color};
                                 font-weight: 800;
                                 background: ${potData.color}15;
-                                padding: 8px 14px;
-                                border-radius: 10px;
-                                border: 2px solid ${potData.color}30;
+                                padding: 6px 10px;
+                                border-radius: 8px;
+                                border: 1px solid ${potData.color}30;
                             ">
-                                <span style="font-size: 1.2rem;">${potData.icon}</span>
+                                <span style="font-size: 1rem;">${potData.icon}</span>
                                 ${potData.label}
                             </span>
                         </div>
 
                         <!-- Statystyki podstawowe -->
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
                             <div>
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.75rem; margin-bottom: 4px;">AGE</div>
-                                <div style="font-weight: 900; color: #1a237e; font-size: 1.2rem;">${p.age}</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">AGE</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 1rem;">${p.age}</div>
                             </div>
                             <div>
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.75rem; margin-bottom: 4px;">HEIGHT</div>
-                                <div style="font-weight: 900; color: #1a237e; font-size: 1.2rem;">${heightInFt}</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">HEIGHT</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 1rem;">${heightInFt}</div>
                             </div>
                             <div>
-                                <div style="font-weight: 700; color: #64748b; font-size: 0.75rem; margin-bottom: 4px;">SALARY</div>
-                                <div style="font-weight: 900; color: #1a237e; font-size: 1.1rem;">$${(p.salary || 0).toLocaleString()}</div>
+                                <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">SALARY</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 0.9rem;">$${(p.salary || 0).toLocaleString()}</div>
                             </div>
                         </div>
                     </div>
@@ -1418,37 +1368,37 @@ function renderPlayerCard(item) {
 
                 <!-- Umiejętności -->
                 <div style="
-                    margin: 20px 0;
-                    padding: 18px;
+                    margin: 12px 0;
+                    padding: 14px;
                     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                    border-radius: 14px;
-                    border: 2px solid #e2e8f0;
+                    border-radius: 10px;
+                    border: 1px solid #e2e8f0;
                     flex: 1;
                 ">
                     <div style="
                         display: grid;
                         grid-template-columns: repeat(4, 1fr);
-                        gap: 12px;
+                        gap: 8px;
                     ">
                         ${Object.entries(skills).map(([key, value]) => `
                             <div style="
                                 text-align: center;
-                                padding: 12px 8px;
+                                padding: 8px 4px;
                                 background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'};
-                                border-radius: 10px;
-                                border: 2px solid ${value >= 15 ? '#a7f3d0' : value >= 10 ? '#fde68a' : '#e5e7eb'};
+                                border-radius: 8px;
+                                border: 1px solid ${value >= 15 ? '#a7f3d0' : value >= 10 ? '#fde68a' : '#e5e7eb'};
                                 transition: transform 0.2s;
                             ">
                                 <div style="
-                                    font-size: 0.6rem;
+                                    font-size: 0.55rem;
                                     color: ${value >= 15 ? '#065f46' : value >= 10 ? '#92400e' : '#64748b'};
-                                    font-weight: 900;
-                                    margin-bottom: 6px;
+                                    font-weight: 800;
+                                    margin-bottom: 4px;
                                     text-transform: uppercase;
-                                    letter-spacing: 0.5px;
+                                    letter-spacing: 0.3px;
                                 ">${key}</div>
                                 <div style="
-                                    font-size: 1.2rem;
+                                    font-size: 1rem;
                                     font-weight: 900;
                                     color: ${value >= 15 ? '#059669' : value >= 10 ? '#d97706' : '#475569'};
                                 ">${value}</div>
@@ -1461,33 +1411,33 @@ function renderPlayerCard(item) {
                 <div style="margin-top: auto;">
                     ${priceInfo}
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                         <!-- Wartość rynkowa -->
                         <div>
-                            <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; margin-bottom: 4px;">MARKET VALUE</div>
-                            <div style="font-size: 1.4rem; font-weight: 900; color: #059669;">$${marketVal.toLocaleString()}</div>
+                            <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; margin-bottom: 2px;">MARKET VALUE</div>
+                            <div style="font-size: 1.1rem; font-weight: 900; color: #059669;">$${marketVal.toLocaleString()}</div>
                         </div>
                         
                         <!-- Przyciski akcji -->
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
                             ${actionButtons}
                             <button onclick="showPlayerProfile('${p.id}')" style="
                                 background: #f8fafc;
                                 color: #475569;
-                                border: 2px solid #e2e8f0;
-                                padding: 12px 20px;
-                                border-radius: 10px;
+                                border: 1px solid #e2e8f0;
+                                padding: 8px 12px;
+                                border-radius: 8px;
                                 font-weight: 700;
                                 cursor: pointer;
-                                font-size: 0.85rem;
+                                font-size: 0.8rem;
                                 display: flex;
                                 align-items: center;
-                                gap: 8px;
+                                gap: 6px;
                                 transition: all 0.2s;
-                                min-width: 100px;
+                                min-width: 80px;
                                 justify-content: center;
                             ">
-                                <span style="font-size: 1rem;">👁️</span> Profile
+                                <span style="font-size: 0.9rem;">👁️</span> Profile
                             </button>
                         </div>
                     </div>
@@ -1686,14 +1636,14 @@ style.textContent = `
     }
     
     .player-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 16px 32px rgba(0,0,0,0.1) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
         border-color: #c7d2fe !important;
     }
     
     button:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.12) !important;
     }
     
     #bid-modal {
@@ -1708,22 +1658,36 @@ style.textContent = `
     @media (max-width: 1600px) {
         #market-listings {
             grid-template-columns: repeat(3, 1fr) !important;
+            gap: 16px !important;
         }
     }
     
     @media (max-width: 1200px) {
         #market-listings {
             grid-template-columns: repeat(2, 1fr) !important;
+            gap: 14px !important;
         }
     }
     
     @media (max-width: 768px) {
         #market-listings {
             grid-template-columns: 1fr !important;
+            gap: 12px !important;
         }
         
         .market-modern-wrapper {
             padding: 10px !important;
+        }
+        
+        .filters-panel {
+            padding: 20px !important;
+        }
+        
+        .market-management-header {
+            padding: 20px !important;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
         }
     }
 `;
