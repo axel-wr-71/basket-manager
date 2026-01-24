@@ -8,6 +8,8 @@ let currentFilters = {
     position: '',
     minAge: '',
     maxAge: '',
+    minSalary: '',
+    maxSalary: '',
     minPrice: '',
     maxPrice: '',
     potential: '',
@@ -82,30 +84,43 @@ function getPotentialData(potentialId) {
     return fallbackMap[potentialId] || { label: 'Unknown', color: '#94a3b8', icon: '👤' };
 }
 
-// Generowanie opcji potencjału
-function generatePotentialOptions() {
-    if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
-        const options = Object.values(window.potentialDefinitions)
-            .sort((a, b) => b.order_index - a.order_index)
-            .map(def => `<option value="${def.id}">${def.label} ${def.emoji || ''}</option>`)
-            .join('');
-        return `<option value="">All Potential Levels</option>${options}`;
-    }
+// Generowanie opcji potencjału dla przycisków
+function generatePotentialButtons() {
+    const potentials = [
+        { id: '', label: 'All Potential', emoji: '🌟', color: '#94a3b8' },
+        { id: 'GOAT', label: 'G.O.A.T.', emoji: '🐐', color: '#f59e0b' },
+        { id: 'Elite Franchise', label: 'Elite Franchise', emoji: '★', color: '#8b5cf6' },
+        { id: 'Franchise Player', label: 'Franchise Player', emoji: '★', color: '#3b82f6' },
+        { id: 'All-Star Caliber', label: 'All-Star', emoji: '⭐', color: '#10b981' },
+        { id: 'Starter', label: 'Starter', emoji: '🏀', color: '#059669' },
+        { id: 'Sixth Man', label: 'Sixth Man', emoji: '🔥', color: '#d97706' },
+        { id: 'Rotation Player', label: 'Rotation', emoji: '🔄', color: '#f59e0b' },
+        { id: 'Deep Bench', label: 'Deep Bench', emoji: '⏱️', color: '#6b7280' },
+        { id: 'Project Player', label: 'Project', emoji: '🌱', color: '#ef4444' },
+        { id: 'High Prospect', label: 'Prospect', emoji: '🎯', color: '#ec4899' }
+    ];
     
-    // Fallback options
-    return `
-        <option value="">All Potential Levels</option>
-        <option value="GOAT">G.O.A.T. 🐐</option>
-        <option value="Elite Franchise">Elite Franchise ★</option>
-        <option value="Franchise Player">Franchise Player ★</option>
-        <option value="All-Star Caliber">All-Star Caliber</option>
-        <option value="Starter">Starter</option>
-        <option value="Sixth Man">Sixth Man</option>
-        <option value="Rotation Player">Rotation Player</option>
-        <option value="Deep Bench">Deep Bench</option>
-        <option value="Project Player">Project Player</option>
-        <option value="High Prospect">High Prospect</option>
-    `;
+    return potentials.map(pot => `
+        <button type="button" class="potential-btn ${currentFilters.potential === pot.id ? 'active' : ''}" 
+                data-potential="${pot.id}" style="
+            background: ${currentFilters.potential === pot.id ? pot.color + '20' : '#f8fafc'};
+            color: ${currentFilters.potential === pot.id ? pot.color : '#64748b'};
+            border: 2px solid ${currentFilters.potential === pot.id ? pot.color : '#e2e8f0'};
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        ">
+            <span>${pot.emoji}</span>
+            ${pot.label}
+        </button>
+    `).join('');
 }
 
 // Funkcja do renderowania popupu licytacji
@@ -354,36 +369,46 @@ export async function renderMarketView(teamData, players = []) {
 
     container.innerHTML = `
         <div class="market-modern-wrapper">
-            <!-- Header z finansami -->
+            <!-- Nagłówek w stylu Roster Management -->
             <div class="market-management-header" style="
-                background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
                 color: white;
-                padding: 24px 32px;
-                border-radius: 16px;
+                padding: 20px 32px;
                 margin-bottom: 30px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                box-shadow: 0 8px 24px rgba(26, 35, 126, 0.2);
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             ">
-                <div>
-                    <h1 style="margin:0; font-weight:900; font-size: 2rem; letter-spacing: -0.5px;">
-                        🏀 TRANSFER MARKET
-                    </h1>
-                    <p style="margin:8px 0 0 0; opacity: 0.9; font-size: 0.95rem;">
-                        Scout and sign new talent for your franchise
-                    </p>
-                </div>
-                <div style="
-                    background: rgba(255, 255, 255, 0.15);
-                    backdrop-filter: blur(10px);
-                    padding: 16px 28px;
-                    border-radius: 12px;
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    text-align: center;
-                ">
-                    <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 4px;">AVAILABLE FUNDS</div>
-                    <div style="font-size: 1.8rem; font-weight: 900;">$${(teamData.balance || 0).toLocaleString()}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="
+                            font-size: 1.2rem;
+                            font-weight: 800;
+                            margin-bottom: 4px;
+                            color: #cbd5e1;
+                            letter-spacing: 0.5px;
+                        ">
+                            🏀 TRANSFER MARKET
+                        </div>
+                        <div style="
+                            font-size: 0.9rem;
+                            color: #94a3b8;
+                            font-weight: 500;
+                        ">
+                            Scout and sign new talent for your franchise
+                        </div>
+                    </div>
+                    <div style="
+                        background: rgba(255, 255, 255, 0.1);
+                        backdrop-filter: blur(10px);
+                        padding: 14px 24px;
+                        border-radius: 10px;
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        text-align: center;
+                        min-width: 180px;
+                    ">
+                        <div style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">AVAILABLE FUNDS</div>
+                        <div style="font-size: 1.6rem; font-weight: 900; color: white;">$${(teamData.balance || 0).toLocaleString()}</div>
+                    </div>
                 </div>
             </div>
 
@@ -418,40 +443,110 @@ export async function renderMarketView(teamData, players = []) {
                     </button>
                 </div>
 
-                <!-- Grid filtrów - USUNIĘTO NARODOWOŚĆ -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
-                    <!-- Pozycja -->
-                    <div class="filter-group">
-                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
-                            Position
-                        </label>
-                        <select id="filter-position" class="filter-select" style="
-                            width: 100%;
-                            padding: 12px 16px;
-                            border: 2px solid #e2e8f0;
-                            border-radius: 10px;
-                            font-size: 0.9rem;
-                            background: white;
-                            color: #334155;
-                            transition: all 0.2s;
-                            cursor: pointer;
-                        ">
-                            <option value="">All Positions</option>
-                            <option value="PG">PG - Point Guard</option>
-                            <option value="SG">SG - Shooting Guard</option>
-                            <option value="SF">SF - Small Forward</option>
-                            <option value="PF">PF - Power Forward</option>
-                            <option value="C">C - Center</option>
-                        </select>
+                <!-- Filtry pozycji jako przyciski -->
+                <div style="margin-bottom: 25px;">
+                    <div style="font-size: 0.8rem; color: #475569; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">
+                        Position
                     </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <button type="button" class="position-btn ${currentFilters.position === '' ? 'active' : ''}" data-position="" style="
+                            background: ${currentFilters.position === '' ? '#1a237e' : '#f8fafc'};
+                            color: ${currentFilters.position === '' ? 'white' : '#64748b'};
+                            border: 2px solid ${currentFilters.position === '' ? '#1a237e' : '#e2e8f0'};
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            font-size: 0.85rem;
+                            transition: all 0.2s;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        ">
+                            <span>🌟</span> ALL
+                        </button>
+                        
+                        <button type="button" class="position-btn ${currentFilters.position === 'PG' ? 'active' : ''}" data-position="PG" style="
+                            background: ${currentFilters.position === 'PG' ? '#1e40af' : '#f8fafc'};
+                            color: ${currentFilters.position === 'PG' ? '#dbeafe' : '#1e40af'};
+                            border: 2px solid ${currentFilters.position === 'PG' ? '#1e40af' : '#e2e8f0'};
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            font-size: 0.85rem;
+                            transition: all 0.2s;
+                        ">PG</button>
+                        
+                        <button type="button" class="position-btn ${currentFilters.position === 'SG' ? 'active' : ''}" data-position="SG" style="
+                            background: ${currentFilters.position === 'SG' ? '#5b21b6' : '#f8fafc'};
+                            color: ${currentFilters.position === 'SG' ? '#f3e8ff' : '#5b21b6'};
+                            border: 2px solid ${currentFilters.position === 'SG' ? '#5b21b6' : '#e2e8f0'};
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            font-size: 0.85rem;
+                            transition: all 0.2s;
+                        ">SG</button>
+                        
+                        <button type="button" class="position-btn ${currentFilters.position === 'SF' ? 'active' : ''}" data-position="SF" style="
+                            background: ${currentFilters.position === 'SF' ? '#065f46' : '#f8fafc'};
+                            color: ${currentFilters.position === 'SF' ? '#d1fae5' : '#065f46'};
+                            border: 2px solid ${currentFilters.position === 'SF' ? '#065f46' : '#e2e8f0'};
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            font-size: 0.85rem;
+                            transition: all 0.2s;
+                        ">SF</button>
+                        
+                        <button type="button" class="position-btn ${currentFilters.position === 'PF' ? 'active' : ''}" data-position="PF" style="
+                            background: ${currentFilters.position === 'PF' ? '#9a3412' : '#f8fafc'};
+                            color: ${currentFilters.position === 'PF' ? '#ffedd5' : '#9a3412'};
+                            border: 2px solid ${currentFilters.position === 'PF' ? '#9a3412' : '#e2e8f0'};
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            font-size: 0.85rem;
+                            transition: all 0.2s;
+                        ">PF</button>
+                        
+                        <button type="button" class="position-btn ${currentFilters.position === 'C' ? 'active' : ''}" data-position="C" style="
+                            background: ${currentFilters.position === 'C' ? '#F5AD27' : '#f8fafc'};
+                            color: ${currentFilters.position === 'C' ? '#92400e' : '#92400e'};
+                            border: 2px solid ${currentFilters.position === 'C' ? '#F5AD27' : '#e2e8f0'};
+                            padding: 10px 20px;
+                            border-radius: 10px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            font-size: 0.85rem;
+                            transition: all 0.2s;
+                        ">C</button>
+                    </div>
+                </div>
 
+                <!-- Filtry potencjału jako przyciski -->
+                <div style="margin-bottom: 25px;">
+                    <div style="font-size: 0.8rem; color: #475569; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;">
+                        Potential
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; max-height: 120px; overflow-y: auto; padding-right: 10px;">
+                        ${generatePotentialButtons()}
+                    </div>
+                </div>
+
+                <!-- Grid filtrów numerycznych -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
                     <!-- Wiek -->
                     <div class="filter-group">
                         <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
                             Age Range
                         </label>
                         <div style="display: flex; gap: 10px;">
-                            <input id="filter-min-age" type="number" min="18" max="40" placeholder="Min" style="
+                            <input id="filter-min-age" type="number" min="18" max="40" placeholder="Min" value="${currentFilters.minAge || ''}" style="
                                 flex: 1;
                                 padding: 12px;
                                 border: 2px solid #e2e8f0;
@@ -460,7 +555,33 @@ export async function renderMarketView(teamData, players = []) {
                                 text-align: center;
                             ">
                             <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
-                            <input id="filter-max-age" type="number" min="18" max="40" placeholder="Max" style="
+                            <input id="filter-max-age" type="number" min="18" max="40" placeholder="Max" value="${currentFilters.maxAge || ''}" style="
+                                flex: 1;
+                                padding: 12px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 10px;
+                                font-size: 0.9rem;
+                                text-align: center;
+                            ">
+                        </div>
+                    </div>
+
+                    <!-- Pensja -->
+                    <div class="filter-group">
+                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                            Salary Range ($)
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <input id="filter-min-salary" type="number" min="0" placeholder="Min" value="${currentFilters.minSalary || ''}" style="
+                                flex: 1;
+                                padding: 12px;
+                                border: 2px solid #e2e8f0;
+                                border-radius: 10px;
+                                font-size: 0.9rem;
+                                text-align: center;
+                            ">
+                            <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
+                            <input id="filter-max-salary" type="number" min="0" placeholder="Max" value="${currentFilters.maxSalary || ''}" style="
                                 flex: 1;
                                 padding: 12px;
                                 border: 2px solid #e2e8f0;
@@ -477,7 +598,7 @@ export async function renderMarketView(teamData, players = []) {
                             Price Range ($)
                         </label>
                         <div style="display: flex; gap: 10px;">
-                            <input id="filter-min-price" type="number" min="0" placeholder="Min" style="
+                            <input id="filter-min-price" type="number" min="0" placeholder="Min" value="${currentFilters.minPrice || ''}" style="
                                 flex: 1;
                                 padding: 12px;
                                 border: 2px solid #e2e8f0;
@@ -486,7 +607,7 @@ export async function renderMarketView(teamData, players = []) {
                                 text-align: center;
                             ">
                             <div style="color: #94a3b8; align-self: center; font-weight: 600;">→</div>
-                            <input id="filter-max-price" type="number" min="0" placeholder="Max" style="
+                            <input id="filter-max-price" type="number" min="0" placeholder="Max" value="${currentFilters.maxPrice || ''}" style="
                                 flex: 1;
                                 padding: 12px;
                                 border: 2px solid #e2e8f0;
@@ -495,26 +616,6 @@ export async function renderMarketView(teamData, players = []) {
                                 text-align: center;
                             ">
                         </div>
-                    </div>
-
-                    <!-- Potencjał (PRZENIESIONY w miejsce narodowości) -->
-                    <div class="filter-group">
-                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
-                            Potential
-                        </label>
-                        <select id="filter-potential" class="filter-select" style="
-                            width: 100%;
-                            padding: 12px 16px;
-                            border: 2px solid #e2e8f0;
-                            border-radius: 10px;
-                            font-size: 0.9rem;
-                            background: white;
-                            color: #334155;
-                            transition: all 0.2s;
-                            cursor: pointer;
-                        ">
-                            ${generatePotentialOptions()}
-                        </select>
                     </div>
                 </div>
 
@@ -538,7 +639,7 @@ export async function renderMarketView(teamData, players = []) {
                             flex: 1;
                             min-width: 180px;
                         ">
-                            <input type="radio" name="offerType" value="all" checked 
+                            <input type="radio" name="offerType" value="all" ${currentFilters.offerType === 'all' ? 'checked' : ''}
                                    style="transform: scale(1.2); accent-color: #1a237e;">
                             <div style="font-weight: 600; color: #475569;">All Offers</div>
                             <div style="
@@ -566,7 +667,7 @@ export async function renderMarketView(teamData, players = []) {
                             flex: 1;
                             min-width: 180px;
                         ">
-                            <input type="radio" name="offerType" value="auction"
+                            <input type="radio" name="offerType" value="auction" ${currentFilters.offerType === 'auction' ? 'checked' : ''}
                                    style="transform: scale(1.2); accent-color: #1a237e;">
                             <div style="font-weight: 600; color: #475569;">Auction Only</div>
                             <div style="
@@ -594,7 +695,7 @@ export async function renderMarketView(teamData, players = []) {
                             flex: 1;
                             min-width: 180px;
                         ">
-                            <input type="radio" name="offerType" value="buy_now"
+                            <input type="radio" name="offerType" value="buy_now" ${currentFilters.offerType === 'buy_now' ? 'checked' : ''}
                                    style="transform: scale(1.2); accent-color: #1a237e;">
                             <div style="font-weight: 600; color: #475569;">Buy Now Only</div>
                             <div style="
@@ -768,6 +869,46 @@ export async function renderMarketView(teamData, players = []) {
         }
     };
 
+    // Event listeners dla przycisków pozycji
+    document.querySelectorAll('.position-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const position = btn.dataset.position;
+            currentFilters.position = position;
+            
+            // Aktualizuj wygląd przycisków
+            document.querySelectorAll('.position-btn').forEach(b => {
+                const pos = b.dataset.position;
+                const style = getPositionStyle(pos);
+                b.style.background = currentFilters.position === pos ? style.bg : '#f8fafc';
+                b.style.color = currentFilters.position === pos ? style.text : (pos ? style.bg : '#64748b');
+                b.style.borderColor = currentFilters.position === pos ? style.bg : '#e2e8f0';
+            });
+            
+            currentPage = 1;
+            loadMarketData();
+        });
+    });
+
+    // Event listeners dla przycisków potencjału
+    document.querySelectorAll('.potential-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const potential = btn.dataset.potential;
+            currentFilters.potential = potential;
+            
+            // Aktualizuj wygląd przycisków
+            document.querySelectorAll('.potential-btn').forEach(b => {
+                const potId = b.dataset.potential;
+                const potData = getPotentialData(potId);
+                b.style.background = currentFilters.potential === potId ? potData.color + '20' : '#f8fafc';
+                b.style.color = currentFilters.potential === potId ? potData.color : '#64748b';
+                b.style.borderColor = currentFilters.potential === potId ? potData.color : '#e2e8f0';
+            });
+            
+            currentPage = 1;
+            loadMarketData();
+        });
+    });
+
     // Hover effects dla checkboxów
     document.querySelectorAll('.checkbox-modern').forEach(label => {
         const input = label.querySelector('input[type="radio"]');
@@ -813,12 +954,14 @@ export async function renderMarketView(teamData, players = []) {
 
 function updateFilters() {
     currentFilters = {
-        position: document.getElementById('filter-position').value,
+        position: currentFilters.position,
         minAge: parseInt(document.getElementById('filter-min-age').value) || '',
         maxAge: parseInt(document.getElementById('filter-max-age').value) || '',
+        minSalary: parseInt(document.getElementById('filter-min-salary').value) || '',
+        maxSalary: parseInt(document.getElementById('filter-max-salary').value) || '',
         minPrice: parseInt(document.getElementById('filter-min-price').value) || '',
         maxPrice: parseInt(document.getElementById('filter-max-price').value) || '',
-        potential: document.getElementById('filter-potential').value,
+        potential: currentFilters.potential,
         offerType: document.querySelector('input[name="offerType"]:checked').value
     };
     
@@ -826,12 +969,40 @@ function updateFilters() {
 }
 
 function resetFilters() {
-    // Resetuj selecty
-    document.getElementById('filter-position').value = '';
-    document.getElementById('filter-potential').value = '';
+    // Resetuj przyciski pozycji
+    currentFilters.position = '';
+    document.querySelectorAll('.position-btn').forEach(btn => {
+        const pos = btn.dataset.position;
+        if (pos === '') {
+            btn.style.background = '#1a237e';
+            btn.style.color = 'white';
+            btn.style.borderColor = '#1a237e';
+        } else {
+            const style = getPositionStyle(pos);
+            btn.style.background = '#f8fafc';
+            btn.style.color = style.bg;
+            btn.style.borderColor = '#e2e8f0';
+        }
+    });
+    
+    // Resetuj przyciski potencjału
+    currentFilters.potential = '';
+    document.querySelectorAll('.potential-btn').forEach(btn => {
+        const potId = btn.dataset.potential;
+        if (potId === '') {
+            btn.style.background = '#94a3b820';
+            btn.style.color = '#94a3b8';
+            btn.style.borderColor = '#94a3b8';
+        } else {
+            const potData = getPotentialData(potId);
+            btn.style.background = '#f8fafc';
+            btn.style.color = '#64748b';
+            btn.style.borderColor = '#e2e8f0';
+        }
+    });
     
     // Resetuj inputy numeryczne
-    ['filter-min-age', 'filter-max-age', 'filter-min-price', 'filter-max-price'].forEach(id => {
+    ['filter-min-age', 'filter-max-age', 'filter-min-salary', 'filter-max-salary', 'filter-min-price', 'filter-max-price'].forEach(id => {
         document.getElementById(id).value = '';
     });
     
@@ -855,6 +1026,8 @@ function resetFilters() {
         position: '',
         minAge: '',
         maxAge: '',
+        minSalary: '',
+        maxSalary: '',
         minPrice: '',
         maxPrice: '',
         potential: '',
@@ -917,6 +1090,15 @@ async function loadMarketData() {
                 return false;
             }
             if (currentFilters.maxAge && player.age > currentFilters.maxAge) {
+                return false;
+            }
+            
+            // Filtruj pensję
+            const salary = player.salary || 0;
+            if (currentFilters.minSalary && salary < currentFilters.minSalary) {
+                return false;
+            }
+            if (currentFilters.maxSalary && salary > currentFilters.maxSalary) {
                 return false;
             }
             
@@ -1115,27 +1297,34 @@ function renderPlayerCard(item) {
         `;
     }
     
-    // Konwersja wzrostu
+    // Konwersja wzrostu na cm i stopy
     const heightCm = p.height || 0;
     const inchesTotal = heightCm * 0.393701;
     const ft = Math.floor(inchesTotal / 12);
     const inc = Math.round(inchesTotal % 12);
-    const heightInFt = heightCm > 0 ? `${ft}'${inc}"` : '--';
+    const heightDisplay = heightCm > 0 ? `${heightCm}cm / ${ft}'${inc}"` : '--';
 
-    const skills = {
-        '2PT': p.skill_2pt || 0,
-        '3PT': p.skill_3pt || 0,
-        'DUNK': p.skill_dunk || 0,
-        'PASS': p.skill_passing || 0,
-        'DRIB': p.skill_dribbling || 0,
-        'REB': p.skill_rebound || 0,
-        'BLK': p.skill_block || 0,
-        'STL': p.skill_steal || 0,
-        'STAM': p.skill_stamina || 0,
-        '1v1O': p.skill_1on1_off || 0,
-        '1v1D': p.skill_1on1_def || 0,
-        'FT': p.skill_ft || 0
-    };
+    // Grupowanie umiejętności według kategorii
+    const attackSkills = [
+        { key: '2PT', value: p.skill_2pt || 0, label: '2PT Shot' },
+        { key: '3PT', value: p.skill_3pt || 0, label: '3PT Shot' },
+        { key: 'DUNK', value: p.skill_dunk || 0, label: 'Dunking' },
+        { key: '1v1O', value: p.skill_1on1_off || 0, label: '1on1 Off' }
+    ];
+    
+    const defenseSkills = [
+        { key: '1v1D', value: p.skill_1on1_def || 0, label: '1on1 Def' },
+        { key: 'BLK', value: p.skill_block || 0, label: 'Blocking' },
+        { key: 'STL', value: p.skill_steal || 0, label: 'Stealing' },
+        { key: 'REB', value: p.skill_rebound || 0, label: 'Rebound' }
+    ];
+    
+    const generalSkills = [
+        { key: 'PASS', value: p.skill_passing || 0, label: 'Passing' },
+        { key: 'DRIB', value: p.skill_dribbling || 0, label: 'Dribbling' },
+        { key: 'STAM', value: p.skill_stamina || 0, label: 'Stamina' },
+        { key: 'FT', value: p.skill_ft || 0, label: 'Free Th.' }
+    ];
 
     const countryCode = p.country || p.nationality || "";
     const flagUrl = getFlagUrl(countryCode);
@@ -1356,7 +1545,7 @@ function renderPlayerCard(item) {
                             </div>
                             <div>
                                 <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">HEIGHT</div>
-                                <div style="font-weight: 900; color: #1a237e; font-size: 1rem;">${heightInFt}</div>
+                                <div style="font-weight: 900; color: #1a237e; font-size: 0.9rem;">${heightDisplay}</div>
                             </div>
                             <div>
                                 <div style="font-weight: 700; color: #64748b; font-size: 0.7rem; margin-bottom: 2px;">SALARY</div>
@@ -1366,7 +1555,7 @@ function renderPlayerCard(item) {
                     </div>
                 </div>
 
-                <!-- Umiejętności -->
+                <!-- Umiejętności pogrupowane -->
                 <div style="
                     margin: 12px 0;
                     padding: 14px;
@@ -1375,35 +1564,115 @@ function renderPlayerCard(item) {
                     border: 1px solid #e2e8f0;
                     flex: 1;
                 ">
-                    <div style="
-                        display: grid;
-                        grid-template-columns: repeat(4, 1fr);
-                        gap: 8px;
-                    ">
-                        ${Object.entries(skills).map(([key, value]) => `
-                            <div style="
-                                text-align: center;
-                                padding: 8px 4px;
-                                background: ${value >= 15 ? '#d1fae5' : value >= 10 ? '#fef3c7' : '#f3f4f6'};
-                                border-radius: 8px;
-                                border: 1px solid ${value >= 15 ? '#a7f3d0' : value >= 10 ? '#fde68a' : '#e5e7eb'};
-                                transition: transform 0.2s;
-                            ">
+                    <!-- ATTACK -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.7rem; color: #dc2626; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+                            ⚔️ ATTACK
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                            ${attackSkills.map(skill => `
                                 <div style="
-                                    font-size: 0.55rem;
-                                    color: ${value >= 15 ? '#065f46' : value >= 10 ? '#92400e' : '#64748b'};
-                                    font-weight: 800;
-                                    margin-bottom: 4px;
-                                    text-transform: uppercase;
-                                    letter-spacing: 0.3px;
-                                ">${key}</div>
+                                    text-align: center;
+                                    padding: 10px 4px;
+                                    background: ${skill.value >= 15 ? '#fee2e2' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
+                                    border-radius: 8px;
+                                    border: 1px solid ${skill.value >= 15 ? '#fca5a5' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
+                                ">
+                                    <div style="
+                                        font-size: 0.6rem;
+                                        color: ${skill.value >= 15 ? '#dc2626' : skill.value >= 10 ? '#92400e' : '#64748b'};
+                                        font-weight: 800;
+                                        margin-bottom: 4px;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.2px;
+                                    ">${skill.key}</div>
+                                    <div style="
+                                        font-size: 1rem;
+                                        font-weight: 900;
+                                        color: ${skill.value >= 15 ? '#dc2626' : skill.value >= 10 ? '#d97706' : '#475569'};
+                                    ">${skill.value}</div>
+                                    <div style="
+                                        font-size: 0.55rem;
+                                        color: #94a3b8;
+                                        margin-top: 2px;
+                                    ">${skill.label}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- DEFENSE -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 0.7rem; color: #1d4ed8; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+                            🛡️ DEFENSE
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                            ${defenseSkills.map(skill => `
                                 <div style="
-                                    font-size: 1rem;
-                                    font-weight: 900;
-                                    color: ${value >= 15 ? '#059669' : value >= 10 ? '#d97706' : '#475569'};
-                                ">${value}</div>
-                            </div>
-                        `).join('')}
+                                    text-align: center;
+                                    padding: 10px 4px;
+                                    background: ${skill.value >= 15 ? '#dbeafe' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
+                                    border-radius: 8px;
+                                    border: 1px solid ${skill.value >= 15 ? '#93c5fd' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
+                                ">
+                                    <div style="
+                                        font-size: 0.6rem;
+                                        color: ${skill.value >= 15 ? '#1d4ed8' : skill.value >= 10 ? '#92400e' : '#64748b'};
+                                        font-weight: 800;
+                                        margin-bottom: 4px;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.2px;
+                                    ">${skill.key}</div>
+                                    <div style="
+                                        font-size: 1rem;
+                                        font-weight: 900;
+                                        color: ${skill.value >= 15 ? '#1d4ed8' : skill.value >= 10 ? '#d97706' : '#475569'};
+                                    ">${skill.value}</div>
+                                    <div style="
+                                        font-size: 0.55rem;
+                                        color: #94a3b8;
+                                        margin-top: 2px;
+                                    ">${skill.label}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- GENERAL -->
+                    <div>
+                        <div style="font-size: 0.7rem; color: #059669; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">
+                            ⚙️ GENERAL
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                            ${generalSkills.map(skill => `
+                                <div style="
+                                    text-align: center;
+                                    padding: 10px 4px;
+                                    background: ${skill.value >= 15 ? '#d1fae5' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
+                                    border-radius: 8px;
+                                    border: 1px solid ${skill.value >= 15 ? '#a7f3d0' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
+                                ">
+                                    <div style="
+                                        font-size: 0.6rem;
+                                        color: ${skill.value >= 15 ? '#059669' : skill.value >= 10 ? '#92400e' : '#64748b'};
+                                        font-weight: 800;
+                                        margin-bottom: 4px;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.2px;
+                                    ">${skill.key}</div>
+                                    <div style="
+                                        font-size: 1rem;
+                                        font-weight: 900;
+                                        color: ${skill.value >= 15 ? '#059669' : skill.value >= 10 ? '#d97706' : '#475569'};
+                                    ">${skill.value}</div>
+                                    <div style="
+                                        font-size: 0.55rem;
+                                        color: #94a3b8;
+                                        margin-top: 2px;
+                                    ">${skill.label}</div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                 </div>
 
@@ -1646,6 +1915,16 @@ style.textContent = `
         box-shadow: 0 4px 8px rgba(0,0,0,0.12) !important;
     }
     
+    .position-btn:hover:not(.active) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    }
+    
+    .potential-btn:hover:not(.active) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    }
+    
     #bid-modal {
         animation: fadeIn 0.3s ease;
     }
@@ -1666,6 +1945,10 @@ style.textContent = `
         #market-listings {
             grid-template-columns: repeat(2, 1fr) !important;
             gap: 14px !important;
+        }
+        
+        .filters-panel .checkbox-modern {
+            min-width: 150px !important;
         }
     }
     
@@ -1688,6 +1971,15 @@ style.textContent = `
             flex-direction: column;
             gap: 15px;
             text-align: center;
+        }
+        
+        .filters-panel .checkbox-modern {
+            min-width: 100% !important;
+        }
+        
+        .position-btn, .potential-btn {
+            padding: 8px 12px !important;
+            font-size: 0.8rem !important;
         }
     }
 `;
