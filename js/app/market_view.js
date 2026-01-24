@@ -11,6 +11,7 @@ let currentFilters = {
     minPrice: '',
     maxPrice: '',
     potential: '',
+    nationality: '',
     offerType: 'all'
 };
 
@@ -58,6 +59,41 @@ function calculateMarketValue(player) {
     return Math.round((ovr * 10000 + (player.salary || 0) * 2) * ageFactor);
 }
 
+// Pobieranie danych potencjału zgodnie z roster_view.js
+function getPotentialData(potentialId) {
+    if (!potentialId) return { label: 'Unknown', color: '#94a3b8', icon: '👤' };
+    
+    // Sprawdź czy mamy globalne definicje potencjału
+    if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
+        // Szukaj po ID
+        const def = Object.values(window.potentialDefinitions).find(d => d.id === potentialId);
+        if (def) return def;
+        
+        // Szukaj po label
+        const defByLabel = Object.values(window.potentialDefinitions).find(d => 
+            d.label.toLowerCase() === potentialId.toLowerCase() ||
+            d.id.toLowerCase() === potentialId.toLowerCase()
+        );
+        if (defByLabel) return defByLabel;
+    }
+    
+    // Fallback dla brakujących definicji
+    const fallbackMap = {
+        'GOAT': { label: 'G.O.A.T.', color: '#f59e0b', icon: '🐐' },
+        'Elite Franchise': { label: 'Elite Franchise', color: '#8b5cf6', icon: '★' },
+        'Franchise Player': { label: 'Franchise Player', color: '#3b82f6', icon: '★' },
+        'All-Star Caliber': { label: 'All-Star', color: '#10b981', icon: '⭐' },
+        'Starter': { label: 'Starter', color: '#059669', icon: '🏀' },
+        'Sixth Man': { label: 'Sixth Man', color: '#d97706', icon: '🔥' },
+        'Rotation Player': { label: 'Rotation', color: '#f59e0b', icon: '🔄' },
+        'Deep Bench': { label: 'Deep Bench', color: '#6b7280', icon: '⏱️' },
+        'Project Player': { label: 'Project', color: '#ef4444', icon: '🌱' },
+        'High Prospect': { label: 'Prospect', color: '#ec4899', icon: '🎯' }
+    };
+    
+    return fallbackMap[potentialId] || { label: potentialId || 'Unknown', color: '#94a3b8', icon: '👤' };
+}
+
 // Generowanie opcji potencjału
 function generatePotentialOptions() {
     if (window.potentialDefinitions && Object.keys(window.potentialDefinitions).length > 0) {
@@ -84,27 +120,503 @@ function generatePotentialOptions() {
     `;
 }
 
-// Pobieranie danych potencjału
-function getPotentialData(potentialId) {
-    if (window.potentialDefinitions && window.potentialDefinitions[potentialId]) {
-        return window.potentialDefinitions[potentialId];
-    }
+// Funkcja do renderowania profilu zawodnika (jak w roster_view)
+function renderPlayerProfile(player) {
+    const potData = getPotentialData(player.potential);
+    const ovr = calculateOVR(player);
+    const ovrStyle = getOvrStyle(ovr);
+    const posStyle = getPositionStyle(player.position);
     
-    // Fallback dla brakujących definicji
-    const fallbackMap = {
-        'GOAT': { label: 'G.O.A.T.', color: '#f59e0b', icon: '🐐' },
-        'Elite Franchise': { label: 'Elite Franchise', color: '#8b5cf6', icon: '★' },
-        'Franchise Player': { label: 'Franchise Player', color: '#3b82f6', icon: '★' },
-        'All-Star Caliber': { label: 'All-Star', color: '#10b981', icon: '⭐' },
-        'Starter': { label: 'Starter', color: '#059669', icon: '🏀' },
-        'Sixth Man': { label: 'Sixth Man', color: '#d97706', icon: '🔥' },
-        'Rotation Player': { label: 'Rotation', color: '#f59e0b', icon: '🔄' },
-        'Deep Bench': { label: 'Deep Bench', color: '#6b7280', icon: '⏱️' },
-        'Project Player': { label: 'Project', color: '#ef4444', icon: '🌱' },
-        'High Prospect': { label: 'Prospect', color: '#ec4899', icon: '🎯' }
-    };
+    const heightCm = player.height || 0;
+    const inchesTotal = heightCm * 0.393701;
+    const ft = Math.floor(inchesTotal / 12);
+    const inc = Math.round(inchesTotal % 12);
+    const heightInFt = heightCm > 0 ? `${ft}'${inc}"` : '--';
+
+    const countryCode = player.country || player.nationality || "";
+    const flagUrl = getFlagUrl(countryCode);
+
+    return `
+        <div style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+        ">
+            <div style="
+                background: white;
+                border-radius: 20px;
+                max-width: 800px;
+                width: 100%;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                position: relative;
+            ">
+                <!-- Nagłówek -->
+                <div style="
+                    background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+                    color: white;
+                    padding: 30px;
+                    border-radius: 20px 20px 0 0;
+                    position: relative;
+                ">
+                    <button onclick="closePlayerProfile()" style="
+                        position: absolute;
+                        top: 20px;
+                        right: 20px;
+                        background: rgba(255, 255, 255, 0.2);
+                        color: white;
+                        border: none;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        font-size: 1.2rem;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">✕</button>
+                    
+                    <div style="display: flex; align-items: center; gap: 25px;">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${player.first_name}${player.last_name}" 
+                             style="
+                                width: 120px;
+                                height: 120px;
+                                background: white;
+                                border-radius: 16px;
+                                border: 4px solid rgba(255, 255, 255, 0.3);
+                             ">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;">
+                                <h1 style="margin: 0; font-size: 2rem; font-weight: 900;">
+                                    ${player.first_name} ${player.last_name}
+                                </h1>
+                                ${flagUrl ? `
+                                    <img src="${flagUrl}" style="
+                                        width: 40px;
+                                        height: auto;
+                                        border-radius: 6px;
+                                        border: 2px solid rgba(255, 255, 255, 0.3);
+                                    ">
+                                ` : ''}
+                                ${player.is_rookie ? `
+                                    <span style="
+                                        background: #fef3c7;
+                                        color: #92400e;
+                                        font-size: 0.8rem;
+                                        padding: 6px 14px;
+                                        border-radius: 20px;
+                                        font-weight: 900;
+                                        border: 2px solid #fcd34d;
+                                    ">ROOKIE</span>
+                                ` : ''}
+                            </div>
+                            
+                            <div style="display: flex; gap: 20px; margin-top: 15px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="
+                                        background: ${posStyle.bg};
+                                        color: ${posStyle.text};
+                                        width: 50px;
+                                        height: 50px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        border-radius: 12px;
+                                        font-weight: 900;
+                                        font-size: 1.2rem;
+                                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                                    ">
+                                        ${player.position}
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.8rem; opacity: 0.8;">POSITION</div>
+                                        <div style="font-weight: 700;">${posStyle.label}</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="
+                                        width: 50px;
+                                        height: 50px;
+                                        background: ${ovrStyle.bg};
+                                        border: 3px solid ${ovrStyle.border};
+                                        border-radius: 12px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-weight: 900;
+                                        color: ${ovrStyle.color};
+                                        font-size: 1.4rem;
+                                    ">
+                                        ${ovr}
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.8rem; opacity: 0.8;">OVERALL</div>
+                                        <div style="font-weight: 700;">${ovr}/100</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="
+                                    background: ${potData.color}20;
+                                    border: 2px solid ${potData.color};
+                                    border-radius: 12px;
+                                    padding: 12px 20px;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                ">
+                                    <span style="font-size: 1.5rem;">${potData.icon}</span>
+                                    <div>
+                                        <div style="font-size: 0.8rem; opacity: 0.8;">POTENTIAL</div>
+                                        <div style="font-weight: 700; color: ${potData.color};">${potData.label}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Główna zawartość -->
+                <div style="padding: 30px;">
+                    <!-- Informacje podstawowe -->
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">AGE</div>
+                            <div style="font-size: 2rem; font-weight: 900; color: #1a237e;">${player.age}</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">HEIGHT</div>
+                            <div style="font-size: 1.8rem; font-weight: 900; color: #1a237e;">${heightInFt}</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">${heightCm} cm</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">SALARY</div>
+                            <div style="font-size: 1.8rem; font-weight: 900; color: #059669;">$${(player.salary || 0).toLocaleString()}</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">per season</div>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                            <div style="font-size: 0.9rem; color: #64748b; margin-bottom: 8px;">MARKET VALUE</div>
+                            <div style="font-size: 1.8rem; font-weight: 900; color: #059669;">$${calculateMarketValue(player).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Umiejętności -->
+                    <h3 style="color: #1a237e; margin-bottom: 20px; font-size: 1.2rem; font-weight: 900;">SKILLS RATINGS</h3>
+                    <div style="
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        gap: 15px;
+                        margin-bottom: 30px;
+                    ">
+                        ${[
+                            { label: '2PT Shot', value: player.skill_2pt || 0 },
+                            { label: '3PT Shot', value: player.skill_3pt || 0 },
+                            { label: 'Dunking', value: player.skill_dunk || 0 },
+                            { label: 'Free Throw', value: player.skill_ft || 0 },
+                            { label: 'Passing', value: player.skill_passing || 0 },
+                            { label: 'Dribbling', value: player.skill_dribbling || 0 },
+                            { label: 'Stamina', value: player.skill_stamina || 0 },
+                            { label: 'Rebounding', value: player.skill_rebound || 0 },
+                            { label: 'Blocking', value: player.skill_block || 0 },
+                            { label: 'Stealing', value: player.skill_steal || 0 },
+                            { label: '1on1 Offense', value: player.skill_1on1_off || 0 },
+                            { label: '1on1 Defense', value: player.skill_1on1_def || 0 }
+                        ].map(skill => `
+                            <div style="
+                                background: ${skill.value >= 15 ? '#d1fae5' : skill.value >= 10 ? '#fef3c7' : '#f3f4f6'};
+                                border: 2px solid ${skill.value >= 15 ? '#a7f3d0' : skill.value >= 10 ? '#fde68a' : '#e5e7eb'};
+                                border-radius: 10px;
+                                padding: 15px;
+                            ">
+                                <div style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    margin-bottom: 8px;
+                                ">
+                                    <div style="
+                                        font-weight: 700;
+                                        color: ${skill.value >= 15 ? '#065f46' : skill.value >= 10 ? '#92400e' : '#475569'};
+                                    ">${skill.label}</div>
+                                    <div style="
+                                        font-size: 1.4rem;
+                                        font-weight: 900;
+                                        color: ${skill.value >= 15 ? '#059669' : skill.value >= 10 ? '#d97706' : '#475569'};
+                                    ">${skill.value}</div>
+                                </div>
+                                <div style="
+                                    height: 8px;
+                                    background: #e5e7eb;
+                                    border-radius: 4px;
+                                    overflow: hidden;
+                                ">
+                                    <div style="
+                                        height: 100%;
+                                        width: ${(skill.value / 20) * 100}%;
+                                        background: ${skill.value >= 15 ? '#10b981' : skill.value >= 10 ? '#f59e0b' : '#94a3b8'};
+                                    "></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Przycisk zamknięcia -->
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button onclick="closePlayerProfile()" style="
+                            background: #1a237e;
+                            color: white;
+                            border: none;
+                            padding: 15px 40px;
+                            border-radius: 12px;
+                            font-weight: 800;
+                            cursor: pointer;
+                            font-size: 1rem;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 10px;
+                        ">
+                            <span>←</span> Back to Market
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Funkcja do renderowania popupu licytacji
+function renderBidModal(listingId, currentPrice, player) {
+    const minBid = currentPrice + 10000;
     
-    return fallbackMap[potentialId] || { label: 'Unknown', color: '#94a3b8', icon: '👤' };
+    return `
+        <div id="bid-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+        ">
+            <div style="
+                background: white;
+                border-radius: 20px;
+                max-width: 500px;
+                width: 100%;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                position: relative;
+            ">
+                <!-- Nagłówek -->
+                <div style="
+                    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                    color: white;
+                    padding: 25px;
+                    border-radius: 20px 20px 0 0;
+                    position: relative;
+                ">
+                    <button onclick="closeBidModal()" style="
+                        position: absolute;
+                        top: 20px;
+                        right: 20px;
+                        background: rgba(255, 255, 255, 0.2);
+                        color: white;
+                        border: none;
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 50%;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">✕</button>
+                    
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="
+                            width: 60px;
+                            height: 60px;
+                            background: rgba(255, 255, 255, 0.2);
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 2rem;
+                        ">🏷️</div>
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.5rem; font-weight: 900;">PLACE A BID</h2>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9rem;">
+                                ${player.first_name} ${player.last_name}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Zawartość -->
+                <div style="padding: 30px;">
+                    <!-- Informacje o aktualnej ofercie -->
+                    <div style="
+                        background: #fef3c7;
+                        border: 2px solid #fcd34d;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 25px;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 0.8rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Current Bid</div>
+                                <div style="font-size: 2rem; font-weight: 900; color: #b45309;">$${currentPrice.toLocaleString()}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.8rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Your Balance</div>
+                                <div style="font-size: 1.5rem; font-weight: 900; color: #1a237e;">$${window.currentTeamBalance.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div style="
+                            background: rgba(180, 83, 9, 0.1);
+                            border-radius: 8px;
+                            padding: 10px 15px;
+                            font-size: 0.85rem;
+                            color: #92400e;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        ">
+                            <span>📈</span>
+                            Minimum bid: <strong style="margin-left: 5px;">$${minBid.toLocaleString()}</strong>
+                        </div>
+                    </div>
+                    
+                    <!-- Formularz licytacji -->
+                    <div style="margin-bottom: 30px;">
+                        <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #475569;">
+                            Enter Your Bid Amount ($)
+                        </label>
+                        <div style="position: relative;">
+                            <span style="
+                                position: absolute;
+                                left: 15px;
+                                top: 50%;
+                                transform: translateY(-50%);
+                                color: #64748b;
+                                font-weight: 700;
+                            ">$</span>
+                            <input type="number" id="bid-amount-input" 
+                                   min="${minBid}" 
+                                   value="${minBid}"
+                                   step="1000"
+                                   style="
+                                        width: 100%;
+                                        padding: 16px 16px 16px 40px;
+                                        border: 2px solid #e2e8f0;
+                                        border-radius: 12px;
+                                        font-size: 1.2rem;
+                                        font-weight: 700;
+                                        color: #1a237e;
+                                        box-sizing: border-box;
+                                   "
+                                   oninput="updateBidPreview(this.value)">
+                        </div>
+                        
+                        <!-- Szybkie przyciski -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;">
+                            ${[10000, 25000, 50000, 100000].map(amount => `
+                                <button onclick="setBidAmount(${currentPrice + amount})" style="
+                                    background: #f1f5f9;
+                                    color: #475569;
+                                    border: 2px solid #e2e8f0;
+                                    padding: 10px;
+                                    border-radius: 8px;
+                                    font-weight: 700;
+                                    cursor: pointer;
+                                    font-size: 0.85rem;
+                                    transition: all 0.2s;
+                                ">
+                                    +$${amount.toLocaleString()}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- Podgląd -->
+                    <div id="bid-preview" style="
+                        background: #f0f9ff;
+                        border: 2px solid #bae6fd;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 25px;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 0.8rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">Your Bid</div>
+                                <div id="preview-bid-amount" style="font-size: 1.8rem; font-weight: 900; color: #0c4a6e;">$${minBid.toLocaleString()}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.8rem; color: #0369a1; font-weight: 600; text-transform: uppercase;">New Balance</div>
+                                <div id="preview-new-balance" style="font-size: 1.5rem; font-weight: 900; color: ${window.currentTeamBalance - minBid >= 0 ? '#059669' : '#ef4444'};">$${(window.currentTeamBalance - minBid).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div id="bid-warning" style="
+                            font-size: 0.85rem;
+                            color: ${window.currentTeamBalance - minBid >= 0 ? '#059669' : '#ef4444'};
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            margin-top: 10px;
+                        ">
+                            ${window.currentTeamBalance - minBid >= 0 ? 
+                                '✅ Sufficient funds available' : 
+                                '❌ Insufficient funds'}
+                        </div>
+                    </div>
+                    
+                    <!-- Przyciski akcji -->
+                    <div style="display: flex; gap: 15px;">
+                        <button onclick="closeBidModal()" style="
+                            flex: 1;
+                            background: #f1f5f9;
+                            color: #64748b;
+                            border: 2px solid #e2e8f0;
+                            padding: 16px;
+                            border-radius: 12px;
+                            font-weight: 800;
+                            cursor: pointer;
+                            font-size: 0.95rem;
+                            transition: all 0.2s;
+                        ">
+                            Cancel
+                        </button>
+                        <button onclick="submitBid('${listingId}')" id="submit-bid-btn" style="
+                            flex: 1;
+                            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                            color: white;
+                            border: none;
+                            padding: 16px;
+                            border-radius: 12px;
+                            font-weight: 800;
+                            cursor: pointer;
+                            font-size: 0.95rem;
+                            transition: all 0.2s;
+                        ">
+                            PLACE BID
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Renderowanie głównego widoku
@@ -160,7 +672,7 @@ export async function renderMarketView(teamData, players = []) {
                 </div>
             </div>
 
-            <!-- Panel filtrów z nowym UX -->
+            <!-- Panel filtrów -->
             <div class="filters-panel" style="
                 background: white;
                 border-radius: 16px;
@@ -191,8 +703,8 @@ export async function renderMarketView(teamData, players = []) {
                     </button>
                 </div>
 
-                <!-- Grid filtrów -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <!-- Grid filtrów - dodano narodowość -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
                     <!-- Pozycja -->
                     <div class="filter-group">
                         <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
@@ -289,9 +801,47 @@ export async function renderMarketView(teamData, players = []) {
                             ${generatePotentialOptions()}
                         </select>
                     </div>
+
+                    <!-- Narodowość -->
+                    <div class="filter-group">
+                        <label style="display: block; font-size: 0.8rem; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">
+                            Nationality
+                        </label>
+                        <select id="filter-nationality" class="filter-select" style="
+                            width: 100%;
+                            padding: 12px 16px;
+                            border: 2px solid #e2e8f0;
+                            border-radius: 10px;
+                            font-size: 0.9rem;
+                            background: white;
+                            color: #334155;
+                            transition: all 0.2s;
+                            cursor: pointer;
+                        ">
+                            <option value="">All Nationalities</option>
+                            <option value="US">United States 🇺🇸</option>
+                            <option value="GB">United Kingdom 🇬🇧</option>
+                            <option value="ES">Spain 🇪🇸</option>
+                            <option value="FR">France 🇫🇷</option>
+                            <option value="DE">Germany 🇩🇪</option>
+                            <option value="IT">Italy 🇮🇹</option>
+                            <option value="GR">Greece 🇬🇷</option>
+                            <option value="RS">Serbia 🇷🇸</option>
+                            <option value="LT">Lithuania 🇱🇹</option>
+                            <option value="HR">Croatia 🇭🇷</option>
+                            <option value="SI">Slovenia 🇸🇮</option>
+                            <option value="AU">Australia 🇦🇺</option>
+                            <option value="CA">Canada 🇨🇦</option>
+                            <option value="CN">China 🇨🇳</option>
+                            <option value="BR">Brazil 🇧🇷</option>
+                            <option value="AR">Argentina 🇦🇷</option>
+                            <option value="TR">Turkey 🇹🇷</option>
+                            <option value="PL">Poland 🇵🇱</option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Filtry checkbox z lepszym UX -->
+                <!-- Filtry checkbox -->
                 <div style="border-top: 2px solid #f1f5f9; padding-top: 25px;">
                     <div style="font-size: 0.85rem; color: #475569; margin-bottom: 15px; font-weight: 600;">
                         Offer Type
@@ -545,7 +1095,6 @@ export async function renderMarketView(teamData, players = []) {
     document.querySelectorAll('.checkbox-modern').forEach(label => {
         const input = label.querySelector('input[type="radio"]');
         
-        // Efekt hover
         label.addEventListener('mouseenter', () => {
             if (!input.checked) {
                 label.style.borderColor = '#c7d2fe';
@@ -560,15 +1109,12 @@ export async function renderMarketView(teamData, players = []) {
             }
         });
         
-        // Efekt przy kliknięciu
         input.addEventListener('change', () => {
-            // Zresetuj wszystkie labelki
             document.querySelectorAll('.checkbox-modern').forEach(l => {
                 l.style.borderColor = '#e2e8f0';
                 l.style.background = '#f8fafc';
             });
             
-            // Wyróżnij zaznaczony
             if (input.checked) {
                 label.style.borderColor = '#1a237e';
                 label.style.background = '#e0e7ff';
@@ -579,7 +1125,6 @@ export async function renderMarketView(teamData, players = []) {
             loadMarketData();
         });
         
-        // Zaznacz domyślny
         if (input.checked) {
             label.style.borderColor = '#1a237e';
             label.style.background = '#e0e7ff';
@@ -597,6 +1142,7 @@ function updateFilters() {
         minPrice: parseInt(document.getElementById('filter-min-price').value) || '',
         maxPrice: parseInt(document.getElementById('filter-max-price').value) || '',
         potential: document.getElementById('filter-potential').value,
+        nationality: document.getElementById('filter-nationality').value,
         offerType: document.querySelector('input[name="offerType"]:checked').value
     };
     
@@ -607,6 +1153,7 @@ function resetFilters() {
     // Resetuj selecty
     document.getElementById('filter-position').value = '';
     document.getElementById('filter-potential').value = '';
+    document.getElementById('filter-nationality').value = '';
     
     // Resetuj inputy numeryczne
     ['filter-min-age', 'filter-max-age', 'filter-min-price', 'filter-max-price'].forEach(id => {
@@ -636,6 +1183,7 @@ function resetFilters() {
         minPrice: '',
         maxPrice: '',
         potential: '',
+        nationality: '',
         offerType: 'all'
     };
 }
@@ -698,9 +1246,17 @@ async function loadMarketData() {
                 return false;
             }
             
-            // Filtruj potencjał (NAPRAWIONE)
+            // Filtruj potencjał
             if (currentFilters.potential && player.potential !== currentFilters.potential) {
                 return false;
+            }
+            
+            // Filtruj narodowość
+            if (currentFilters.nationality) {
+                const playerCountry = player.country || player.nationality || "";
+                if (playerCountry !== currentFilters.nationality) {
+                    return false;
+                }
             }
             
             // Filtruj typ oferty
@@ -906,9 +1462,9 @@ function renderPlayerCard(item) {
             </div>
         `;
         actionButtons += `
-            <button onclick="handleBid('${item.id}', ${bidPrice})" style="
-                background: linear-gradient(135deg, ${posStyle.bg} 0%, #3730a3 100%);
-                color: ${posStyle.text};
+            <button onclick="handleBid('${item.id}', ${bidPrice}, '${p.id}')" style="
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                color: white;
                 border: none;
                 padding: 12px 20px;
                 border-radius: 10px;
@@ -917,7 +1473,7 @@ function renderPlayerCard(item) {
                 font-size: 0.85rem;
                 flex: 1;
                 transition: all 0.2s;
-                box-shadow: 0 4px 12px rgba(${parseInt(posStyle.bg.slice(1,3), 16)}, ${parseInt(posStyle.bg.slice(3,5), 16)}, ${parseInt(posStyle.bg.slice(5,7), 16)}, 0.2);
+                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
             ">BID NOW</button>
         `;
     }
@@ -1186,7 +1742,7 @@ function renderPlayerCard(item) {
                         <!-- Przyciski akcji -->
                         <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
                             ${actionButtons}
-                            <button onclick="showPlayerDetails('${p.id}')" style="
+                            <button onclick="showPlayerProfile('${p.id}')" style="
                                 background: #f8fafc;
                                 color: #475569;
                                 border: 2px solid #e2e8f0;
@@ -1202,7 +1758,7 @@ function renderPlayerCard(item) {
                                 min-width: 100px;
                                 justify-content: center;
                             ">
-                                <span style="font-size: 1rem;">👁️</span> Details
+                                <span style="font-size: 1rem;">👁️</span> Profile
                             </button>
                         </div>
                     </div>
@@ -1213,23 +1769,22 @@ function renderPlayerCard(item) {
 }
 
 // Globalne funkcje dla przycisków
-window.handleBid = (listingId, currentPrice) => {
-    const bidAmount = prompt(`🏷️ Place Your Bid\n\nCurrent bid: $${currentPrice.toLocaleString()}\nEnter your bid amount:`, currentPrice + 10000);
-    
-    if (!bidAmount) return;
-    
-    const bid = parseInt(bidAmount);
-    if (isNaN(bid) || bid <= currentPrice) {
-        alert(`❌ Bid must be higher than current price ($${currentPrice.toLocaleString()})`);
+window.handleBid = async (listingId, currentPrice, playerId) => {
+    // Znajdź zawodnika
+    const listing = allMarketData.find(item => item.id === listingId);
+    if (!listing) {
+        alert("❌ Player listing not found!");
         return;
     }
     
-    if (bid > window.currentTeamBalance) {
-        alert(`💰 Insufficient funds!\nYou have: $${window.currentTeamBalance.toLocaleString()}\nRequired: $${bid.toLocaleString()}`);
-        return;
-    }
+    const player = listing.players;
     
-    alert(`✅ Bid placed successfully!\n\nYour bid: $${bid.toLocaleString()}\n\n(Full auction system integration coming soon!)`);
+    // Renderuj modal licytacji
+    const modalHtml = renderBidModal(listingId, currentPrice, player);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Inicjalizuj podgląd
+    updateBidPreview(currentPrice + 10000);
 };
 
 window.handleBuyNow = async (listingId, price) => {
@@ -1263,8 +1818,130 @@ window.handleBuyNow = async (listingId, price) => {
     }
 };
 
-window.showPlayerDetails = (playerId) => {
-    alert(`👤 Player Profile: ${playerId}\n\n(Full player profile modal coming soon!)`);
+window.showPlayerProfile = async (playerId) => {
+    try {
+        // Znajdź zawodnika w danych rynku
+        const listing = allMarketData.find(item => item.players.id === playerId);
+        if (!listing) {
+            alert("❌ Player not found!");
+            return;
+        }
+        
+        const player = listing.players;
+        
+        // Renderuj profil
+        const profileHtml = renderPlayerProfile(player);
+        document.body.insertAdjacentHTML('beforeend', profileHtml);
+        
+    } catch (error) {
+        console.error("Error loading player profile:", error);
+        alert("❌ Could not load player profile");
+    }
+};
+
+// Funkcje pomocnicze dla modali
+window.closePlayerProfile = () => {
+    const modal = document.getElementById('player-profile-modal');
+    if (modal) modal.remove();
+};
+
+window.closeBidModal = () => {
+    const modal = document.getElementById('bid-modal');
+    if (modal) modal.remove();
+};
+
+window.setBidAmount = (amount) => {
+    const input = document.getElementById('bid-amount-input');
+    if (input) {
+        input.value = amount;
+        updateBidPreview(amount);
+    }
+};
+
+window.updateBidPreview = (amount) => {
+    const bidAmount = parseInt(amount) || 0;
+    const currentPrice = parseInt(document.querySelector('#bid-amount-input')?.min || 0) - 10000 || 0;
+    const minBid = currentPrice + 10000;
+    
+    // Aktualizuj podgląd kwoty
+    const previewAmount = document.getElementById('preview-bid-amount');
+    const previewBalance = document.getElementById('preview-new-balance');
+    const warning = document.getElementById('bid-warning');
+    const submitBtn = document.getElementById('submit-bid-btn');
+    
+    if (previewAmount) {
+        previewAmount.textContent = `$${bidAmount.toLocaleString()}`;
+    }
+    
+    if (previewBalance) {
+        const newBalance = window.currentTeamBalance - bidAmount;
+        previewBalance.textContent = `$${newBalance.toLocaleString()}`;
+        previewBalance.style.color = newBalance >= 0 ? '#059669' : '#ef4444';
+    }
+    
+    if (warning) {
+        const isValid = bidAmount >= minBid && window.currentTeamBalance - bidAmount >= 0;
+        const isBelowMin = bidAmount < minBid;
+        const insufficientFunds = window.currentTeamBalance - bidAmount < 0;
+        
+        if (isValid) {
+            warning.innerHTML = '✅ Valid bid amount';
+            warning.style.color = '#059669';
+        } else if (isBelowMin) {
+            warning.innerHTML = `❌ Minimum bid: $${minBid.toLocaleString()}`;
+            warning.style.color = '#ef4444';
+        } else if (insufficientFunds) {
+            warning.innerHTML = '❌ Insufficient funds';
+            warning.style.color = '#ef4444';
+        }
+    }
+    
+    if (submitBtn) {
+        const isValid = bidAmount >= minBid && window.currentTeamBalance - bidAmount >= 0;
+        submitBtn.disabled = !isValid;
+        submitBtn.style.opacity = isValid ? '1' : '0.5';
+        submitBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+    }
+};
+
+window.submitBid = async (listingId) => {
+    const input = document.getElementById('bid-amount-input');
+    if (!input) return;
+    
+    const bidAmount = parseInt(input.value);
+    const currentPrice = parseInt(input.min) - 10000;
+    
+    if (bidAmount <= currentPrice) {
+        alert(`❌ Bid must be higher than current price ($${currentPrice.toLocaleString()})`);
+        return;
+    }
+    
+    if (bidAmount > window.currentTeamBalance) {
+        alert(`💰 Insufficient funds!\nYou have: $${window.currentTeamBalance.toLocaleString()}\nRequired: $${bidAmount.toLocaleString()}`);
+        return;
+    }
+    
+    // TODO: Implementuj rzeczywiste API do składania ofert
+    try {
+        // Symulacja udanej licytacji
+        console.log(`Placing bid: $${bidAmount} on listing ${listingId}`);
+        
+        // Zamknij modal
+        closeBidModal();
+        
+        // Pokaz potwierdzenie
+        setTimeout(() => {
+            alert(`✅ Bid placed successfully!\n\nYour bid: $${bidAmount.toLocaleString()}\n\nThe auction will be updated shortly.`);
+        }, 300);
+        
+        // Odśwież dane po chwili
+        setTimeout(() => {
+            loadMarketData();
+        }, 1000);
+        
+    } catch (error) {
+        alert(`❌ Failed to place bid: ${error.message}`);
+    }
 };
 
 // Dodaj styl animacji dla loadera
@@ -1290,6 +1967,19 @@ style.textContent = `
     button:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
+    }
+    
+    #player-profile-modal {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    #bid-modal {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
     
     @media (max-width: 1600px) {
