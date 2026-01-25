@@ -519,6 +519,14 @@ async function renderAdminPanelContent(teamData) {
     return true;
 }
 
+// DODAJ TĘ LINIJKĘ:
+window.openAdminPanel = async () => {
+    await renderAdminPanel({
+        team_name: 'Admin Console',
+        id: 'console-test'
+    });
+};
+
 function initAdminEventListeners() {
     console.log("[ADMIN] Inicjalizacja listenerów...");
     
@@ -1966,8 +1974,3 @@ function injectAdminStyles() {
     document.head.appendChild(style);
 }
 
-// Dodaj to na samym końcu pliku admin_panel.js
-window.openAdminPanel = async function() {
-    const { renderAdminPanel } = await import('./app/admin_panel.js');
-    await renderAdminPanel(null);
-};
