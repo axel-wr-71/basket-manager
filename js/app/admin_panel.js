@@ -1,5 +1,5 @@
 // js/app/admin_panel.js
-import { supabaseClient } from '../auth.js';
+import { supabaseClient, checkAdminPermissions, validateAdminPassword, isAdminSessionValid, resetAdminSession } from '../auth.js';
 import { 
     adminUpdateSalaries,
     adminUpdateMarketValues,
@@ -11,9 +11,260 @@ let adminLogEntries = [];
 let systemStats = null;
 let currentModal = null;
 
+// Główna funkcja renderująca panel admina z weryfikacją
 export async function renderAdminPanel(teamData) {
     console.log("[ADMIN] Renderowanie panelu admina jako modal...");
     
+    // Sprawdź uprawnienia admina
+    const { hasAccess, reason, profile } = await checkAdminPermissions();
+    
+    if (!hasAccess) {
+        console.warn(`[ADMIN] Brak dostępu: ${reason}`);
+        
+        // Pokaż komunikat użytkownikowi
+        let message = "Nie masz uprawnień do panelu administracyjnego.";
+        
+        switch(reason) {
+            case "not_logged_in":
+                message = "Musisz być zalogowany aby uzyskać dostęp do panelu admina.";
+                break;
+            case "insufficient_permissions":
+                const details = profile?.details || {};
+                if (!details.isAdminRole && !details.hasNoTeam) {
+                    message = "Twoje konto nie ma uprawnień administratora i jest przypisane do drużyny.";
+                } else if (!details.isAdminRole) {
+                    message = "Twoje konto nie ma uprawnień administratora (role ≠ 'admin').";
+                } else {
+                    message = "Twoje konto jest przypisane do drużyny (team_id ≠ NULL).";
+                }
+                break;
+            case "profile_error":
+                message = "Błąd podczas weryfikacji Twojego konta.";
+                break;
+        }
+        
+        alert(`❌ ${message}\nKod błędu: ${reason}`);
+        return null;
+    }
+    
+    // Jeśli ma uprawnienia, sprawdź sesję lub wyświetl popup z hasłem
+    if (!isAdminSessionValid()) {
+        const passwordValid = await showAdminPasswordPrompt();
+        
+        if (!passwordValid) {
+            console.log("[ADMIN] Anulowano dostęp - błędne hasło lub anulowano");
+            return null;
+        }
+    } else {
+        console.log("[ADMIN] Sesja admina ważna, pomijam weryfikację hasła");
+    }
+    
+    // Teraz renderuj panel
+    return renderAdminPanelContent(teamData);
+}
+
+/**
+ * Funkcja pokazująca popup z hasłem admina
+ */
+async function showAdminPasswordPrompt() {
+    return new Promise((resolve) => {
+        // Utwórz modal z hasłem
+        const modalHTML = `
+            <div class="admin-password-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; justify-content:center; align-items:center;">
+                <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:400px; box-shadow:0 15px 50px rgba(0,0,0,0.5);">
+                    <div style="text-align:center; margin-bottom:25px;">
+                        <div style="font-size:3rem; margin-bottom:15px;">🔐</div>
+                        <h3 style="margin:0; color:#1a237e; font-weight:800;">WERYFIKACJA ADMINISTRATORA</h3>
+                        <p style="color:#64748b; font-size:0.9rem; margin-top:10px;">
+                            Wprowadź hasło administratora aby kontynuować
+                        </p>
+                    </div>
+                    
+                    <form id="admin-password-form">
+                        <div style="margin-bottom:20px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155; text-align:left;">
+                                Hasło administratora
+                            </label>
+                            <input type="password" 
+                                   id="admin-password-input" 
+                                   placeholder="Wprowadź hasło..."
+                                   style="width:100%; padding:12px 15px; border:2px solid #e2e8f0; border-radius:8px; font-size:1rem; transition:border-color 0.2s;"
+                                   autocomplete="current-password"
+                                   required>
+                            <div id="password-error" style="color:#ef4444; font-size:0.85rem; margin-top:5px; display:none;"></div>
+                        </div>
+                        
+                        <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px;">
+                            <p style="color:#64748b; font-size:0.85rem; margin:0;">
+                                <strong>ℹ️ Wymagania dostępu:</strong><br>
+                                • Rola: <strong>admin</strong> w profilu<br>
+                                • Brak przypisanej drużyny (team_id = NULL)<br>
+                                • Weryfikacja dwuetapowa
+                            </p>
+                        </div>
+                        
+                        <div style="display:flex; gap:10px;">
+                            <button type="button" id="btn-cancel-password" 
+                                    style="flex:1; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
+                                ❌ Anuluj
+                            </button>
+                            <button type="submit" id="btn-submit-password" 
+                                    style="flex:1; background:linear-gradient(135deg, #1a237e, #283593); color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
+                                ✅ Zweryfikuj
+                            </button>
+                        </div>
+                        
+                        <div id="attempts-warning" style="margin-top:15px; padding:10px; background:#fef3c7; border-radius:6px; border-left:4px solid #f59e0b; display:none;">
+                            <p style="color:#92400e; font-size:0.8rem; margin:0;">
+                                ⚠️ Pozostało <span id="attempts-count">3</span> prób
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Zmienne do śledzenia prób
+        let attempts = 3;
+        const maxAttempts = 3;
+        const passwordInput = document.getElementById('admin-password-input');
+        const errorDiv = document.getElementById('password-error');
+        const attemptsWarning = document.getElementById('attempts-warning');
+        const attemptsCount = document.getElementById('attempts-count');
+        
+        // Skupienie na polu hasła
+        setTimeout(() => passwordInput.focus(), 100);
+        
+        // Sprawdź czy dostęp nie jest zablokowany
+        const blockedUntil = localStorage.getItem('admin_blocked_until');
+        if (blockedUntil && Date.now() < parseInt(blockedUntil)) {
+            const remainingMinutes = Math.ceil((parseInt(blockedUntil) - Date.now()) / 60000);
+            showError(`⏳ Dostęp tymczasowo zablokowany. Spróbuj za ${remainingMinutes} minut.`);
+            
+            const submitBtn = document.getElementById('btn-submit-password');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Zablokowane';
+            submitBtn.style.background = '#6b7280';
+            
+            setTimeout(() => {
+                document.querySelector('.admin-password-modal').remove();
+                resolve(false);
+            }, 3000);
+            return;
+        }
+        
+        // Obsługa anulowania
+        document.getElementById('btn-cancel-password').addEventListener('click', () => {
+            document.querySelector('.admin-password-modal').remove();
+            resolve(false);
+        });
+        
+        // Obsługa formularza
+        document.getElementById('admin-password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = passwordInput.value.trim();
+            
+            if (!password) {
+                showError("Hasło nie może być puste");
+                return;
+            }
+            
+            // Wyłącz przycisk podczas weryfikacji
+            const submitBtn = document.getElementById('btn-submit-password');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '🔐 Weryfikowanie...';
+            submitBtn.style.opacity = '0.7';
+            
+            try {
+                // Walidacja hasła
+                const validation = await validateAdminPassword(password);
+                
+                if (validation.valid) {
+                    // Hasło poprawne
+                    console.log("[ADMIN] Hasło poprawne, udzielanie dostępu...");
+                    
+                    // Efekt sukcesu
+                    submitBtn.innerHTML = '✅ Dostęp przyznany';
+                    submitBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    
+                    // Zapisz w sesji że hasło zostało zweryfikowane
+                    sessionStorage.setItem('admin_verified', 'true');
+                    sessionStorage.setItem('admin_verified_timestamp', Date.now());
+                    
+                    setTimeout(() => {
+                        document.querySelector('.admin-password-modal').remove();
+                        resolve(true);
+                    }, 800);
+                    
+                } else {
+                    // Hasło nieprawidłowe
+                    attempts--;
+                    
+                    if (attempts <= 0) {
+                        // Brak prób
+                        showError("❌ Brak pozostałych prób. Dostęp zablokowany.");
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '🔒 Zablokowane';
+                        submitBtn.style.background = '#6b7280';
+                        
+                        // Zablokuj dostęp na 5 minut
+                        localStorage.setItem('admin_blocked_until', Date.now() + 5 * 60 * 1000);
+                        
+                        setTimeout(() => {
+                            document.querySelector('.admin-password-modal').remove();
+                            alert('❌ Dostęp do panelu admina został tymczasowo zablokowany z powodu zbyt wielu nieudanych prób.');
+                            resolve(false);
+                        }, 2000);
+                        
+                    } else {
+                        // Pozostały próby
+                        showError(`❌ ${validation.message} | Pozostało prób: ${attempts}`);
+                        passwordInput.value = '';
+                        passwordInput.focus();
+                        
+                        // Pokaż ostrzeżenie o próbach
+                        attemptsWarning.style.display = 'block';
+                        attemptsCount.textContent = attempts;
+                        
+                        // Efekt błędu
+                        passwordInput.style.borderColor = '#ef4444';
+                        setTimeout(() => {
+                            passwordInput.style.borderColor = '#e2e8f0';
+                        }, 500);
+                    }
+                }
+                
+            } catch (error) {
+                console.error("[ADMIN] Błąd walidacji:", error);
+                showError("❌ Błąd systemu podczas weryfikacji");
+                
+            } finally {
+                // Przywróć przycisk
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '✅ Zweryfikuj';
+                submitBtn.style.opacity = '1';
+            }
+        });
+        
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Autoukrywanie błędu po 5 sekundach
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    });
+}
+
+/**
+ * Główna funkcja renderująca zawartość panelu admina
+ */
+async function renderAdminPanelContent(teamData) {
     // Utwórz modal overlay
     if (document.querySelector('.admin-modal-overlay')) {
         document.querySelector('.admin-modal-overlay').remove();
@@ -55,6 +306,9 @@ export async function renderAdminPanel(teamData) {
                         <div style="background:rgba(255,255,255,0.2); color:white; padding:10px 20px; border-radius:8px; font-weight:700; font-size:0.85rem; display:flex; align-items:center; gap:8px; border: 1px solid rgba(255,255,255,0.3);">
                             <span>⚙️</span> ADMIN MODE
                         </div>
+                        <button id="btn-logout-admin" style="background:rgba(255,255,255,0.2); color:white; border:none; padding:8px 15px; border-radius:6px; font-size:0.8rem; cursor:pointer;">
+                            🔓 Wyjdź z trybu admina
+                        </button>
                     </div>
                 </div>
             </div>
@@ -244,14 +498,25 @@ export async function renderAdminPanel(teamData) {
         }
     });
     
+    // Dodaj listener do wyjścia z trybu admina
+    document.getElementById('btn-logout-admin')?.addEventListener('click', () => {
+        resetAdminSession();
+        document.querySelector('.admin-modal-overlay').remove();
+        addAdminLog('Wyjście z trybu admina', 'info');
+        alert('Wyszedłeś z trybu administratora. Aby ponownie uzyskać dostęp, musisz przejść weryfikację hasła.');
+    });
+    
     // Załaduj statystyki systemu
     await loadSystemStats();
     
     // Dodaj początkowy log
     addAdminLog('Panel administracyjny gotowy do użycia', 'info');
+    addAdminLog('Sesja admina zweryfikowana', 'success');
     
     // Dodaj styl CSS jeśli nie ma
     injectAdminStyles();
+    
+    return true;
 }
 
 function initAdminEventListeners() {
