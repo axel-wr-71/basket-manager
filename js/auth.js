@@ -13,8 +13,6 @@ import { initContentManager } from './content-manager.js';
 window.POTENTIAL_MAP = [];
 let contentManager = null;
 
-// Lista adminów (używana w checkAdminEmail)
-window.adminEmails = ['strubbe23@gmail.com', 'admin@ebl.online.alex'];
 
 // ==================== FUNKCJE ADMIN PANEL ====================
 
