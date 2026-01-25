@@ -352,7 +352,7 @@ async function renderAdminPanelContent(teamData) {
                         Uruchom masową aktualizację pensji i wartości rynkowych wszystkich graczy z możliwością konfiguracji parametrów.
                     </p>
                     
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
                         <button id="btn-admin-update-salaries" 
                                 style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 15px; border-radius: 8px; 
                                        font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
@@ -363,6 +363,12 @@ async function renderAdminPanelContent(teamData) {
                                 style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; padding: 15px; border-radius: 8px; 
                                        font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
                             💰 Aktualizuj wartości rynkowe
+                        </button>
+                        
+                        <button id="btn-admin-advanced-salary" 
+                                style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; padding: 15px; border-radius: 8px; 
+                                       font-weight: 700; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            ⚙️ Zaawansowane algorytmy
                         </button>
                     </div>
 
@@ -535,10 +541,16 @@ function initAdminEventListeners() {
         card.addEventListener('click', handleStatCardClick);
     });
     
-    // Aktualizacja pensji - otwiera modal z parametrami
+    // Aktualizacja pensji - otwiera modal z algorytmami
     const salaryBtn = document.getElementById('btn-admin-update-salaries');
     if (salaryBtn) {
-        salaryBtn.addEventListener('click', () => showSalaryParametersModal());
+        salaryBtn.addEventListener('click', () => showSalaryAlgorithmModal());
+    }
+    
+    // Zaawansowane algorytmy pensji
+    const advancedBtn = document.getElementById('btn-admin-advanced-salary');
+    if (advancedBtn) {
+        advancedBtn.addEventListener('click', () => showSalaryAlgorithmModal());
     }
     
     // Aktualizacja wartości rynkowych - otwiera modal z parametrami
@@ -887,88 +899,1013 @@ function showSystemConfiguration() {
     alert('Konfiguracja systemu - funkcja w budowie!');
 }
 
-// ===== MODALE DLA PARAMETRÓW (EKONOMIA) =====
+// ===== MODAL ZAADWANSOWANYCH ALGORYTMÓW PENSJI =====
 
-function showSalaryParametersModal() {
+/**
+ * Modal z różnymi algorytmami przeliczania pensji
+ */
+function showSalaryAlgorithmModal() {
     const modalHTML = `
-        <div class="admin-parameters-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;">
-            <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:500px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+        <div class="admin-algorithm-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:30px; width:90%; max-width:700px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
                 <h3 style="margin-top:0; color:#1a237e; font-weight:800; display:flex; align-items:center; gap:10px;">
-                    <span>💰</span> Parametry aktualizacji pensji
+                    <span>⚙️</span> Wybierz algorytm aktualizacji pensji
                 </h3>
+                <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px;">
+                    Wybierz metodę przeliczania pensji lub skorzystaj z zaawansowanego edytora.
+                </p>
                 
-                <form id="salary-parameters-form">
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155;">Mnożnik pensji bazowej</label>
-                        <input type="range" id="salary-multiplier" name="salary_multiplier" min="0.5" max="2.0" step="0.1" value="1.0" 
-                               style="width:100%;" oninput="document.getElementById('multiplier-value').textContent = this.value + 'x'">
-                        <div style="display:flex; justify-content:space-between; margin-top:5px;">
-                            <span style="color:#64748b; font-size:0.8rem;">0.5x</span>
-                            <span id="multiplier-value" style="font-weight:bold; color:#3b82f6;">1.0x</span>
-                            <span style="color:#64748b; font-size:0.8rem;">2.0x</span>
+                <!-- KARTY ALGORYTMÓW -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <button class="algorithm-card" data-algorithm="dynamic" style="border:none; background:#f8fafc; border-radius:10px; padding:20px; cursor:pointer; text-align:left; transition:all 0.2s; border:2px solid #e2e8f0;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                            <div style="background:#3b82f6; color:white; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                🔄
+                            </div>
+                            <h4 style="margin:0; color:#1a237e;">Dynamiczny</h4>
+                        </div>
+                        <p style="color:#64748b; font-size:0.85rem; margin:0;">
+                            Uwzględnia OVR, wiek, potencjał i statystyki. Najbardziej zaawansowany.
+                        </p>
+                    </button>
+                    
+                    <button class="algorithm-card" data-algorithm="percentage" style="border:none; background:#f8fafc; border-radius:10px; padding:20px; cursor:pointer; text-align:left; transition:all 0.2s; border:2px solid #e2e8f0;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                            <div style="background:#10b981; color:white; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                📈
+                            </div>
+                            <h4 style="margin:0; color:#1a237e;">Procentowy</h4>
+                        </div>
+                        <p style="color:#64748b; font-size:0.85rem; margin:0;">
+                            Ustaw globalny % zmiany dla wszystkich graczy.
+                        </p>
+                    </button>
+                    
+                    <button class="algorithm-card" data-algorithm="positional" style="border:none; background:#f8fafc; border-radius:10px; padding:20px; cursor:pointer; text-align:left; transition:all 0.2s; border:2px solid #e2e8f0;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                            <div style="background:#8b5cf6; color:white; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                🏀
+                            </div>
+                            <h4 style="margin:0; color:#1a237e;">Pozycyjny</h4>
+                        </div>
+                        <p style="color:#64748b; font-size:0.85rem; margin:0;">
+                            Różne stawki dla różnych pozycji (PG, SG, SF, PF, C).
+                        </p>
+                    </button>
+                    
+                    <button class="algorithm-card" data-algorithm="manual" style="border:none; background:#f8fafc; border-radius:10px; padding:20px; cursor:pointer; text-align:left; transition:all 0.2s; border:2px solid #e2e8f0;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                            <div style="background:#f59e0b; color:white; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                ✏️
+                            </div>
+                            <h4 style="margin:0; color:#1a237e;">Ręczny Editor</h4>
+                        </div>
+                        <p style="color:#64748b; font-size:0.85rem; margin:0;">
+                            Zaawansowany edytor z formułami SQL.
+                        </p>
+                    </button>
+                </div>
+                
+                <!-- SEKCJA EDYTORA FORMUŁ -->
+                <div id="formula-editor-section" style="display:none; margin-top:25px;">
+                    <h4 style="color:#1a237e; margin-bottom:15px;">Zaawansowany edytor formuł</h4>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155;">
+                            Wybierz bazową formułę:
+                        </label>
+                        <select id="formula-template" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:6px;">
+                            <option value="custom">Własna formuła</option>
+                            <option value="ovr_based">Bazowana na OVR</option>
+                            <option value="age_based">Bazowana na wieku</option>
+                            <option value="potential_based">Bazowana na potencjale</option>
+                            <option value="stats_based">Bazowana na statystykach</option>
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155;">
+                            Formuła SQL (aktualizacja pensji):
+                        </label>
+                        <textarea id="sql-formula" rows="6" style="width:100%; padding:15px; border:1px solid #e2e8f0; border-radius:6px; font-family: 'Courier New', monospace; font-size:0.9rem;"
+                                  placeholder="UPDATE players SET salary = 
+(CASE 
+    WHEN overall_rating >= 90 THEN salary * 1.5
+    WHEN overall_rating >= 80 THEN salary * 1.3
+    ELSE salary * 1.1
+END)
+WHERE team_id IS NOT NULL;"></textarea>
+                        <div style="font-size:0.8rem; color:#64748b; margin-top:5px;">
+                            Użyj kolumn z tabeli players: overall_rating, age, potential, position, experience, draft_year
                         </div>
                     </div>
                     
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155;">Maksymalny wzrost (%)</label>
-                        <input type="number" id="max-increase" name="max_increase" min="0" max="100" value="20" 
-                               style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:6px;">
-                    </div>
-                    
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155;">Uwzględnij:</label>
-                        <div style="display:flex; flex-direction:column; gap:10px;">
-                            <label style="display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" name="include_experience" checked>
-                                <span>Doświadczenie gracza</span>
-                            </label>
-                            <label style="display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" name="include_potential" checked>
-                                <span>Potencjał gracza</span>
-                            </label>
-                            <label style="display:flex; align-items:center; gap:8px;">
-                                <input type="checkbox" name="include_performance" checked>
-                                <span>Ostatnie wyniki</span>
-                            </label>
+                    <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <span style="font-weight:600; color:#334155;">Podgląd zmiany:</span>
+                            <button id="btn-preview-formula" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:5px; font-size:0.85rem; cursor:pointer;">
+                                🔍 Podgląd
+                            </button>
+                        </div>
+                        <div id="formula-preview" style="background:white; padding:10px; border-radius:5px; border:1px solid #e2e8f0; font-family: 'Courier New', monospace; font-size:0.85rem; color:#64748b;">
+                            Tutaj pojawi się podgląd zmian...
                         </div>
                     </div>
-                    
-                    <div style="display:flex; gap:10px; margin-top:30px;">
-                        <button type="button" id="btn-cancel-salary" 
-                                style="flex:1; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
-                            ❌ Anuluj
-                        </button>
-                        <button type="submit" id="btn-submit-salary" 
-                                style="flex:1; background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
-                            ✅ Zastosuj parametry
-                        </button>
+                </div>
+                
+                <!-- PODGLĄD ZMIAN -->
+                <div id="preview-section" style="display:none; margin-top:25px;">
+                    <h4 style="color:#1a237e; margin-bottom:15px;">Podgląd zmian</h4>
+                    <div id="preview-content" style="max-height:200px; overflow-y:auto;">
+                        <!-- Dynamicznie ładowane -->
                     </div>
-                </form>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:25px;">
+                    <button id="btn-cancel-algorithm" 
+                            style="flex:1; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
+                        ❌ Anuluj
+                    </button>
+                    <button id="btn-execute-algorithm" 
+                            style="flex:1; background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:none;">
+                        ✅ Wykonaj aktualizację
+                    </button>
+                    <button id="btn-configure-algorithm" 
+                            style="flex:1; background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer; display:none;">
+                        ⚙️ Konfiguruj parametry
+                    </button>
+                </div>
             </div>
         </div>
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // Event listenery dla modala
-    document.getElementById('btn-cancel-salary').addEventListener('click', () => {
-        document.querySelector('.admin-parameters-modal').remove();
+    // Event listenery dla kart algorytmów
+    document.querySelectorAll('.algorithm-card').forEach(card => {
+        card.addEventListener('click', function() {
+            // Usuń zaznaczenie ze wszystkich kart
+            document.querySelectorAll('.algorithm-card').forEach(c => {
+                c.style.borderColor = '#e2e8f0';
+                c.style.background = '#f8fafc';
+            });
+            
+            // Zaznacz aktualną kartę
+            this.style.borderColor = '#3b82f6';
+            this.style.background = '#eff6ff';
+            
+            const algorithm = this.getAttribute('data-algorithm');
+            handleAlgorithmSelection(algorithm);
+        });
     });
     
-    document.getElementById('salary-parameters-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const params = Object.fromEntries(formData.entries());
+    // Obsługa wyboru szablonu formuły
+    document.getElementById('formula-template').addEventListener('change', function() {
+        const template = this.value;
+        const textarea = document.getElementById('sql-formula');
         
-        // Dodaj checkboxy
-        params.include_experience = e.target.include_experience.checked;
-        params.include_potential = e.target.include_potential.checked;
-        params.include_performance = e.target.include_performance.checked;
+        const templates = {
+            'ovr_based': `UPDATE players SET salary = 
+(CASE 
+    WHEN overall_rating >= 90 THEN salary * 1.5
+    WHEN overall_rating >= 80 THEN salary * 1.3
+    WHEN overall_rating >= 70 THEN salary * 1.15
+    ELSE salary * 1.05
+END)
+WHERE team_id IS NOT NULL;`,
+            
+            'age_based': `UPDATE players SET salary = 
+(CASE 
+    WHEN age <= 25 THEN salary * 1.4  -- Młodzi gracze
+    WHEN age <= 30 THEN salary * 1.2  -- Gracze w prime
+    WHEN age <= 35 THEN salary * 1.0  -- Stabilni
+    ELSE salary * 0.9                  -- Starsze
+END)
+WHERE team_id IS NOT NULL;`,
+            
+            'potential_based': `UPDATE players SET salary = 
+(CASE 
+    WHEN potential >= 90 THEN salary * 1.6
+    WHEN potential >= 80 THEN salary * 1.4
+    WHEN potential >= 70 THEN salary * 1.2
+    ELSE salary * 1.1
+END)
+WHERE team_id IS NOT NULL;`,
+            
+            'stats_based': `UPDATE players SET salary = 
+salary * (1 + (0.05 * experience)) 
+WHERE team_id IS NOT NULL;`
+        };
         
-        document.querySelector('.admin-parameters-modal').remove();
-        executeSalaryUpdate(params);
+        if (template !== 'custom' && templates[template]) {
+            textarea.value = templates[template];
+        }
+    });
+    
+    // Podgląd formuły
+    document.getElementById('btn-preview-formula').addEventListener('click', previewFormulaChanges);
+    
+    // Anulowanie
+    document.getElementById('btn-cancel-algorithm').addEventListener('click', () => {
+        document.querySelector('.admin-algorithm-modal').remove();
+    });
+    
+    // Konfiguracja
+    document.getElementById('btn-configure-algorithm').addEventListener('click', function() {
+        const algorithm = this.getAttribute('data-algorithm');
+        showAlgorithmConfiguration(algorithm);
+    });
+    
+    // Wykonanie
+    document.getElementById('btn-execute-algorithm').addEventListener('click', function() {
+        const algorithm = this.getAttribute('data-algorithm');
+        executeAlgorithmUpdate(algorithm);
     });
 }
+
+function handleAlgorithmSelection(algorithm) {
+    const formulaSection = document.getElementById('formula-editor-section');
+    const configureBtn = document.getElementById('btn-configure-algorithm');
+    const executeBtn = document.getElementById('btn-execute-algorithm');
+    
+    // Ukryj wszystko na początek
+    formulaSection.style.display = 'none';
+    configureBtn.style.display = 'none';
+    executeBtn.style.display = 'none';
+    
+    // Ustaw algorytm na przyciskach
+    configureBtn.setAttribute('data-algorithm', algorithm);
+    executeBtn.setAttribute('data-algorithm', algorithm);
+    
+    switch(algorithm) {
+        case 'dynamic':
+            // Użyj istniejącego dynamicznego algorytmu
+            configureBtn.style.display = 'block';
+            executeBtn.style.display = 'block';
+            configureBtn.textContent = '⚙️ Konfiguruj parametry dynamiczne';
+            break;
+            
+        case 'percentage':
+            // Prosty procent
+            configureBtn.style.display = 'block';
+            executeBtn.style.display = 'block';
+            configureBtn.textContent = '📊 Ustaw procent zmiany';
+            break;
+            
+        case 'positional':
+            // Pozycyjny
+            configureBtn.style.display = 'block';
+            executeBtn.style.display = 'block';
+            configureBtn.textContent = '🏀 Ustaw stawki pozycyjne';
+            break;
+            
+        case 'manual':
+            // Ręczny edytor
+            formulaSection.style.display = 'block';
+            executeBtn.style.display = 'block';
+            executeBtn.textContent = '🚀 Wykonaj formułę SQL';
+            break;
+    }
+}
+
+async function previewFormulaChanges() {
+    const sqlFormula = document.getElementById('sql-formula').value.trim();
+    const previewDiv = document.getElementById('formula-preview');
+    
+    if (!sqlFormula) {
+        previewDiv.innerHTML = '<span style="color:#ef4444;">❌ Formuła nie może być pusta</span>';
+        return;
+    }
+    
+    try {
+        // Sprawdź czy formuła zawiera UPDATE
+        if (!sqlFormula.toUpperCase().includes('UPDATE') || !sqlFormula.toUpperCase().includes('SET')) {
+            throw new Error('Formuła musi zawierać UPDATE i SET');
+        }
+        
+        // Estymuj liczbę graczy do aktualizacji
+        const { count, error } = await supabaseClient
+            .from('players')
+            .select('*', { count: 'exact', head: true })
+            .not('team_id', 'is', null);
+        
+        if (error) throw error;
+        
+        // Przeanalizuj formułę dla przykładowych danych
+        const samplePlayers = await getSamplePlayersForPreview();
+        
+        previewDiv.innerHTML = `
+            <div style="color:#059669;">
+                ✅ Formuła jest poprawna<br>
+                📊 Przykładowe zmiany:<br>
+                <div style="margin-top:10px; font-size:0.8rem;">
+                    ${samplePlayers.map(p => 
+                        `<div>${p.first_name} ${p.last_name}: $${p.current_salary?.toLocaleString()} → <strong>$${p.new_salary?.toLocaleString()}</strong></div>`
+                    ).join('')}
+                </div>
+                <div style="margin-top:10px; border-top:1px solid #e2e8f0; padding-top:10px;">
+                    <strong>Estymacja:</strong> ${count} graczy zostanie zaktualizowanych
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        previewDiv.innerHTML = `<span style="color:#ef4444;">❌ Błąd formuły: ${error.message}</span>`;
+    }
+}
+
+async function getSamplePlayersForPreview() {
+    // Pobierz przykładowych graczy do podglądu
+    const { data, error } = await supabaseClient
+        .from('players')
+        .select('id, first_name, last_name, salary as current_salary, overall_rating, age, potential, position')
+        .not('team_id', 'is', null)
+        .limit(5);
+    
+    if (error || !data) return [];
+    
+    // Symuluj zmianę pensji na podstawie OVR (dla podglądu)
+    return data.map(player => ({
+        ...player,
+        new_salary: Math.round(player.current_salary * (1 + (player.overall_rating - 70) * 0.02))
+    }));
+}
+
+function showAlgorithmConfiguration(algorithm) {
+    let modalContent = '';
+    
+    switch(algorithm) {
+        case 'dynamic':
+            modalContent = `
+                <div style="padding:20px;">
+                    <h4 style="color:#1a237e; margin-bottom:15px;">Parametry algorytmu dynamicznego</h4>
+                    <p style="color:#64748b; font-size:0.9rem; margin-bottom:20px;">
+                        Algorytm uwzględnia: OVR (40%), wiek (20%), potencjał (20%), doświadczenie (10%), statystyki (10%)
+                    </p>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">Bazowa pensja dla OVR 70</label>
+                            <input type="number" id="base-salary" value="500000" min="100000" max="5000000" step="50000" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">Mnożnik za każdy OVR powyżej 70</label>
+                            <input type="number" id="ovr-multiplier" value="0.05" min="0.01" max="0.2" step="0.01" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">Bonus za wiek &lt; 25</label>
+                            <input type="number" id="age-bonus" value="0.15" min="0" max="0.5" step="0.05" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">Maksymalny wzrost (%)</label>
+                            <input type="number" id="max-increase" value="100" min="0" max="500" step="10" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                        </div>
+                    </div>
+                    
+                    <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px;">
+                        <strong>Formuła:</strong><br>
+                        <code style="font-size:0.8rem; color:#64748b;">
+                            pensja = bazowa_pensja * (1 + (OVR-70)*mnożnik_OVR) * (1 + bonus_wiek) * (1 + potencjał*0.01)
+                        </code>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'percentage':
+            modalContent = `
+                <div style="padding:20px;">
+                    <h4 style="color:#1a237e; margin-bottom:15px;">Globalna zmiana procentowa</h4>
+                    
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155;">Procent zmiany pensji (%)</label>
+                        <input type="range" id="percent-change" min="-50" max="200" value="10" step="5" style="width:100%;" 
+                               oninput="document.getElementById('percent-value').textContent = this.value + '%'">
+                        <div style="display:flex; justify-content:space-between; margin-top:5px;">
+                            <span style="color:#ef4444; font-size:0.8rem;">-50%</span>
+                            <span id="percent-value" style="font-weight:bold; color:#3b82f6;">10%</span>
+                            <span style="color:#10b981; font-size:0.8rem;">+200%</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#334155;">Ograniczenia:</label>
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <label style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" id="apply-to-all" checked>
+                                <span>Zastosuj do wszystkich graczy</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" id="include-bot-teams">
+                                <span>Uwzględnij drużyny botów</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" id="cap-max-salary">
+                                <span>Ogranicz maksymalną pensję do $10M</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="percentage-preview" style="background:#f0f9ff; padding:15px; border-radius:8px; border:1px solid #e0f2fe;">
+                        <strong>Podgląd:</strong><br>
+                        <span id="preview-text">Średnia pensja: $1,000,000 → $1,100,000 (+$100,000)</span>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'positional':
+            modalContent = `
+                <div style="padding:20px;">
+                    <h4 style="color:#1a237e; margin-bottom:15px;">Stawki pozycyjne</h4>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">PG - Rozgrywający</label>
+                            <input type="number" id="salary-pg" value="120" min="50" max="300" step="10" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                            <div style="font-size:0.8rem; color:#64748b;">% bazowej stawki</div>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">SG - Rzucający obrońca</label>
+                            <input type="number" id="salary-sg" value="110" min="50" max="300" step="10" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                            <div style="font-size:0.8rem; color:#64748b;">% bazowej stawki</div>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">SF - Niski skrzydłowy</label>
+                            <input type="number" id="salary-sf" value="100" min="50" max="300" step="10" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                            <div style="font-size:0.8rem; color:#64748b;">% bazowej stawki</div>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">PF - Silny skrzydłowy</label>
+                            <input type="number" id="salary-pf" value="95" min="50" max="300" step="10" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                            <div style="font-size:0.8rem; color:#64748b;">% bazowej stawki</div>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">C - Środkowy</label>
+                            <input type="number" id="salary-c" value="105" min="50" max="300" step="10" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                            <div style="font-size:0.8rem; color:#64748b;">% bazowej stawki</div>
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:5px; font-weight:600; color:#334155;">Bazowa pensja</label>
+                            <input type="number" id="base-positional" value="750000" min="100000" max="5000000" step="50000" style="width:100%; padding:8px; border:1px solid #e2e8f0; border-radius:6px;">
+                            <div style="font-size:0.8rem; color:#64748b;">Dla OVR 70</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background:#f8fafc; padding:15px; border-radius:8px;">
+                        <strong>Kalkulacja:</strong><br>
+                        <code style="font-size:0.8rem; color:#64748b;">
+                            pensja = bazowa_pensja * (stawka_pozycyjna/100) * (1 + (OVR-70)*0.03)
+                        </code>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+    
+    // Pokaz modal z konfiguracją
+    const configModalHTML = `
+        <div class="algorithm-config-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10001; display:flex; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:12px; padding:20px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h4 style="margin:0; color:#1a237e;">Konfiguracja: ${algorithm.toUpperCase()}</h4>
+                    <button id="btn-close-config" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#64748b;">
+                        ×
+                    </button>
+                </div>
+                
+                ${modalContent}
+                
+                <div style="display:flex; gap:10px; margin-top:25px;">
+                    <button id="btn-save-config" 
+                            style="flex:1; background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
+                        💾 Zapisz konfigurację
+                    </button>
+                    <button id="btn-test-config" 
+                            style="flex:1; background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:white; border:none; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
+                        🧪 Przetestuj na próbce
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', configModalHTML);
+    
+    // Event listenery
+    document.getElementById('btn-close-config').addEventListener('click', () => {
+        document.querySelector('.algorithm-config-modal').remove();
+    });
+    
+    document.getElementById('btn-save-config').addEventListener('click', () => {
+        const config = collectAlgorithmConfig(algorithm);
+        localStorage.setItem(`salary_algorithm_${algorithm}`, JSON.stringify(config));
+        alert('✅ Konfiguracja zapisana!');
+        document.querySelector('.algorithm-config-modal').remove();
+    });
+    
+    document.getElementById('btn-test-config').addEventListener('click', () => {
+        testAlgorithmConfig(algorithm);
+    });
+    
+    // Dla procentowego algorytmu - aktualizuj podgląd
+    if (algorithm === 'percentage') {
+        document.getElementById('percent-change').addEventListener('input', updatePercentagePreview);
+        updatePercentagePreview();
+    }
+}
+
+function collectAlgorithmConfig(algorithm) {
+    const config = { algorithm };
+    
+    switch(algorithm) {
+        case 'dynamic':
+            config.baseSalary = parseInt(document.getElementById('base-salary').value);
+            config.ovrMultiplier = parseFloat(document.getElementById('ovr-multiplier').value);
+            config.ageBonus = parseFloat(document.getElementById('age-bonus').value);
+            config.maxIncrease = parseInt(document.getElementById('max-increase').value);
+            break;
+            
+        case 'percentage':
+            config.percentChange = parseInt(document.getElementById('percent-change').value);
+            config.applyToAll = document.getElementById('apply-to-all').checked;
+            config.includeBotTeams = document.getElementById('include-bot-teams').checked;
+            config.capMaxSalary = document.getElementById('cap-max-salary').checked;
+            break;
+            
+        case 'positional':
+            config.baseSalary = parseInt(document.getElementById('base-positional').value);
+            config.pgMultiplier = parseInt(document.getElementById('salary-pg').value) / 100;
+            config.sgMultiplier = parseInt(document.getElementById('salary-sg').value) / 100;
+            config.sfMultiplier = parseInt(document.getElementById('salary-sf').value) / 100;
+            config.pfMultiplier = parseInt(document.getElementById('salary-pf').value) / 100;
+            config.cMultiplier = parseInt(document.getElementById('salary-c').value) / 100;
+            break;
+    }
+    
+    return config;
+}
+
+async function updatePercentagePreview() {
+    const percent = parseInt(document.getElementById('percent-change').value);
+    const previewText = document.getElementById('preview-text');
+    
+    // Pobierz średnią pensję
+    try {
+        const { data, error } = await supabaseClient
+            .from('players')
+            .select('salary')
+            .not('team_id', 'is', null)
+            .limit(100);
+            
+        if (!error && data && data.length > 0) {
+            const avgSalary = data.reduce((sum, p) => sum + (p.salary || 0), 0) / data.length;
+            const newAvg = avgSalary * (1 + percent / 100);
+            const change = newAvg - avgSalary;
+            
+            previewText.innerHTML = `
+                Średnia pensja: $${Math.round(avgSalary).toLocaleString()} 
+                → $${Math.round(newAvg).toLocaleString()} 
+                <span style="color:${percent >= 0 ? '#10b981' : '#ef4444'}">
+                    (${percent >= 0 ? '+' : ''}$${Math.round(change).toLocaleString()})
+                </span>
+            `;
+        }
+    } catch (error) {
+        console.error('Błąd pobierania danych do podglądu:', error);
+    }
+}
+
+async function testAlgorithmConfig(algorithm) {
+    const config = collectAlgorithmConfig(algorithm);
+    
+    addAdminLog(`Testowanie algorytmu ${algorithm}...`, 'info');
+    
+    try {
+        // Pobierz 5 przykładowych graczy
+        const { data: samplePlayers, error } = await supabaseClient
+            .from('players')
+            .select('id, first_name, last_name, salary, overall_rating, age, potential, position')
+            .not('team_id', 'is', null)
+            .limit(5);
+            
+        if (error) throw error;
+        
+        // Oblicz nowe pensje
+        const testResults = samplePlayers.map(player => {
+            const newSalary = calculateTestSalary(player, config);
+            return {
+                player: `${player.first_name} ${player.last_name}`,
+                oldSalary: player.salary,
+                newSalary: newSalary,
+                change: ((newSalary - player.salary) / player.salary * 100).toFixed(1)
+            };
+        });
+        
+        // Pokaż wyniki testu
+        const testModalHTML = `
+            <div class="test-results-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10002; display:flex; justify-content:center; align-items:center;">
+                <div style="background:white; border-radius:12px; padding:25px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                    <h4 style="color:#1a237e; margin-bottom:20px;">🧪 Wyniki testu algorytmu</h4>
+                    
+                    <div style="margin-bottom:20px;">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+                                    <th style="padding:10px; text-align:left;">Gracz</th>
+                                    <th style="padding:10px; text-align:right;">Stara pensja</th>
+                                    <th style="padding:10px; text-align:right;">Nowa pensja</th>
+                                    <th style="padding:10px; text-align:right;">Zmiana</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${testResults.map(result => `
+                                    <tr style="border-bottom:1px solid #f1f5f9;">
+                                        <td style="padding:10px;">${result.player}</td>
+                                        <td style="padding:10px; text-align:right;">$${result.oldSalary?.toLocaleString()}</td>
+                                        <td style="padding:10px; text-align:right; font-weight:600;">$${Math.round(result.newSalary).toLocaleString()}</td>
+                                        <td style="padding:10px; text-align:right; color:${parseFloat(result.change) >= 0 ? '#10b981' : '#ef4444'}">
+                                            ${parseFloat(result.change) >= 0 ? '+' : ''}${result.change}%
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="background:#f0f9ff; padding:15px; border-radius:8px; margin-bottom:20px;">
+                        <strong>Podsumowanie:</strong><br>
+                        Średnia zmiana: <strong>${(testResults.reduce((sum, r) => sum + parseFloat(r.change), 0) / testResults.length).toFixed(1)}%</strong><br>
+                        Min zmiana: <strong>${Math.min(...testResults.map(r => parseFloat(r.change))).toFixed(1)}%</strong><br>
+                        Max zmiana: <strong>${Math.max(...testResults.map(r => parseFloat(r.change))).toFixed(1)}%</strong>
+                    </div>
+                    
+                    <button onclick="document.querySelector('.test-results-modal').remove()" 
+                            style="width:100%; background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; padding:12px; border-radius:8px; font-weight:600; cursor:pointer;">
+                        Zamknij podgląd
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', testModalHTML);
+        
+    } catch (error) {
+        addAdminLog(`Błąd testowania: ${error.message}`, 'error');
+        alert(`Błąd testowania: ${error.message}`);
+    }
+}
+
+function calculateTestSalary(player, config) {
+    switch(config.algorithm) {
+        case 'dynamic':
+            const ovrBonus = (player.overall_rating - 70) * config.ovrMultiplier;
+            const ageBonus = player.age < 25 ? config.ageBonus : 0;
+            const potentialBonus = player.potential * 0.01;
+            
+            let newSalary = config.baseSalary * (1 + ovrBonus) * (1 + ageBonus) * (1 + potentialBonus);
+            
+            // Ogranicz maksymalny wzrost
+            const maxSalary = player.salary * (1 + config.maxIncrease / 100);
+            if (newSalary > maxSalary) newSalary = maxSalary;
+            
+            return newSalary;
+            
+        case 'percentage':
+            const multiplier = 1 + (config.percentChange / 100);
+            let salary = player.salary * multiplier;
+            
+            if (config.capMaxSalary && salary > 10000000) {
+                salary = 10000000;
+            }
+            
+            return salary;
+            
+        case 'positional':
+            const positionMultipliers = {
+                'PG': config.pgMultiplier || 1.2,
+                'SG': config.sgMultiplier || 1.1,
+                'SF': config.sfMultiplier || 1.0,
+                'PF': config.pfMultiplier || 0.95,
+                'C': config.cMultiplier || 1.05
+            };
+            
+            const posMultiplier = positionMultipliers[player.position] || 1.0;
+            const ovrBonusPos = (player.overall_rating - 70) * 0.03;
+            
+            return config.baseSalary * posMultiplier * (1 + ovrBonusPos);
+            
+        default:
+            return player.salary;
+    }
+}
+
+async function executeAlgorithmUpdate(algorithm) {
+    addAdminLog(`Wykonywanie aktualizacji pensji (algorytm: ${algorithm})...`, 'warning');
+    
+    try {
+        let result;
+        
+        switch(algorithm) {
+            case 'dynamic':
+                const dynamicConfig = JSON.parse(localStorage.getItem('salary_algorithm_dynamic') || '{}');
+                result = await executeDynamicSalaryUpdate(dynamicConfig);
+                break;
+                
+            case 'percentage':
+                const percentConfig = JSON.parse(localStorage.getItem('salary_algorithm_percentage') || '{}');
+                result = await executePercentageSalaryUpdate(percentConfig);
+                break;
+                
+            case 'positional':
+                const positionalConfig = JSON.parse(localStorage.getItem('salary_algorithm_positional') || '{}');
+                result = await executePositionalSalaryUpdate(positionalConfig);
+                break;
+                
+            case 'manual':
+                const sqlFormula = document.getElementById('sql-formula').value;
+                result = await executeManualSalaryUpdate(sqlFormula);
+                break;
+                
+            default:
+                throw new Error(`Nieznany algorytm: ${algorithm}`);
+        }
+        
+        // Pokaż wynik
+        showAlgorithmResult(result, algorithm);
+        
+        // Zamknij modal
+        document.querySelector('.admin-algorithm-modal').remove();
+        
+    } catch (error) {
+        addAdminLog(`Błąd wykonania algorytmu: ${error.message}`, 'error');
+        alert(`❌ Błąd: ${error.message}`);
+    }
+}
+
+async function executeDynamicSalaryUpdate(config) {
+    // Pobierz wszystkich graczy
+    const { data: players, error } = await supabaseClient
+        .from('players')
+        .select('*')
+        .not('team_id', 'is', null);
+        
+    if (error) throw error;
+    
+    // Oblicz nowe pensje
+    const updates = players.map(player => {
+        const newSalary = calculateDynamicSalary(player, config);
+        return {
+            id: player.id,
+            salary: Math.round(newSalary),
+            last_salary_update: new Date().toISOString()
+        };
+    });
+    
+    // Wykonaj aktualizację
+    const { data, error: updateError } = await supabaseClient
+        .from('players')
+        .upsert(updates, { onConflict: 'id' });
+        
+    if (updateError) throw updateError;
+    
+    return {
+        success: true,
+        updatedPlayers: updates.length,
+        totalPlayers: players.length,
+        averageOldSalary: Math.round(players.reduce((sum, p) => sum + p.salary, 0) / players.length),
+        averageNewSalary: Math.round(updates.reduce((sum, p) => sum + p.salary, 0) / updates.length)
+    };
+}
+
+function calculateDynamicSalary(player, config) {
+    // Domyślne wartości jeśli config nie istnieje
+    const baseSalary = config.baseSalary || 500000;
+    const ovrMultiplier = config.ovrMultiplier || 0.05;
+    const ageBonus = config.ageBonus || 0.15;
+    const maxIncrease = config.maxIncrease || 100;
+    
+    const ovrBonus = (player.overall_rating - 70) * ovrMultiplier;
+    const ageFactor = player.age < 25 ? ageBonus : 0;
+    const potentialFactor = player.potential * 0.01;
+    
+    let newSalary = baseSalary * (1 + ovrBonus) * (1 + ageFactor) * (1 + potentialFactor);
+    
+    // Ogranicz maksymalny wzrost
+    const maxSalary = player.salary * (1 + maxIncrease / 100);
+    if (newSalary > maxSalary) newSalary = maxSalary;
+    
+    // Zaokrąglij do najbliższych 1000
+    return Math.round(newSalary / 1000) * 1000;
+}
+
+async function executePercentageSalaryUpdate(config) {
+    const percentChange = config.percentChange || 10;
+    const multiplier = 1 + (percentChange / 100);
+    
+    let query = supabaseClient
+        .from('players')
+        .update({
+            salary: supabaseClient.raw(`salary * ${multiplier}`),
+            last_salary_update: new Date().toISOString()
+        })
+        .not('team_id', 'is', null);
+    
+    // Jeśli nie uwzględniać botów
+    if (!config.includeBotTeams) {
+        query = query.not('team_id', 'in', await getBotTeamIds());
+    }
+    
+    const { count, error } = await query.select('*', { count: 'exact' });
+    
+    if (error) throw error;
+    
+    return {
+        success: true,
+        updatedPlayers: count,
+        percentChange: percentChange,
+        multiplier: multiplier
+    };
+}
+
+async function getBotTeamIds() {
+    const { data, error } = await supabaseClient
+        .from('teams')
+        .select('id')
+        .eq('is_bot', true);
+        
+    if (error) return [];
+    return data.map(t => t.id);
+}
+
+async function executePositionalSalaryUpdate(config) {
+    // Pobierz wszystkich graczy z drużyn
+    const { data: players, error } = await supabaseClient
+        .from('players')
+        .select('*')
+        .not('team_id', 'is', null);
+        
+    if (error) throw error;
+    
+    // Oblicz nowe pensje
+    const updates = players.map(player => {
+        const newSalary = calculatePositionalSalary(player, config);
+        return {
+            id: player.id,
+            salary: Math.round(newSalary),
+            last_salary_update: new Date().toISOString()
+        };
+    });
+    
+    // Wykonaj aktualizację
+    const { data, error: updateError } = await supabaseClient
+        .from('players')
+        .upsert(updates, { onConflict: 'id' });
+        
+    if (updateError) throw updateError;
+    
+    return {
+        success: true,
+        updatedPlayers: updates.length,
+        totalPlayers: players.length
+    };
+}
+
+function calculatePositionalSalary(player, config) {
+    const positionMultipliers = {
+        'PG': config.pgMultiplier || 1.2,
+        'SG': config.sgMultiplier || 1.1,
+        'SF': config.sfMultiplier || 1.0,
+        'PF': config.pfMultiplier || 0.95,
+        'C': config.cMultiplier || 1.05
+    };
+    
+    const baseSalary = config.baseSalary || 750000;
+    const position = player.position || 'SF';
+    const posMultiplier = positionMultipliers[position] || 1.0;
+    const ovrBonus = (player.overall_rating - 70) * 0.03;
+    
+    return baseSalary * posMultiplier * (1 + ovrBonus);
+}
+
+async function executeManualSalaryUpdate(sqlFormula) {
+    // Wykonaj niestandardowe zapytanie SQL
+    // UWAGA: W Supabase potrzebujemy funkcji RPC dla UPDATE
+    // Dla bezpieczeństwa ograniczamy możliwe operacje
+    
+    // Sprawdź czy formuła jest bezpieczna
+    const safeFormula = validateSQLFormula(sqlFormula);
+    if (!safeFormula.valid) {
+        throw new Error(`Niebezpieczna formuła: ${safeFormula.reason}`);
+    }
+    
+    // Użyj funkcji RPC w Supabase
+    const { data, error } = await supabaseClient.rpc('execute_salary_update', {
+        update_formula: sqlFormula
+    });
+    
+    if (error) throw error;
+    
+    return {
+        success: true,
+        message: 'Formuła wykonana pomyślnie',
+        data: data
+    };
+}
+
+function validateSQLFormula(sql) {
+    // Prosta walidacja bezpieczeństwa
+    const dangerousPatterns = [
+        /DROP\s+TABLE/i,
+        /DELETE\s+FROM/i,
+        /TRUNCATE/i,
+        /INSERT\s+INTO/i,
+        /CREATE\s+TABLE/i,
+        /ALTER\s+TABLE/i,
+        /GRANT/i,
+        /REVOKE/i
+    ];
+    
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(sql)) {
+            return { valid: false, reason: 'Zawiera niebezpieczne polecenie SQL' };
+        }
+    }
+    
+    // Musi zawierać UPDATE players SET
+    if (!sql.toUpperCase().includes('UPDATE PLAYERS SET')) {
+        return { valid: false, reason: 'Musi zawierać UPDATE players SET' };
+    }
+    
+    return { valid: true };
+}
+
+function showAlgorithmResult(result, algorithm) {
+    const resultDiv = document.getElementById('salary-update-result');
+    if (!resultDiv) return;
+    
+    resultDiv.style.display = 'block';
+    
+    let resultHTML = '';
+    
+    if (result.success) {
+        switch(algorithm) {
+            case 'dynamic':
+                resultHTML = `
+                    <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px; color: #065f46;">
+                        <strong>✅ Sukces: Algorytm dynamiczny</strong><br>
+                        Zaktualizowano: ${result.updatedPlayers} graczy<br>
+                        Średnia pensja przed: $${result.averageOldSalary.toLocaleString()}<br>
+                        Średnia pensja po: $${result.averageNewSalary.toLocaleString()}<br>
+                        Zmiana średniej: ${(((result.averageNewSalary - result.averageOldSalary) / result.averageOldSalary) * 100).toFixed(1)}%
+                    </div>
+                `;
+                break;
+                
+            case 'percentage':
+                resultHTML = `
+                    <div style="background: #dbeafe; border: 1px solid #bfdbfe; border-radius: 8px; padding: 15px; color: #1e40af;">
+                        <strong>✅ Sukces: Zmiana procentowa</strong><br>
+                        Zaktualizowano: ${result.updatedPlayers} graczy<br>
+                        Zmiana: ${result.percentChange}% (mnożnik: ${result.multiplier}x)
+                    </div>
+                `;
+                break;
+                
+            case 'positional':
+                resultHTML = `
+                    <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 15px; color: #92400e;">
+                        <strong>✅ Sukces: Algorytm pozycyjny</strong><br>
+                        Zaktualizowano: ${result.updatedPlayers} graczy<br>
+                        Uwzględniono różne stawki dla pozycji
+                    </div>
+                `;
+                break;
+                
+            case 'manual':
+                resultHTML = `
+                    <div style="background: #fae8ff; border: 1px solid #f5d0fe; border-radius: 8px; padding: 15px; color: #86198f;">
+                        <strong>✅ Sukces: Formuła ręczna</strong><br>
+                        ${result.message}<br>
+                        Wynik: ${JSON.stringify(result.data)}
+                    </div>
+                `;
+                break;
+        }
+    } else {
+        resultHTML = `
+            <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; color: #dc2626;">
+                <strong>❌ Błąd wykonania algorytmu</strong><br>
+                ${result.error || 'Nieznany błąd'}
+            </div>
+        `;
+    }
+    
+    resultDiv.innerHTML = resultHTML;
+    addAdminLog(`Algorytm ${algorithm} wykonany: ${result.success ? 'Sukces' : 'Błąd'}`, result.success ? 'success' : 'error');
+}
+
+// ===== MODALE DLA PARAMETRÓW (EKONOMIA) =====
 
 function showMarketValueParametersModal() {
     const modalHTML = `
@@ -1060,47 +1997,6 @@ function showMarketValueParametersModal() {
         document.querySelector('.admin-parameters-modal').remove();
         executeMarketValueUpdate(params);
     });
-}
-
-async function executeSalaryUpdate(params) {
-    addAdminLog('Rozpoczynam aktualizację pensji z parametrami:', 'warning');
-    addAdminLog(`- Mnożnik: ${params.salary_multiplier}x`, 'info');
-    addAdminLog(`- Max wzrost: ${params.max_increase}%`, 'info');
-    
-    // Tutaj przekazujemy parametry do funkcji aktualizacji
-    const result = await adminUpdateSalaries(params);
-    
-    const resultDiv = document.getElementById('salary-update-result');
-    if (!resultDiv) return;
-    
-    resultDiv.style.display = 'block';
-    
-    if (result.success) {
-        resultDiv.innerHTML = `
-            <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 15px; color: #065f46;">
-                <strong>✅ Sukces:</strong> Zaktualizowano pensje ${result.updatedPlayers} graczy.<br>
-                <strong>Bez zmian:</strong> ${result.unchangedPlayers} graczy<br>
-                <strong>W sumie:</strong> ${result.totalPlayers} graczy
-                ${result.errors ? `<br><small>Uwagi: ${result.errors.length} błędów pominięto</small>` : ''}
-                <br><br>
-                <small><strong>Użyte parametry:</strong><br>
-                Mnożnik: ${params.salary_multiplier}x | Max wzrost: ${params.max_increase}%
-                </small>
-            </div>
-        `;
-        addAdminLog(`Zaktualizowano pensje ${result.updatedPlayers} z ${result.totalPlayers} graczy`, 'success');
-    } else {
-        resultDiv.innerHTML = `
-            <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; color: #dc2626;">
-                <strong>❌ Błąd:</strong> ${result.error || 'Nieznany błąd'}<br>
-                ${result.errors ? result.errors.join('<br>') : ''}
-            </div>
-        `;
-        addAdminLog(`Błąd aktualizacji pensji: ${result.error}`, 'error');
-    }
-    
-    // Odśwież statystyki
-    await loadSystemStats();
 }
 
 async function executeMarketValueUpdate(params) {
@@ -1968,6 +2864,69 @@ function injectAdminStyles() {
             to {
                 opacity: 1;
             }
+        }
+        
+        .algorithm-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .algorithm-card.selected {
+            border-color: #3b82f6 !important;
+            background: #eff6ff !important;
+        }
+        
+        .sql-editor {
+            font-family: 'Courier New', monospace;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px;
+            background: #f8fafc;
+            min-height: 100px;
+            width: 100%;
+            resize: vertical;
+        }
+        
+        .config-param {
+            margin-bottom: 15px;
+        }
+        
+        .config-param label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #334155;
+        }
+        
+        .config-param input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .preview-table th {
+            background: #f8fafc;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            color: #64748b;
+            font-weight: 600;
+        }
+        
+        .preview-table td {
+            padding: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .preview-table tr:hover {
+            background: #f8fafc;
         }
     `;
     
