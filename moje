@@ -1,0 +1,6 @@
+# Hasło admina (ZMIEŃ TO NA SWOJE!)
+VITE_ADMIN_PASSWORD=alex
+
+# Opcjonalne ustawienia
+VITE_ADMIN_SESSION_DURATION=1800000  # 30 minut w milisekundach
+VITE_ADMIN_MAX_ATTEMPTS=3            # Maksymalna liczba prób logowania
