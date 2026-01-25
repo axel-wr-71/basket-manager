@@ -1965,3 +1965,9 @@ function injectAdminStyles() {
     
     document.head.appendChild(style);
 }
+
+// Dodaj to na samym końcu pliku admin_panel.js
+window.openAdminPanel = async function() {
+    const { renderAdminPanel } = await import('./app/admin_panel.js');
+    await renderAdminPanel(null);
+};
