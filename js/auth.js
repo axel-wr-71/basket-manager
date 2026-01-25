@@ -647,10 +647,16 @@ export const setupUI = async (role) => {
         gameApp.classList.remove('auth-state-pending');
     }
 
-    if (role === 'manager') {
+    if (role === 'manager' || role === 'admin') {  // ZMIANA: Dodano 'admin'
         if (managerNav) managerNav.style.display = 'flex';
         await initApp();
-        await switchTab('m-roster');
+        
+        // Dla admina ustaw domyślną zakładkę na panel admina
+        if (role === 'admin') {
+            await switchTab('m-admin');
+        } else {
+            await switchTab('m-roster');
+        }
     }
 };
 window.setupUI = setupUI;
@@ -704,7 +710,11 @@ export async function checkUser() {
             profile = newProfile;
         }
 
-        await fetchManagerTeam(user.id);
+        // Dla admina nie pobieraj danych drużyny (team_id = null)
+        if (profile.role !== 'admin' && profile.team_id) {
+            await fetchManagerTeam(user.id);
+        }
+        
         await setupUI(profile?.role || 'manager');
         
         // Sprawdź czy użytkownik ma uprawnienia admina
