@@ -9,7 +9,7 @@ export function initAdminPanel() {
     
     // Lista adminów (tutaj możesz dodać swoje emaile)
     const adminEmails = [
-        'strubbe23@gmai.com',
+        'strubbe23@gmail.com',
         
     ];
     
