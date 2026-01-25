@@ -1974,3 +1974,135 @@ function injectAdminStyles() {
     document.head.appendChild(style);
 }
 
+// ========== DODANE FUNKCJE DLA KOMPATYBILNOŚCI WSTECZNEJ ==========
+
+/**
+ * STARA FUNKCJA loadAdminPanel() dla kompatybilności wstecznej
+ * Wywoływana z konsoli: loadAdminPanel()
+ */
+window.loadAdminPanel = async function() {
+    console.log("[ADMIN] loadAdminPanel() wywołane z konsoli");
+    
+    // Sprawdź czy jest zalogowany użytkownik
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        alert("❌ Musisz być zalogowany aby otworzyć panel admina!");
+        return;
+    }
+    
+    // Pobierz dane profilu
+    const { data: profile, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+    
+    if (error) {
+        console.error("[ADMIN] Błąd pobierania profilu:", error);
+        alert("❌ Błąd pobierania danych użytkownika");
+        return;
+    }
+    
+    // Wywołaj renderAdminPanel z danymi profilu
+    return await renderAdminPanel({
+        team_name: profile.username || profile.email || "Admin",
+        id: profile.id
+    });
+};
+
+/**
+ * Funkcja do szybkiego dostępu z konsoli z hasłem
+ * Wywołanie: loadAdminPanelWithPassword("NBA2024!ADMIN")
+ */
+window.loadAdminPanelWithPassword = async function(password) {
+    console.log("[ADMIN] Wywołanie z hasłem...");
+    
+    // Sprawdź hasło
+    const { valid } = await validateAdminPassword(password);
+    
+    if (!valid) {
+        alert("❌ Błędne hasło admina!");
+        return;
+    }
+    
+    // Ustaw sesję jako zweryfikowaną
+    sessionStorage.setItem('admin_verified', 'true');
+    sessionStorage.setItem('admin_verified_timestamp', Date.now());
+    
+    // Wywołaj panel
+    return await window.loadAdminPanel();
+};
+
+// Automatyczne dodawanie przycisku Admin dla uprawnionych użytkowników
+async function initializeAdminButton() {
+    try {
+        // Sprawdź czy użytkownik jest zalogowany
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+        
+        // Sprawdź uprawnienia
+        const { hasAccess, profile } = await checkAdminPermissions();
+        
+        if (hasAccess) {
+            console.log("[ADMIN] Użytkownik ma dostęp admina - dodaję przycisk");
+            
+            // Usuń istniejący przycisk jeśli jest
+            const existingBtn = document.getElementById('admin-floating-button');
+            if (existingBtn) existingBtn.remove();
+            
+            // Utwórz nowy przycisk
+            const adminBtn = document.createElement('button');
+            adminBtn.id = 'admin-floating-button';
+            adminBtn.innerHTML = '⚙️ ADMIN';
+            adminBtn.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #1a237e, #283593);
+                color: white;
+                border: none;
+                border-radius: 25px;
+                padding: 12px 20px;
+                font-weight: bold;
+                font-size: 14px;
+                cursor: pointer;
+                z-index: 9998;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            `;
+            
+            adminBtn.onmouseover = () => {
+                adminBtn.style.transform = 'translateY(-2px)';
+                adminBtn.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+            };
+            
+            adminBtn.onmouseout = () => {
+                adminBtn.style.transform = 'translateY(0)';
+                adminBtn.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+            };
+            
+            adminBtn.onclick = () => window.loadAdminPanel();
+            
+            // Dodaj przycisk do body
+            document.body.appendChild(adminBtn);
+            
+            // Log do konsoli
+            console.log("[ADMIN] Przycisk admina został dodany automatycznie");
+        }
+    } catch (error) {
+        console.warn("[ADMIN] Błąd inicjalizacji przycisku:", error);
+    }
+}
+
+// Wywołaj po załadowaniu DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAdminButton);
+} else {
+    initializeAdminButton();
+}
+
+// Również wywołaj po zmianie hasha (dla SPA)
+window.addEventListener('hashchange', initializeAdminButton);
