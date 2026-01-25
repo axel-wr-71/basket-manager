@@ -1,11 +1,11 @@
 // js/app/app.js
-import { supabaseClient } from '../auth.js';
+import { supabaseClient, checkAdminPermissions } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
 import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
 import { renderFinancesView } from './finances_view.js';
 import { renderMediaView } from './media_view.js'; 
-import { renderLeagueView } from './league_view.js'; // DODANO: import modułu League
+import { renderLeagueView } from './league_view.js';
 import { ScheduleView } from './schedule_view.js';
 import { RosterActions } from './roster_actions.js';
 
@@ -16,7 +16,7 @@ window.gameState = {
     team: null,
     players: [],
     currentWeek: 0,
-    isAdmin: false // Dodajemy flagę admina
+    isAdmin: false
 };
 
 /**
@@ -70,7 +70,7 @@ async function loadDynamicNavigation() {
         const navContainer = document.getElementById('main-nav-container'); 
         if (!navContainer) return;
 
-        // Sprawdź, czy użytkownik jest adminem - używamy window.gameState.isAdmin
+        // Sprawdź czy użytkownik jest adminem
         const isAdmin = window.gameState.isAdmin || false;
 
         // Jeśli jest adminem, dodajemy zakładkę admina na końcu
@@ -97,10 +97,16 @@ async function loadDynamicNavigation() {
 
         navContainer.innerHTML = navHTML;
 
-        // Ustawienie domyślnej zakładki (np. Media) po załadowaniu menu
+        // Ustawienie domyślnej zakładki - dla admina inna, dla zwykłego użytkownika inna
         if (settings.length > 0) {
-            const firstTab = settings[0].app_modules.module_key;
-            switchTab(firstTab);
+            if (isAdmin) {
+                // Admin - ustaw na panel admina
+                switchTab('m-admin');
+            } else {
+                // Zwykły użytkownik - pierwsza zakładka z ustawień
+                const firstTab = settings[0].app_modules.module_key;
+                switchTab(firstTab);
+            }
         }
 
     } catch (err) {
@@ -109,34 +115,51 @@ async function loadDynamicNavigation() {
 }
 
 /**
- * Inicjalizacja danych gry
+ * Sprawdza czy użytkownik jest administratorem
  */
-export async function initApp() {
-    console.log("[APP] Start inicjalizacji...");
+async function checkUserAdminStatus(userId) {
     try {
-        // Sprawdzenie czy supabaseClient jest dostępny
-        if (!supabaseClient) {
-            throw new Error("supabaseClient nie został zainicjalizowany!");
+        const adminCheck = await checkAdminPermissions();
+        
+        if (adminCheck.hasAccess) {
+            window.gameState.isAdmin = true;
+            console.log('[APP] Użytkownik jest administratorem');
+            return true;
         }
+        
+        // Dodatkowe sprawdzenie z bazy danych
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('role, is_admin')
+            .eq('id', userId)
+            .single();
+            
+        const isAdmin = profile?.role === 'admin' || profile?.is_admin === true;
+        window.gameState.isAdmin = isAdmin;
+        
+        return isAdmin;
+        
+    } catch (error) {
+        console.error("[APP] Błąd sprawdzania admina:", error);
+        return false;
+    }
+}
 
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) {
-            console.warn("[APP] Brak zalogowanego użytkownika.");
-            return;
-        }
-
-        console.log('[APP] Zalogowany użytkownik:', user.email);
-
+/**
+ * Pobiera dane dla zwykłego użytkownika (ma drużynę)
+ */
+async function loadRegularUserData(userId) {
+    try {
         // 1. Pobierz dane podstawowe
         const [profileRes, configRes] = await Promise.all([
-            supabaseClient.from('profiles').select('team_id').eq('id', user.id).single(),
+            supabaseClient.from('profiles').select('team_id').eq('id', userId).single(),
             supabaseClient.from('game_config').select('value').eq('key', 'current_week').single()
         ]);
 
         const teamId = profileRes.data?.team_id;
         if (!teamId) {
             console.error("[APP] Brak przypisanej drużyny!");
-            return;
+            return false;
         }
 
         window.userTeamId = teamId;
@@ -162,7 +185,72 @@ export async function initApp() {
 
         // UI Updates dla nagłówka
         const teamName = window.gameState.team?.team_name || "Twoja Drużyna";
-        document.querySelectorAll('.team-info b, #display-team-name').forEach(el => el.innerText = teamName);
+        document.querySelectorAll('.team-info b, #display-team-name').forEach(el => {
+            if (el) el.textContent = teamName;
+        });
+
+        return true;
+        
+    } catch (err) {
+        console.error("[APP] Błąd ładowania danych użytkownika:", err);
+        return false;
+    }
+}
+
+/**
+ * Inicjalizacja danych gry
+ */
+export async function initApp() {
+    console.log("[APP] Start inicjalizacji...");
+    try {
+        // Sprawdzenie czy supabaseClient jest dostępny
+        if (!supabaseClient) {
+            throw new Error("supabaseClient nie został zainicjalizowany!");
+        }
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+            console.warn("[APP] Brak zalogowanego użytkownika.");
+            return;
+        }
+
+        console.log('[APP] Zalogowany użytkownik:', user.email);
+
+        // Sprawdź czy użytkownik jest administratorem
+        const isAdmin = await checkUserAdminStatus(user.id);
+        
+        if (isAdmin) {
+            console.log('[APP] Użytkownik jest administratorem - pomijam ładowanie drużyny');
+            
+            // Dla admina ustawiamy puste dane drużyny
+            window.userTeamId = null;
+            window.gameState.team = { 
+                id: 'admin',
+                team_name: 'System Administrator',
+                is_admin: true 
+            };
+            window.gameState.players = [];
+            
+            // Pobierz tydzień dla statystyk
+            const { data: configRes } = await supabaseClient
+                .from('game_config')
+                .select('value')
+                .eq('key', 'current_week')
+                .single();
+                
+            window.gameState.currentWeek = configRes ? parseInt(configRes.value) : 1;
+            
+            // Pobierz definicje potencjałów (może być potrzebne do panelu admina)
+            await fetchPotentialDefinitions();
+            
+        } else {
+            // Zwykły użytkownik - ładujemy dane drużyny
+            const success = await loadRegularUserData(user.id);
+            if (!success) {
+                console.error("[APP] Nie udało się załadować danych użytkownika");
+                return;
+            }
+        }
 
         // 4. Załaduj nawigację (to wywoła switchTab dla pierwszej zakładki)
         await loadDynamicNavigation();
@@ -190,8 +278,16 @@ export async function switchTab(tabId) {
     const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 
-    const { team, players } = window.gameState;
-    if (!team) {
+    const { team, players, isAdmin } = window.gameState;
+    
+    // Dla admina specjalne traktowanie
+    if (isAdmin && tabId === 'm-admin') {
+        await renderAdminView(team, players);
+        return;
+    }
+    
+    // Dla zwykłego użytkownika lub innych zakładek admina
+    if (!team && !isAdmin) {
         console.warn('[SWITCHTAB] Brak danych drużyny!');
         return;
     }
@@ -200,25 +296,38 @@ export async function switchTab(tabId) {
     console.log('[SWITCHTAB] Players:', players?.length);
 
     switch (tabId) {
-        case 'm-roster': renderRosterView(team, players); break;
-        case 'm-training': renderTrainingView(team, players); break;
-        case 'm-market': renderMarketView(team, players); break;
-        case 'm-media': renderMediaView(team, players); break;
-        case 'm-finances': renderFinancesView(team, players); break;
-        case 'm-schedule': 
-            ScheduleView.render(tabId, window.userTeamId); 
+        case 'm-roster': 
+            if (!isAdmin) renderRosterView(team, players); 
             break;
-        case 'm-league': renderLeagueView(team, players); break;
+        case 'm-training': 
+            if (!isAdmin) renderTrainingView(team, players); 
+            break;
+        case 'm-market': 
+            if (!isAdmin) renderMarketView(team, players); 
+            break;
+        case 'm-media': 
+            if (!isAdmin) renderMediaView(team, players); 
+            break;
+        case 'm-finances': 
+            if (!isAdmin) renderFinancesView(team, players); 
+            break;
+        case 'm-schedule': 
+            if (!isAdmin) ScheduleView.render(tabId, window.userTeamId); 
+            break;
+        case 'm-league': 
+            if (!isAdmin) renderLeagueView(team, players); 
+            break;
         case 'm-admin': 
             console.log('[SWITCHTAB] Przełączam na panel admina');
-            console.log('[SWITCHTAB] userEmail:', JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user?.email);
             await renderAdminView(team, players); 
             break;
+        default:
+            console.warn('[SWITCHTAB] Nieznana zakładka:', tabId);
     }
 }
 
 /**
- * DODANO: Funkcja do renderowania panelu admina
+ * Funkcja do renderowania panelu admina
  */
 async function renderAdminView(team, players) {
     console.log('[ADMIN] renderAdminView wywołany');
@@ -317,11 +426,9 @@ async function renderAdminView(team, players) {
                     <h3 style="color: #1a237e; margin-bottom: 15px;">ℹ️ Informacje debugowania</h3>
                     <div style="font-family: monospace; background: #f3f4f6; padding: 15px; border-radius: 6px;">
                         <p><strong>Email:</strong> ${userEmail}</p>
-                        <p><strong>Team ID:</strong> ${team?.id || 'brak'}</p>
-                        <p><strong>Team Name:</strong> ${team?.team_name || 'brak'}</p>
+                        <p><strong>Admin:</strong> TAK</p>
                         <p><strong>Current Week:</strong> ${window.gameState.currentWeek}</p>
                         <p><strong>Players:</strong> ${players?.length || 0}</p>
-                        <p><strong>Admin:</strong> TAK</p>
                     </div>
                 </div>
             </div>
@@ -338,7 +445,6 @@ async function renderAdminView(team, players) {
                 <div style="margin-top: 20px; padding: 10px; background: #f3f4f6; border-radius: 6px; text-align: left;">
                     <strong>Debug info:</strong><br>
                     Email: ${userEmail}<br>
-                    Team: ${team?.team_name || 'brak'}<br>
                     Error: ${error.toString()}
                 </div>
                 <button onclick="location.reload()" 
@@ -351,7 +457,7 @@ async function renderAdminView(team, players) {
 }
 
 // ============================================
-// PANEL ADMINA - DOSTĘP PRZEZ KONSOLĘ (KROK 3)
+// PANEL ADMINA - DOSTĘP PRZEZ KONSOLĘ
 // ============================================
 
 /**
@@ -371,16 +477,12 @@ function initAdminConsole() {
             return;
         }
         
-        // 2. Proste zabezpieczenie hasłem (możesz zmienić)
+        // 2. Proste zabezpieczenie hasłem
         const password = prompt("🔐 PANEL ADMINA\n\nWprowadź hasło dostępu:");
         
         if (password === "NBA2024!ADMIN") {
             // Hasło poprawne - załaduj panel
             await showAdminPanel();
-        } else if (password === "test") {
-            // Tryb testowy z łatwiejszym dostępem
-            alert("⚠️ Tryb testowy - ograniczone funkcje");
-            await showAdminPanel(true);
         } else {
             alert("❌ Nieprawidłowe hasło!");
             return;
@@ -388,7 +490,7 @@ function initAdminConsole() {
     };
 
     // Główna funkcja pokazująca panel admina
-    async function showAdminPanel(isTestMode = false) {
+    async function showAdminPanel() {
         let container;
         try {
             // Znajdź lub utwórz kontener
@@ -414,11 +516,6 @@ function initAdminConsole() {
             
             // Pobierz dane drużyny (jeśli potrzebne)
             let teamData = window.gameState.team;
-            
-            // Jeśli tryb testowy, przekaż flagę
-            if (isTestMode) {
-                teamData = { ...teamData, test_mode: true };
-            }
             
             // Renderuj panel
             await renderAdminPanel(teamData);
@@ -457,6 +554,7 @@ function initAdminConsole() {
             console.log("Team Name:", window.gameState.team?.team_name);
             console.log("Players:", window.gameState.players.length);
             console.log("Current Week:", window.gameState.currentWeek);
+            console.log("Is Admin:", window.gameState.isAdmin);
             console.log("Token:", localStorage.getItem('supabase.auth.token'));
             console.log("User Email:", JSON.parse(localStorage.getItem('supabase.auth.token'))?.currentSession?.user?.email);
             console.log("========================");
@@ -520,7 +618,7 @@ function initAdminConsole() {
             }
         },
         
-        // Aktualizuj wartości rynkowe (dodano z powrotem)
+        // Aktualizuj wartości rynkowe
         updateMarketValues: async () => {
             if (!confirm("Czy chcesz zaktualizować wartości rynkowe wszystkich graczy?")) return;
             
