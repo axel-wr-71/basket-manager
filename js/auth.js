@@ -16,7 +16,7 @@ let registerModal, loginModal;
 let contentManager = null;
 
 // DODANO: Lista adminów - przeniesiona z index.html dla spójności
-window.adminEmails = ['strubbe23@gmail.com', 'admin@ebl.com', 'info.ebl.game@gmail.com'];
+window.adminEmails = ['strubbe23@gmail.com', 'admin@ebl.online.alex'];
 
 /**
  * Nowe funkcje autoryzacji admina
