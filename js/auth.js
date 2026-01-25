@@ -16,6 +16,118 @@ let registerModal, loginModal;
 let contentManager = null; // Dodano zmienną contentManager
 
 /**
+ * Nowe funkcje autoryzacji admina
+ */
+
+/**
+ * Sprawdza uprawnienia admina
+ */
+export async function checkAdminPermissions() {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        if (!user) {
+            console.log("[AUTH] Brak zalogowanego użytkownika");
+            return { hasAccess: false, reason: "not_logged_in" };
+        }
+        
+        // Pobierz profil użytkownika
+        const { data: profile, error } = await supabaseClient
+            .from('profiles')
+            .select('role, team_id, username, email')
+            .eq('id', user.id)
+            .single();
+        
+        if (error) {
+            console.error("[AUTH] Błąd pobierania profilu:", error);
+            return { hasAccess: false, reason: "profile_error", error: error.message };
+        }
+        
+        // Sprawdź warunki admina
+        const isAdminRole = profile.role === 'admin';
+        const hasNoTeam = profile.team_id === null;
+        
+        console.log(`[AUTH] Sprawdzanie admina: role=${profile.role}, team_id=${profile.team_id}`);
+        console.log(`[AUTH] Warunki: isAdminRole=${isAdminRole}, hasNoTeam=${hasNoTeam}`);
+        
+        if (isAdminRole && hasNoTeam) {
+            return { 
+                hasAccess: true, 
+                user: user, 
+                profile: profile,
+                reason: "admin_access_granted"
+            };
+        } else {
+            return { 
+                hasAccess: false, 
+                reason: "insufficient_permissions",
+                details: {
+                    isAdminRole,
+                    hasNoTeam
+                }
+            };
+        }
+        
+    } catch (error) {
+        console.error("[AUTH] Błąd sprawdzania uprawnień:", error);
+        return { hasAccess: false, reason: "system_error", error: error.message };
+    }
+}
+
+/**
+ * Walidacja hasła admina
+ */
+export async function validateAdminPassword(password) {
+    try {
+        // Hasło w zmiennych środowiskowych
+        const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD;
+        
+        if (!adminPassword) {
+            console.warn("[AUTH] Brak hasła admina w zmiennych środowiskowych, używam domyślnego");
+            // Dla testów - w produkcji zawsze używaj zmiennych środowiskowych!
+            const defaultPassword = "admin123secure"; // TYLKO DO TESTOW!
+            return { 
+                valid: password === defaultPassword, 
+                message: password === defaultPassword ? "Hasło poprawne" : "Nieprawidłowe hasło" 
+            };
+        }
+        
+        if (password === adminPassword) {
+            return { valid: true, message: "Hasło poprawne" };
+        } else {
+            return { valid: false, message: "Nieprawidłowe hasło" };
+        }
+        
+    } catch (error) {
+        console.error("[AUTH] Błąd walidacji hasła:", error);
+        return { valid: false, message: "Błąd systemu podczas walidacji" };
+    }
+}
+
+/**
+ * Funkcje pomocnicze dla sesji admina
+ */
+export function isAdminSessionValid() {
+    const verified = sessionStorage.getItem('admin_verified');
+    const timestamp = sessionStorage.getItem('admin_verified_timestamp');
+    
+    if (!verified || !timestamp) {
+        return false;
+    }
+    
+    const sessionAge = Date.now() - parseInt(timestamp);
+    const SESSION_DURATION = 30 * 60 * 1000; // 30 minut
+    
+    return sessionAge < SESSION_DURATION;
+}
+
+export function resetAdminSession() {
+    sessionStorage.removeItem('admin_verified');
+    sessionStorage.removeItem('admin_verified_timestamp');
+    localStorage.removeItem('admin_blocked_until');
+}
+
+/**
  * Inicjalizacja Content Managera
  */
 async function initContent() {
