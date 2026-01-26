@@ -362,3 +362,76 @@ header {
     border-top: 1px solid #e2e8f0;
     margin-top: 20px;
 }
+
+/* DESIGN KART */
+.nav-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    min-width: 120px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1a237e, #e65100);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.nav-card:hover {
+    transform: translateY(-5px);
+    border-color: #e65100;
+    box-shadow: 0 8px 30px rgba(230, 81, 0, 0.15);
+}
+
+.nav-card:hover::before {
+    opacity: 1;
+}
+
+.nav-card.active {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: white;
+    border-color: #1a237e;
+}
+
+.nav-card-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    transition: transform 0.3s;
+}
+
+.nav-card:hover .nav-card-icon {
+    transform: scale(1.2);
+}
+
+.nav-card-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.nav-card-badge {
+    background: rgba(230, 81, 0, 0.1);
+    color: #e65100;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.nav-card.active .nav-card-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
