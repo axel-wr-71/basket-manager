@@ -4,9 +4,12 @@ import { supabaseClient } from '../auth.js';
  * GŁÓWNA FUNKCJA RENDERUJĄCA WIDOK FINANSÓW
  * Wersja 2.1.0 - Modern Elite Design
  */
-export async function renderFinancesView(teamData) {
-    const container = document.getElementById('finances-container');
-    if (!container) return;
+export async function renderFinancesView(teamData, players = null) {
+    const container = document.getElementById('finances-view-container');
+    if (!container) {
+        console.error("Nie znaleziono kontenera finances-view-container");
+        return;
+    }
 
     // 1. Pobieranie danych z Supabase
     const { data: logs, error: logsError } = await supabaseClient
