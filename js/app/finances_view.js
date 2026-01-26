@@ -1,100 +1,154 @@
-// js/app/finances_view.js
 import { supabaseClient } from '../auth.js';
 
+/**
+ * GŁÓWNA FUNKCJA RENDERUJĄCA WIDOK FINANSÓW
+ * Wersja 2.1.0 - Modern Elite Design
+ */
 export async function renderFinancesView(teamData) {
     const container = document.getElementById('finances-container');
     if (!container) return;
 
-    // Pobieramy logi finansowe z podziałem na kategorie
-    const { data: logs } = await supabaseClient
+    // 1. Pobieranie danych z Supabase
+    const { data: logs, error: logsError } = await supabaseClient
         .from('financial_logs')
         .select('*')
         .eq('team_id', teamData.id)
         .order('created_at', { ascending: false });
 
+    if (logsError) console.error("Błąd pobierania logów:", logsError);
+
     const stats = calculateDetailedStats(logs);
     const weeklySalaries = await calculateTotalSalaries(teamData.id);
+    
+    // Obliczanie prognozy (Forecast)
+    const weeklyForecast = (stats.income7d - (stats.expense7d + weeklySalaries));
 
     container.innerHTML = `
-        <div style="padding: 30px; font-family: 'Inter', sans-serif; background: #f4f7f6; min-height: 100vh;">
-            <header style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div class="finances-wrapper" style="padding: 40px; background: #f8fafc; min-height: 100vh; font-family: 'Inter', sans-serif;">
+            
+            <!-- HEADER SECTION -->
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
                 <div>
-                    <h1 style="font-size: 2em; font-weight: 800; color: #1a237e; margin:0;">FINANCIAL <span style="color: #e65100;">REPORT</span></h1>
-                    <p style="color: #666; margin: 5px 0 0 0;">Sezon 2026 | Raport bieżący dla <strong>${teamData.team_name}</strong></p>
+                    <h1 style="font-size: 2.5rem; font-weight: 900; color: #0f172a; letter-spacing: -1px; margin: 0;">
+                        FINANCE <span style="color: #f58426;">HUB</span>
+                    </h1>
+                    <p style="color: #64748b; margin-top: 5px; font-size: 1.1rem;">
+                        Zarządzanie budżetem: <span style="font-weight: 700; color: #1e293b;">${teamData.team_name}</span>
+                    </p>
                 </div>
-                <div style="text-align: right;">
-                    <span style="font-size: 0.8em; font-weight: 800; color: #999; text-transform: uppercase;">Dostępne środki</span>
-                    <div style="font-size: 2.2em; font-weight: 900; color: #2e7d32;">$${teamData.balance.toLocaleString()}</div>
+                <div style="background: white; padding: 15px 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; text-align: right;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Aktualne Saldo</span>
+                    <div style="font-size: 1.8rem; font-weight: 900; color: #059669;">$${teamData.balance.toLocaleString()}</div>
                 </div>
             </header>
 
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                ${renderStatCard('PRZYCHODY (7D)', stats.income7d, '#2e7d32')}
-                ${renderStatCard('WYDATKI (7D)', stats.expense7d, '#d32f2f')}
-                ${renderStatCard('BILANS NETTO', stats.income7d - stats.expense7d, '#1a237e')}
-                ${renderStatCard('PENSJE / TYDZIEŃ', weeklySalaries, '#e65100')}
+            <!-- KPI CARDS -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 40px;">
+                ${renderStatCard('PRZYCHODY (7D)', stats.income7d, '#10b981', '↑')}
+                ${renderStatCard('WYDATKI (7D)', stats.expense7d, '#ef4444', '↓')}
+                ${renderStatCard('PENSJE TYGODNIOWE', weeklySalaries, '#f58426', '∑')}
+                ${renderStatCard('PROGNOZA BILANSU', weeklyForecast, weeklyForecast >= 0 ? '#3b82f6' : '#ef4444', '⇄')}
             </div>
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 40px;">
                 
-                <div>
-                    <div style="background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid #e0e0e0;">
-                        <h3 style="margin-top: 0; color: #1a237e; border-bottom: 2px solid #f0f2f5; padding-bottom: 15px;">Struktura Dochodów i Wydatków</h3>
+                <!-- LEFT COLUMN: STRUCTURE & LOGS -->
+                <div style="display: flex; flex-direction: column; gap: 40px;">
+                    
+                    <!-- CASHFLOW STRUCTURE -->
+                    <div style="background: white; border-radius: 24px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+                        <h3 style="margin: 0 0 24px 0; font-size: 1.25rem; color: #1e293b; display: flex; align-items: center; gap: 10px;">
+                            <span style="width: 8px; height: 24px; background: #f58426; border-radius: 4px;"></span>
+                            Struktura Przepływów
+                        </h3>
                         
-                        <div style="margin-top: 20px;">
-                            ${renderFinancialBar('Bilety & Arena', stats.cat_tickets, stats.max_cat)}
-                            ${renderFinancialBar('Merchandising', stats.cat_merch, stats.max_cat)}
-                            ${renderFinancialBar('Sponsorzy', stats.cat_sponsors, stats.max_cat)}
-                            ${renderFinancialBar('Transfery', stats.cat_transfers, stats.max_cat)}
-                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                            ${renderFinancialBar('Pensje Zawodników', -weeklySalaries, stats.max_cat, '#d32f2f')}
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            ${renderFinancialBar('Bilety & Arena', stats.cat_tickets, stats.max_cat, '#3b82f6')}
+                            ${renderFinancialBar('Merchandising', stats.cat_merch, stats.max_cat, '#3b82f6')}
+                            ${renderFinancialBar('Umowy Sponsorskie', stats.cat_sponsors, stats.max_cat, '#3b82f6')}
+                            ${renderFinancialBar('Rynek Transferowy', stats.cat_transfers, stats.max_cat, '#3b82f6')}
+                            <div style="height: 1px; background: #f1f5f9; margin: 10px 0;"></div>
+                            ${renderFinancialBar('Koszty Operacyjne (Pensje)', -weeklySalaries, stats.max_cat, '#ef4444')}
                         </div>
                     </div>
 
-                    <div style="background: white; border-radius: 20px; margin-top: 30px; border: 1px solid #e0e0e0; overflow: hidden;">
-                        <div style="padding: 20px; background: #1a237e; color: white; font-weight: 800;">REJESTR TRANSAKCJI</div>
-                        <div style="max-height: 400px; overflow-y: auto;">
+                    <!-- RECENT TRANSACTIONS -->
+                    <div style="background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+                        <div style="padding: 20px 32px; background: #0f172a; color: white; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 700; letter-spacing: 0.5px;">OSTATNIE TRANSAKCJE</span>
+                            <span style="font-size: 0.75rem; opacity: 0.7;">Ostatnie 50 wpisów</span>
+                        </div>
+                        <div style="max-height: 500px; overflow-y: auto;">
                             <table style="width: 100%; border-collapse: collapse;">
-                                ${logs && logs.length > 0 ? logs.map(log => `
-                                    <tr style="border-bottom: 1px solid #f8f9fa;">
-                                        <td style="padding: 15px; color: #999; font-size: 0.85em;">${new Date(log.created_at).toLocaleDateString()}</td>
-                                        <td style="padding: 15px; font-weight: 600;">${log.description}</td>
-                                        <td style="padding: 15px; text-align: right; color: ${log.amount > 0 ? '#2e7d32' : '#d32f2f'}; font-weight: 800;">
-                                            ${log.amount > 0 ? '+' : ''}${log.amount.toLocaleString()} $
-                                        </td>
+                                <thead style="background: #f8fafc; position: sticky; top: 0;">
+                                    <tr>
+                                        <th style="text-align: left; padding: 15px 32px; font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Data</th>
+                                        <th style="text-align: left; padding: 15px 32px; font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Opis</th>
+                                        <th style="text-align: right; padding: 15px 32px; font-size: 0.75rem; color: #64748b; text-transform: uppercase;">Kwota</th>
                                     </tr>
-                                `).join('') : '<tr><td colspan="3" style="padding: 30px; text-align: center; color: #999;">Brak danych finansowych</td></tr>'}
+                                </thead>
+                                <tbody>
+                                    ${logs && logs.length > 0 ? logs.map(log => `
+                                        <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                            <td style="padding: 16px 32px; color: #94a3b8; font-size: 0.85rem;">${new Date(log.created_at).toLocaleDateString()}</td>
+                                            <td style="padding: 16px 32px; font-weight: 600; color: #1e293b;">${log.description}</td>
+                                            <td style="padding: 16px 32px; text-align: right; color: ${log.amount > 0 ? '#10b981' : '#ef4444'}; font-weight: 700;">
+                                                ${log.amount > 0 ? '+' : ''}${log.amount.toLocaleString()} $
+                                            </td>
+                                        </tr>
+                                    `).join('') : '<tr><td colspan="3" style="padding: 40px; text-align: center; color: #94a3b8;">Brak zarejestrowanych operacji</td></tr>'}
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <div>
-                    <div style="background: #1a237e; color: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 20px rgba(26,35,126,0.2);">
-                        <h3 style="margin-top: 0; color: #ffca28;">Centrum Zarządzania</h3>
+                <!-- RIGHT COLUMN: MANAGEMENT -->
+                <div style="display: flex; flex-direction: column; gap: 30px;">
+                    
+                    <!-- PRICING STRATEGY -->
+                    <div style="background: #1e293b; color: white; border-radius: 24px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 20px 0; color: #f58426; font-size: 1.1rem;">Strategia Biletowa</h3>
                         
-                        <div style="margin-top: 20px;">
-                            <label style="font-size: 0.8em; font-weight: 700;">CENA BILETU ($)</label>
-                            <input type="range" min="10" max="200" value="${teamData.ticket_price || 25}" 
-                                style="width: 100%; margin: 10px 0;" onchange="updateTicketPrice(this.value)">
-                            <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.1em;">
-                                <span>$10</span>
-                                <span style="color: #ffca28;">$${teamData.ticket_price || 25}</span>
-                                <span>$200</span>
+                        <div style="margin-top: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+                                <label style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Cena za bilet</label>
+                                <span id="ticket-price-display" style="font-size: 1.5rem; font-weight: 800; color: #f58426;">$${teamData.ticket_price || 25}</span>
                             </div>
-                            <p style="font-size: 0.75em; opacity: 0.8; margin-top: 10px;">Wyższa cena zmniejsza frekwencję, ale zwiększa zysk z jednego fana.</p>
+                            
+                            <input type="range" min="10" max="250" value="${teamData.ticket_price || 25}" 
+                                style="width: 100%; height: 6px; background: #334155; border-radius: 3px; appearance: none; cursor: pointer;"
+                                oninput="document.getElementById('ticket-price-display').innerText = '$' + this.value"
+                                onchange="updateTicketPrice('${teamData.id}', this.value)">
+                            
+                            <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #64748b; margin-top: 10px; font-weight: 600;">
+                                <span>POPOULARNOŚĆ</span>
+                                <span>ZYSK / FAN</span>
+                            </div>
+                            
+                            <div style="margin-top: 30px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; font-size: 0.8rem; line-height: 1.5; color: #cbd5e1;">
+                                💡 <strong>Wskazówka:</strong> Przy obecnej sile składu, optymalna cena to <strong>$35 - $45</strong>.
+                            </div>
                         </div>
 
-                        <button onclick="alert('Inwestycja w halę w budowie...')" 
-                            style="width: 100%; background: #e65100; color: white; border: none; padding: 15px; border-radius: 10px; margin-top: 30px; font-weight: 800; cursor: pointer;">
-                            ROZBUDUJ ARENĘ
+                        <button onclick="handleArenaExpansion()" 
+                            style="width: 100%; background: #f58426; color: white; border: none; padding: 18px; border-radius: 12px; margin-top: 30px; font-weight: 800; cursor: pointer; transition: transform 0.2s, background 0.2s;"
+                            onmouseover="this.style.background='#e67616'; this.style.transform='translateY(-2px)'"
+                            onmouseout="this.style.background='#f58426'; this.style.transform='translateY(0)'">
+                            MODERNIZUJ ARENĘ
                         </button>
                     </div>
 
-                    <div style="background: white; border-radius: 20px; padding: 25px; margin-top: 30px; border: 1px solid #e0e0e0;">
-                        <h4 style="margin: 0 0 15px 0; color: #1a237e;">Sztab Szkoleniowy</h4>
-                        <p style="font-size: 0.85em; color: #666;">Koszty personelu pomocniczego: <strong>$12,500 / tydz.</strong></p>
-                        <button style="width: 100%; background: #f0f2f5; border: 1px solid #ddd; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Zarządzaj Sztabem</button>
+                    <!-- STAFF COSTS -->
+                    <div style="background: white; border-radius: 24px; padding: 25px; border: 1px solid #e2e8f0;">
+                        <h4 style="margin: 0 0 15px 0; color: #0f172a; font-size: 1rem;">Sztab & Administracja</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <span style="color: #64748b; font-size: 0.9rem;">Koszty stałe:</span>
+                            <span style="font-weight: 700; color: #ef4444;">$12,500 / tydz.</span>
+                        </div>
+                        <button style="width: 100%; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 12px; border-radius: 10px; font-weight: 700; color: #475569; cursor: pointer;">
+                            Zarządzaj Sztabem
+                        </button>
                     </div>
                 </div>
 
@@ -103,27 +157,28 @@ export async function renderFinancesView(teamData) {
     `;
 }
 
-// FUNKCJE POMOCNICZE DO RENDEROWANIA
+// --- FUNKCJE POMOCNICZE ---
 
-function renderStatCard(label, value, color) {
+function renderStatCard(label, value, color, icon) {
     return `
-        <div style="background: white; padding: 20px; border-radius: 15px; border-bottom: 4px solid ${color}; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
-            <div style="font-size: 0.7em; font-weight: 800; color: #999; margin-bottom: 5px;">${label}</div>
-            <div style="font-size: 1.4em; font-weight: 800; color: ${color};">${value.toLocaleString()} $</div>
+        <div style="background: white; padding: 24px; border-radius: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+            <div style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">${label}</div>
+            <div style="font-size: 1.5rem; font-weight: 900; color: ${color};">${value.toLocaleString()} $</div>
+            <div style="position: absolute; right: 20px; bottom: 15px; font-size: 2rem; opacity: 0.1; color: ${color}; font-weight: 900;">${icon}</div>
         </div>
     `;
 }
 
-function renderFinancialBar(label, value, max, color = '#1a237e') {
-    const percentage = Math.abs(max) > 0 ? (Math.abs(value) / Math.abs(max)) * 100 : 0;
+function renderFinancialBar(label, value, max, color) {
+    const percentage = Math.max(5, Math.min(100, (Math.abs(value) / Math.abs(max)) * 100));
     return `
-        <div style="margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.85em; font-weight: 700; margin-bottom: 5px;">
+        <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: #475569;">
                 <span>${label}</span>
-                <span style="color: ${color}">${value.toLocaleString()} $</span>
+                <span style="color: ${color}; font-weight: 800;">${value.toLocaleString()} $</span>
             </div>
-            <div style="width: 100%; height: 8px; background: #f0f2f5; border-radius: 4px; overflow: hidden;">
-                <div style="width: ${percentage}%; height: 100%; background: ${color}; transition: 0.5s;"></div>
+            <div style="width: 100%; height: 10px; background: #f1f5f9; border-radius: 20px; overflow: hidden;">
+                <div style="width: ${percentage}%; height: 100%; background: ${color}; border-radius: 20px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
             </div>
         </div>
     `;
@@ -133,24 +188,25 @@ function calculateDetailedStats(logs) {
     const stats = {
         income7d: 0, expense7d: 0,
         cat_tickets: 0, cat_merch: 0, cat_sponsors: 0, cat_transfers: 0,
-        max_cat: 50000 // Punkt odniesienia dla pasków postępu
+        max_cat: 50000 
     };
 
     if (!logs) return stats;
 
     logs.forEach(log => {
+        const val = Math.abs(log.amount);
         if (log.amount > 0) {
-            stats.income7d += log.amount;
-            if (log.category === 'tickets') stats.cat_tickets += log.amount;
-            if (log.category === 'merch') stats.cat_merch += log.amount;
-            if (log.category === 'sponsors') stats.cat_sponsors += log.amount;
+            stats.income7d += val;
+            if (log.category === 'tickets') stats.cat_tickets += val;
+            if (log.category === 'merch') stats.cat_merch += val;
+            if (log.category === 'sponsors') stats.cat_sponsors += val;
         } else {
-            stats.expense7d += Math.abs(log.amount);
-            if (log.category === 'transfers') stats.cat_transfers += Math.abs(log.amount);
+            stats.expense7d += val;
+            if (log.category === 'transfers') stats.cat_transfers += val;
         }
     });
 
-    stats.max_cat = Math.max(stats.cat_tickets, stats.cat_merch, stats.cat_sponsors, stats.expense7d, 50000);
+    stats.max_cat = Math.max(stats.cat_tickets, stats.cat_merch, stats.cat_sponsors, stats.cat_transfers, 50000);
     return stats;
 }
 
@@ -159,7 +215,23 @@ async function calculateTotalSalaries(teamId) {
     return data ? data.reduce((sum, p) => sum + (p.salary || 0), 0) : 0;
 }
 
-window.updateTicketPrice = async (newPrice) => {
-    console.log("Aktualizacja ceny biletów na:", newPrice);
-    // Tutaj dodamy update do Supabase
+// --- AKCJE UŻYTKOWNIKA ---
+
+window.updateTicketPrice = async (teamId, newPrice) => {
+    try {
+        const { error } = await supabaseClient
+            .from('teams')
+            .update({ ticket_price: parseInt(newPrice) })
+            .eq('id', teamId);
+
+        if (error) throw error;
+        console.log("Cena biletów zaktualizowana pomyślnie.");
+    } catch (err) {
+        console.error("Błąd aktualizacji ceny:", err);
+        alert("Nie udało się zaktualizować ceny biletów.");
+    }
+};
+
+window.handleArenaExpansion = () => {
+    alert("Funkcja rozbudowy areny zostanie odblokowana w następnej aktualizacji (V 2.2).");
 };
