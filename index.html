@@ -6,14 +6,6 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/market.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- ZMIANA: Dodano Chart.js dla modułu finansów -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- DODANO: PapaParse dla eksportu CSV (opcjonalnie) -->
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    
-    <!-- Pozostałe skrypty -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     
@@ -625,42 +617,6 @@
         
         .tab-content.active {
             display: block;
-        }
-        
-        /* DODANO: Podstawowe style dla modułu finansów */
-        .finances-modern-wrapper {
-            padding: 20px;
-        }
-        
-        .finances-header {
-            background: linear-gradient(135deg, #1a237e, #3949ab);
-            color: white;
-            padding: 25px 30px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-        }
-        
-        .finance-stat-card {
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            min-height: 140px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        .finances-section {
-            padding: 25px 0;
-        }
-        
-        .finances-section-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
         }
         
         /* Responsiveness */
@@ -1502,8 +1458,6 @@
     import { signIn, signUp, logout } from './js/auth.js';
     import { switchTab, initApp } from './js/app/app.js';
     import { initContentManager } from './js/content-manager.js';
-    // DODANO: Import funkcji renderFinancesView z finances_view.js
-    import { renderFinancesView } from './js/finances/finances_view.js';
 
     // Inicjalizacja content managera
     let contentManager = null;
@@ -1562,27 +1516,6 @@
         setTimeout(() => {
             checkAdminPermissions();
         }, 1000);
-    };
-
-    // DODANO: Rozszerzenie funkcji switchTab o finanse
-    const originalSwitchTab = window.switchTab;
-    window.switchTab = function(tabId) {
-        // Wywołaj oryginalną funkcję
-        if (originalSwitchTab) {
-            originalSwitchTab(tabId);
-        }
-        
-        // Dodatkowa logika dla poszczególnych zakładek
-        switch(tabId) {
-            case 'm-finances':
-                console.log('[FINANCES] Switching to finances tab');
-                renderFinancesView();
-                break;
-            case 'm-admin':
-                console.log('[ADMIN] Switching to admin panel');
-                // Tutaj możesz dodać inicjalizację panelu admina
-                break;
-        }
     };
 
     // DODANO: Funkcja sprawdzająca uprawnienia admina
