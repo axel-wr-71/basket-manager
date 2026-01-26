@@ -3,7 +3,7 @@ import { supabaseClient, checkAdminPermissions } from '../auth.js';
 import { renderRosterView } from './roster_view.js';
 import { renderTrainingView } from './training_view.js';
 import { renderMarketView } from './market_view.js';
-// ZMIANA: poprawiono ścieżkę importu dla finansów
+// UPEWNIJ SIĘ ŻE TA LINIA JEST POPRAWNA:
 import { renderFinancesView } from '../finances/finances_view.js';
 import { renderMediaView } from './media_view.js'; 
 import { renderLeagueView } from './league_view.js';
