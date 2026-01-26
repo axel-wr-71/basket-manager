@@ -589,42 +589,82 @@ function renderLeagueComparison(team, stats) {
     `;
 }
 
+// Znajdź i zastąp te funkcje:
+
 /**
- * Pobiera statystyki klubu
+ * Pobiera statystyki klubu z obsługą błędów
  */
 async function fetchClubStats(teamId) {
-    const { data, error } = await supabaseClient
-        .from('team_stats')
-        .select('*')
-        .eq('team_id', teamId)
-        .single();
-    
-    if (error) return {};
-    return data;
+    try {
+        const { data, error } = await supabaseClient
+            .from('team_stats')
+            .select('*')
+            .eq('team_id', teamId)
+            .single();
+        
+        if (error) {
+            console.warn("[CLUB STATS] Brak tabeli team_stats:", error.message);
+            
+            // Spróbuj pobrać z teams.club_stats
+            const { data: teamData } = await supabaseClient
+                .from('teams')
+                .select('club_stats')
+                .eq('id', teamId)
+                .single();
+            
+            if (teamData?.club_stats) {
+                return typeof teamData.club_stats === 'string' 
+                    ? JSON.parse(teamData.club_stats)
+                    : teamData.club_stats;
+            }
+            
+            return {};
+        }
+        return data || {};
+    } catch (error) {
+        console.warn("[CLUB STATS] Błąd pobierania statystyk:", error.message);
+        return {};
+    }
 }
 
 /**
- * Pobiera osiągnięcia
+ * Pobiera osiągnięcia z obsługą błędów
  */
 async function fetchAchievements(teamId) {
-    const { data, error } = await supabaseClient
-        .from('achievements')
-        .select('*')
-        .eq('team_id', teamId);
-    
-    if (error) return [];
-    return data;
+    try {
+        const { data, error } = await supabaseClient
+            .from('achievements')
+            .select('*')
+            .eq('team_id', teamId);
+        
+        if (error) {
+            console.warn("[CLUB STATS] Brak tabeli achievements:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.warn("[CLUB STATS] Błąd pobierania osiągnięć:", error.message);
+        return [];
+    }
 }
 
 /**
- * Pobiera rekordy klubu
+ * Pobiera rekordy klubu z obsługą błędów
  */
 async function fetchClubRecords(teamId) {
-    const { data, error } = await supabaseClient
-        .from('club_records')
-        .select('*')
-        .eq('team_id', teamId);
-    
-    if (error) return [];
-    return data;
-}
+    try {
+        const { data, error } = await supabaseClient
+            .from('club_records')
+            .select('*')
+            .eq('team_id', teamId);
+        
+        if (error) {
+            console.warn("[CLUB STATS] Brak tabeli club_records:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (error) {
+        console.warn("[CLUB STATS] Błąd pobierania rekordów:", error.message);
+        return [];
+    }
+}}
