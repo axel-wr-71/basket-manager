@@ -564,18 +564,27 @@ function renderAdvancedCustomization(team, customization) {
     `;
 }
 
+
 /**
- * Pobiera personalizację klubu
+ * Pobiera personalizację klubu z obsługą błędów
  */
 async function fetchClubCustomization(teamId) {
-    const { data, error } = await supabaseClient
-        .from('club_customization')
-        .select('*')
-        .eq('team_id', teamId)
-        .single();
-    
-    if (error) return null;
-    return data;
+    try {
+        const { data, error } = await supabaseClient
+            .from('club_customization')
+            .select('*')
+            .eq('team_id', teamId)
+            .single();
+        
+        if (error) {
+            console.warn("[CLUB CUSTOMIZATION] Brak tabeli club_customization:", error.message);
+            return null;
+        }
+        return data;
+    } catch (error) {
+        console.warn("[CLUB CUSTOMIZATION] Błąd pobierania personalizacji:", error.message);
+        return null;
+    }
 }
 
 /**
