@@ -167,9 +167,12 @@ export async function renderStaffView(team, players) {
     initMarketModal();
 
     // Dodaj event listener do przycisku
-    document.getElementById('open-market-btn').addEventListener('click', () => {
-        openMarketModal();
-    });
+    const openMarketBtn = document.getElementById('open-market-btn');
+    if (openMarketBtn) {
+        openMarketBtn.addEventListener('click', () => {
+            openMarketModal();
+        });
+    }
 }
 
 /**
@@ -186,6 +189,7 @@ async function fetchTeamStaff(teamId) {
 
         if (error) throw error;
         currentStaff = data || [];
+        console.log(`Pobrano ${currentStaff.length} członków personelu`);
     } catch (err) {
         console.error("[STAFF] Błąd pobierania personelu:", err);
         currentStaff = [];
@@ -224,9 +228,14 @@ function renderStaffCard(staff, isCurrent = false) {
     const levelStars = '⭐'.repeat(staff.level);
     const contractInfo = staff.contract_weeks ? 
         `<div class="staff-contract">Kontrakt: ${staff.contract_weeks} tygodni</div>` : '';
+    
+    // Upewnij się, że ID jest prawidłowo przekazane jako string
+    const staffId = staff.id || '';
+    const hireCost = staff.hire_cost || 0;
+    const releaseCost = staff.release_cost || staff.salary * 2;
 
     return `
-        <div class="staff-card ${isCurrent ? 'current-staff' : 'available-staff'}">
+        <div class="staff-card ${isCurrent ? 'current-staff' : 'available-staff'}" data-id="${staffId}">
             <div class="staff-card-header">
                 <div class="staff-name">
                     <strong>${staff.first_name} ${staff.last_name}</strong>
@@ -244,11 +253,11 @@ function renderStaffCard(staff, isCurrent = false) {
             <div class="staff-card-footer">
                 <div class="staff-salary">$${staff.salary}/tydzień</div>
                 ${isCurrent ? 
-                    `<button class="btn btn-small btn-danger" onclick="releaseStaff(${staff.id})">
-                        Zwolnij ($${staff.release_cost || staff.salary * 2})
+                    `<button class="btn btn-small btn-danger release-staff-btn" data-id="${staffId}" data-cost="${releaseCost}" data-name="${staff.first_name} ${staff.last_name}">
+                        Zwolnij ($${releaseCost})
                     </button>` :
-                    `<button class="btn btn-small btn-success" onclick="hireStaff(${staff.id})">
-                        Zatrudnij ($${staff.hire_cost})
+                    `<button class="btn btn-small btn-success hire-staff-btn" data-id="${staffId}" data-cost="${hireCost}" data-name="${staff.first_name} ${staff.last_name}">
+                        Zatrudnij ($${hireCost})
                     </button>`
                 }
             </div>
@@ -261,11 +270,14 @@ function renderStaffCard(staff, isCurrent = false) {
  */
 function initMarketModal() {
     const modal = document.getElementById('staff-market-modal');
+    if (!modal) return;
+    
     const closeBtn = modal.querySelector('.close-modal');
-
-    closeBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
 
     window.addEventListener('click', (event) => {
         if (event.target === modal) {
@@ -275,22 +287,27 @@ function initMarketModal() {
 
     // Wypełnij narodowości
     const nationalitySelect = document.getElementById('filter-nationality');
-    const nationalities = [
-        'Polska', 'Niemcy', 'Francja', 'Hiszpania', 'Włochy', 
-        'USA', 'Rosja', 'Turcja', 'Litwa', 'Grecja'
-    ];
-    
-    nationalities.forEach(nat => {
-        const option = document.createElement('option');
-        option.value = nat;
-        option.textContent = `${getFlagEmoji(nat)} ${nat}`;
-        nationalitySelect.appendChild(option);
-    });
+    if (nationalitySelect) {
+        const nationalities = [
+            'Polska', 'Niemcy', 'Francja', 'Hiszpania', 'Włochy', 
+            'USA', 'Rosja', 'Turcja', 'Litwa', 'Grecja'
+        ];
+        
+        nationalities.forEach(nat => {
+            const option = document.createElement('option');
+            option.value = nat;
+            option.textContent = `${getFlagEmoji(nat)} ${nat}`;
+            nationalitySelect.appendChild(option);
+        });
+    }
 
     // Event listener dla filtrów
-    document.getElementById('apply-filters').addEventListener('click', () => {
-        loadMarketStaff();
-    });
+    const applyFiltersBtn = document.getElementById('apply-filters');
+    if (applyFiltersBtn) {
+        applyFiltersBtn.addEventListener('click', () => {
+            loadMarketStaff();
+        });
+    }
 }
 
 /**
@@ -298,8 +315,10 @@ function initMarketModal() {
  */
 async function openMarketModal() {
     const modal = document.getElementById('staff-market-modal');
-    modal.style.display = 'block';
-    await loadMarketStaff();
+    if (modal) {
+        modal.style.display = 'block';
+        await loadMarketStaff();
+    }
 }
 
 /**
@@ -307,10 +326,10 @@ async function openMarketModal() {
  */
 async function loadMarketStaff() {
     try {
-        const roleFilter = document.getElementById('filter-role').value;
-        const levelFilter = document.getElementById('filter-level').value;
-        const nationalityFilter = document.getElementById('filter-nationality').value;
-        const salaryFilter = document.getElementById('filter-salary').value;
+        const roleFilter = document.getElementById('filter-role')?.value || '';
+        const levelFilter = document.getElementById('filter-level')?.value || '';
+        const nationalityFilter = document.getElementById('filter-nationality')?.value || '';
+        const salaryFilter = document.getElementById('filter-salary')?.value || '';
 
         let query = supabaseClient
             .from('staff')
@@ -320,13 +339,20 @@ async function loadMarketStaff() {
         if (roleFilter) query = query.eq('role', roleFilter);
         if (levelFilter) query = query.eq('level', parseInt(levelFilter));
         if (nationalityFilter) query = query.eq('nationality', nationalityFilter);
-        if (salaryFilter) query = query.lte('salary', parseInt(salaryFilter));
+        if (salaryFilter && !isNaN(salaryFilter) && salaryFilter > 0) {
+            query = query.lte('salary', parseInt(salaryFilter));
+        }
 
         const { data, error } = await query;
         if (error) throw error;
 
         availableStaff = data || [];
         renderMarketStaff();
+        
+        // Dodaj event listenery do przycisków po renderowaniu
+        setTimeout(() => {
+            attachStaffButtonListeners();
+        }, 100);
     } catch (err) {
         console.error("[STAFF] Błąd pobierania rynku:", err);
         alert('Błąd podczas ładowania rynku transferowego');
@@ -346,37 +372,85 @@ function renderMarketStaff() {
     }
 
     container.innerHTML = availableStaff.map(staff => renderStaffCard(staff, false)).join('');
+    
+    // Dodaj event listenery po renderowaniu
+    attachStaffButtonListeners();
+}
+
+/**
+ * Dodaje event listenery do przycisków zatrudniania/zwalniania
+ */
+function attachStaffButtonListeners() {
+    // Przyciski zatrudniania w modalu
+    document.querySelectorAll('.hire-staff-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const staffId = e.target.getAttribute('data-id');
+            const hireCost = parseInt(e.target.getAttribute('data-cost'));
+            const staffName = e.target.getAttribute('data-name');
+            
+            if (staffId) {
+                await hireStaff(staffId, hireCost, staffName);
+            }
+        });
+    });
+    
+    // Przyciski zwalniania w aktualnym personelu
+    document.querySelectorAll('.release-staff-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const staffId = e.target.getAttribute('data-id');
+            const releaseCost = parseInt(e.target.getAttribute('data-cost'));
+            const staffName = e.target.getAttribute('data-name');
+            
+            if (staffId) {
+                await releaseStaff(staffId, releaseCost, staffName);
+            }
+        });
+    });
 }
 
 /**
  * Zatrudnia personel
  */
-window.hireStaff = async function(staffId) {
-    const staff = availableStaff.find(s => s.id === staffId);
-    if (!staff) {
-        alert('Nie znaleziono personelu');
+async function hireStaff(staffId, hireCost, staffName) {
+    if (!currentTeam) {
+        alert('Brak danych drużyny');
         return;
     }
 
-    if (currentTeam.budget < staff.hire_cost) {
-        alert('Nie masz wystarczających środków na zatrudnienie!');
+    if (currentTeam.budget < hireCost) {
+        alert(`Nie masz wystarczających środków na zatrudnienie!\nWymagane: $${hireCost}\nPosiadasz: $${currentTeam.budget}`);
         return;
     }
 
-    if (!confirm(`Zatrudnić ${staff.first_name} ${staff.last_name} za $${staff.hire_cost}?`)) return;
+    if (!confirm(`Zatrudnić ${staffName} za $${hireCost}?`)) return;
 
     try {
+        // Pobierz aktualny budżet drużyny
+        const { data: teamData, error: teamError } = await supabaseClient
+            .from('teams')
+            .select('budget')
+            .eq('id', currentTeam.id)
+            .single();
+            
+        if (teamError) throw teamError;
+        
+        const newBudget = teamData.budget - hireCost;
+        
         const [updateRes, budgetRes] = await Promise.all([
             supabaseClient
                 .from('staff')
                 .update({ 
                     team_id: currentTeam.id,
-                    contract_weeks: 52
+                    contract_weeks: 52,
+                    updated_at: new Date().toISOString()
                 })
                 .eq('id', staffId),
             supabaseClient
                 .from('teams')
-                .update({ budget: currentTeam.budget - staff.hire_cost })
+                .update({ 
+                    budget: newBudget,
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', currentTeam.id)
         ]);
 
@@ -384,9 +458,9 @@ window.hireStaff = async function(staffId) {
         if (budgetRes.error) throw budgetRes.error;
 
         // Aktualizuj stan gry
-        currentTeam.budget -= staff.hire_cost;
+        currentTeam.budget = newBudget;
         
-        alert('Personel zatrudniony pomyślnie!');
+        alert(`${staffName} zatrudniony pomyślnie!`);
         
         // Odśwież widoki
         await fetchTeamStaff(currentTeam.id);
@@ -394,54 +468,94 @@ window.hireStaff = async function(staffId) {
         await loadMarketStaff();
         
         // Odśwież statystyki budżetu
-        document.querySelector('.budget-value').textContent = `$${currentTeam.budget}`;
+        const budgetElement = document.querySelector('.budget-value');
+        if (budgetElement) {
+            budgetElement.textContent = `$${currentTeam.budget}`;
+        }
+        
+        // Dodaj event listenery do nowych przycisków
+        setTimeout(() => {
+            attachStaffButtonListeners();
+        }, 100);
         
     } catch (err) {
         console.error("[STAFF] Błąd zatrudniania:", err);
         alert('Błąd podczas zatrudniania personelu');
     }
-};
+}
 
 /**
  * Zwolnienie personelu
  */
-window.releaseStaff = async function(staffId) {
-    const staff = currentStaff.find(s => s.id === staffId);
-    if (!staff) return;
+async function releaseStaff(staffId, releaseCost, staffName) {
+    if (!currentTeam) {
+        alert('Brak danych drużyny');
+        return;
+    }
 
-    const releaseCost = staff.release_cost || staff.salary * 2;
-    
-    if (!confirm(`Zwolnić ${staff.first_name} ${staff.last_name}? Koszt zwolnienia: $${releaseCost}`)) return;
+    if (currentTeam.budget < releaseCost) {
+        alert(`Nie masz wystarczających środków na zwolnienie!\nWymagane: $${releaseCost}\nPosiadasz: $${currentTeam.budget}`);
+        return;
+    }
+
+    if (!confirm(`Zwolnić ${staffName}?\nKoszt zwolnienia: $${releaseCost}`)) return;
 
     try {
+        // Pobierz aktualny budżet drużyny
+        const { data: teamData, error: teamError } = await supabaseClient
+            .from('teams')
+            .select('budget')
+            .eq('id', currentTeam.id)
+            .single();
+            
+        if (teamError) throw teamError;
+        
+        const newBudget = teamData.budget - releaseCost;
+        
         const [updateRes, budgetRes] = await Promise.all([
             supabaseClient
                 .from('staff')
                 .update({ 
                     team_id: null,
-                    contract_weeks: null
+                    contract_weeks: null,
+                    updated_at: new Date().toISOString()
                 })
                 .eq('id', staffId),
             supabaseClient
                 .from('teams')
-                .update({ budget: currentTeam.budget - releaseCost })
+                .update({ 
+                    budget: newBudget,
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', currentTeam.id)
         ]);
 
         if (updateRes.error) throw updateRes.error;
         if (budgetRes.error) throw budgetRes.error;
 
-        currentTeam.budget -= releaseCost;
-        alert('Personel zwolniony');
+        // Aktualizuj stan gry
+        currentTeam.budget = newBudget;
+        alert(`${staffName} zwolniony pomyślnie`);
         
         await fetchTeamStaff(currentTeam.id);
         renderCurrentStaff();
+        
+        // Odśwież statystyki budżetu
+        const budgetElement = document.querySelector('.budget-value');
+        if (budgetElement) {
+            budgetElement.textContent = `$${currentTeam.budget}`;
+        }
+        
+        // Dodaj event listenery do nowych przycisków
+        setTimeout(() => {
+            attachStaffButtonListeners();
+        }, 100);
         
     } catch (err) {
         console.error("[STAFF] Błąd zwalniania:", err);
         alert('Błąd podczas zwalniania personelu');
     }
-};
+}
 
 /**
  * Pomocnicza funkcja do emoji flag
@@ -454,7 +568,7 @@ function getFlagEmoji(country) {
         'Hiszpania': '🇪🇸',
         'Włochy': '🇮🇹',
         'USA': '🇺🇸',
-        'Belgia': '🇧🇪',
+        'Rosja': '🇷🇺',
         'Turcja': '🇹🇷',
         'Litwa': '🇱🇹',
         'Grecja': '🇬🇷'
@@ -466,5 +580,25 @@ function getFlagEmoji(country) {
  * Oblicza całkowity koszt pensji
  */
 function calculateTotalSalary() {
-    return currentStaff.reduce((sum, staff) => sum + staff.salary, 0);
+    return currentStaff.reduce((sum, staff) => sum + (staff.salary || 0), 0);
 }
+
+// Eksport funkcji dla przycisków w HTML (jeśli nadal potrzebne)
+window.hireStaff = async function(staffId) {
+    const staff = availableStaff.find(s => s.id === staffId);
+    if (!staff) {
+        alert('Nie znaleziono personelu');
+        return;
+    }
+    await hireStaff(staffId, staff.hire_cost, `${staff.first_name} ${staff.last_name}`);
+};
+
+window.releaseStaff = async function(staffId) {
+    const staff = currentStaff.find(s => s.id === staffId);
+    if (!staff) {
+        alert('Nie znaleziono personelu');
+        return;
+    }
+    const releaseCost = staff.release_cost || staff.salary * 2;
+    await releaseStaff(staffId, releaseCost, `${staff.first_name} ${staff.last_name}`);
+};
