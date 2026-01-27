@@ -58,7 +58,6 @@ async function fetchPotentialDefinitions() {
  * Funkcja pomocnicza do pobierania statystyk modułu
  */
 function getModuleStats(moduleKey) {
-    // Tymczasowa implementacja - zwraca puste stringi
     // W przyszłości można tu dodać logikę zliczania np. nowych wiadomości, zadań itp.
     const stats = {
         'm-roster': window.gameState.players?.length || 0,
@@ -525,9 +524,13 @@ export async function switchTab(tabId) {
         case 'm-market': 
             if (!isAdmin) renderMarketView(team, players); 
             break;
-        case 'm-media': 
-            if (!isAdmin) renderMediaView(team, players); 
-            break;
+       case 'm-media': 
+    if (window.gameState.isAdmin) {
+        renderMediaView(team, players, true); // true = admin mode
+    } else {
+        renderMediaView(team, players, false); // false = gracz mode
+    }
+    break;
         case 'm-finances': 
             if (!isAdmin) renderFinancesView(team, players); 
             break;
