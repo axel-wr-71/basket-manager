@@ -9,10 +9,6 @@
     --border-color: #dee2e6;
     --success: #27ae60;
     --accent-orange: #e65100;
-    --warning: #f59e0b;
-    --info: #3b82f6;
-    --dark-blue: #1e3a8a;
-    --light-blue: #dbeafe;
 }
 
 /* PODSTAWY */
@@ -121,124 +117,6 @@ header {
 
 .main-logo { height: 50px; width: auto; object-fit: contain; }
 
-/* GŁÓWNY KONTENER */
-.main-container {
-    display: flex;
-    flex: 1;
-    min-height: calc(100vh - 80px);
-}
-
-/* SIDEBAR (MENU BOCZNE) */
-.sidebar {
-    width: 280px;
-    background: var(--white);
-    border-right: 1px solid var(--border-color);
-    padding: 20px;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.03);
-    overflow-y: auto;
-}
-
-/* NAV CARD STYLES - DLA MENU BOCZNEGO */
-#main-nav-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.nav-card {
-    background: white;
-    border-radius: 12px;
-    padding: 15px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    min-height: 60px;
-}
-
-.nav-card:hover {
-    transform: translateX(5px);
-    border-color: var(--nba-orange);
-    box-shadow: 0 4px 12px rgba(245, 132, 38, 0.1);
-    background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
-}
-
-.nav-card.active {
-    background: linear-gradient(135deg, var(--nba-blue) 0%, var(--dark-blue) 100%);
-    color: white;
-    border-color: var(--nba-blue);
-    box-shadow: 0 4px 15px rgba(26, 35, 126, 0.2);
-}
-
-.nav-card.active:hover {
-    background: linear-gradient(135deg, var(--dark-blue) 0%, var(--nba-blue) 100%);
-}
-
-.nav-card-icon {
-    font-size: 1.5rem;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f3f4f6;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-}
-
-.nav-card.active .nav-card-icon {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.nav-card-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.nav-card-title {
-    font-weight: 600;
-    font-size: 0.95rem;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.nav-card-badge {
-    background: var(--nba-orange);
-    color: white;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-block;
-}
-
-.nav-card.active .nav-card-badge {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-/* GŁÓWNA TREŚĆ */
-.main-content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    background: var(--bg-light);
-}
-
-.tab-content {
-    display: none;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.tab-content.active {
-    display: block;
-}
-
 /* PRZYCISKI OGÓLNE */
 .btn { 
     background: var(--nba-orange); 
@@ -248,93 +126,9 @@ header {
     border-radius: 8px; 
     font-weight: bold; 
     cursor: pointer; 
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 0.9rem;
+    transition: background 0.2s;
 }
-.btn:hover { 
-    background: var(--accent-orange); 
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(230, 81, 0, 0.2);
-}
-
-.btn-primary { 
-    background: var(--nba-blue); 
-    color: white; 
-    border: none; 
-    padding: 12px 30px; 
-    border-radius: 8px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    transition: all 0.3s ease;
-}
-.btn-primary:hover { 
-    background: var(--dark-blue); 
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(26, 35, 126, 0.2);
-}
-
-.btn-secondary { 
-    background: #64748b; 
-    color: white; 
-    border: none; 
-    padding: 10px 20px; 
-    border-radius: 8px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    transition: all 0.3s ease;
-}
-.btn-secondary:hover { 
-    background: #475569; 
-    transform: translateY(-2px);
-}
-
-.btn-small {
-    padding: 8px 16px;
-    font-size: 0.8rem;
-}
-
-.btn-danger {
-    background: var(--danger);
-}
-.btn-danger:hover {
-    background: #c53030;
-}
-
-.btn-success {
-    background: var(--success);
-}
-.btn-success:hover {
-    background: #059669;
-}
-
-.btn-icon {
-    font-size: 1rem;
-}
-
-/* VIEW HEADER */
-.view-header {
-    margin-bottom: 30px;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-}
-
-.view-header h1 {
-    margin: 0 0 10px 0;
-    color: var(--nba-blue);
-    font-size: 1.8rem;
-}
-
-.view-header p {
-    margin: 0;
-    color: #64748b;
-    font-size: 1rem;
-}
+.btn:hover { background: var(--accent-orange); }
 
 /* WIDOK TRENINGU */
 .training-container select {
@@ -431,27 +225,6 @@ header {
         padding: 10px 20px;
         font-size: 11px;
         border-radius: 12px;
-    }
-    
-    .main-container {
-        flex-direction: column;
-    }
-    
-    .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        padding: 15px;
-    }
-    
-    #main-nav-container {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-    
-    .nav-card {
-        flex: 1;
-        min-width: 120px;
     }
 }
 
@@ -590,15 +363,82 @@ header {
     margin-top: 20px;
 }
 
-/* ============================================
-   STAFF VIEW SPECIFIC STYLES - POPRAWIONE I UZUPEŁNIONE
-   ============================================ */
+/* DESIGN KART */
+.nav-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    min-width: 120px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
 
-/* Dashboard personelu */
+.nav-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1a237e, #e65100);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.nav-card:hover {
+    transform: translateY(-5px);
+    border-color: #e65100;
+    box-shadow: 0 8px 30px rgba(230, 81, 0, 0.15);
+}
+
+.nav-card:hover::before {
+    opacity: 1;
+}
+
+.nav-card.active {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: white;
+    border-color: #1a237e;
+}
+
+.nav-card-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    transition: transform 0.3s;
+}
+
+.nav-card:hover .nav-card-icon {
+    transform: scale(1.2);
+}
+
+.nav-card-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.nav-card-badge {
+    background: rgba(230, 81, 0, 0.1);
+    color: #e65100;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.nav-card.active .nav-card-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Staff View Styles */
 .staff-dashboard {
     padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
 .staff-stats {
@@ -610,119 +450,67 @@ header {
 
 .stat-card {
     background: white;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     text-align: center;
-    border: 1px solid #e2e8f0;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
 }
 
 .stat-value {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: bold;
-    color: var(--nba-blue);
+    color: #1a237e;
     margin-bottom: 5px;
-    line-height: 1;
 }
 
 .stat-label {
     color: #64748b;
     font-size: 0.9rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
-/* Sekcja aktualnego personelu */
 .current-staff-section {
     background: white;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    margin-top: 20px;
-    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.section-header h2 {
-    margin: 0;
-    color: var(--nba-blue);
-    font-size: 1.5rem;
-}
-
-.section-actions {
-    display: flex;
-    gap: 10px;
-}
-
-/* Role sections */
-.staff-roles {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
+    margin-bottom: 25px;
 }
 
 .role-section {
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 25px;
-    border: 1px solid #e2e8f0;
+    margin-bottom: 30px;
 }
 
 .role-title {
-    color: var(--nba-blue);
-    margin: 0 0 20px 0;
-    font-size: 1.3rem;
+    color: #1a237e;
+    margin-bottom: 15px;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.role-title .badge {
-    background: var(--nba-orange);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
 .staff-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
 }
 
-/* Karty personelu */
 .staff-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 15px;
     border: 1px solid #e2e8f0;
     transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
 }
 
 .staff-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    border-color: var(--nba-orange);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .staff-card.current-staff {
@@ -730,65 +518,48 @@ header {
 }
 
 .staff-card.available-staff {
-    border-left: 4px solid var(--info);
+    border-left: 4px solid #3b82f6;
 }
 
 .staff-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 15px;
+    align-items: center;
+    margin-bottom: 10px;
 }
 
 .staff-name {
-    flex: 1;
-}
-
-.staff-name strong {
     font-size: 1.1rem;
-    color: var(--nba-blue);
-    display: block;
-    margin-bottom: 5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .staff-nationality {
     font-size: 0.9rem;
-    color: #64748b;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+    opacity: 0.8;
 }
 
 .staff-level {
-    color: var(--warning);
+    color: #f59e0b;
     font-size: 1.2rem;
-    display: flex;
-    gap: 2px;
 }
 
 .staff-card-details {
-    margin-bottom: 20px;
-    flex: 1;
+    margin-bottom: 15px;
 }
 
 .staff-speciality {
-    color: var(--info);
-    font-weight: 600;
-    font-size: 0.95rem;
-    margin-bottom: 8px;
-    padding: 5px 10px;
-    background: #f0f9ff;
-    border-radius: 6px;
-    display: inline-block;
+    color: #6366f1;
+    font-weight: 500;
+    margin-bottom: 5px;
 }
 
 .staff-experience, .staff-contract {
     color: #64748b;
     font-size: 0.9rem;
-    margin-bottom: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    margin-bottom: 3px;
 }
 
 .staff-card-footer {
@@ -796,17 +567,130 @@ header {
     justify-content: space-between;
     align-items: center;
     border-top: 1px solid #e2e8f0;
-    padding-top: 15px;
-    margin-top: auto;
+    padding-top: 10px;
 }
 
 .staff-salary {
-    color: var(--success);
-    font-weight: 700;
-    font-size: 1rem;
+    color: #059669;
+    font-weight: 600;
 }
 
-/* MODAL STYLES */
+/* Modal Styles */
+.wide-modal {
+    max-width: 1200px;
+}
+
+.market-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    color: #475569;
+    font-weight: 500;
+}
+
+.market-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.team-finances {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #dbeafe;
+    padding: 8px 15px;
+    border-radius: 20px;
+}
+
+.budget-label {
+    color: #1e40af;
+    font-size: 0.9rem;
+}
+
+.budget-value {
+    color: #059669;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.market-staff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.staff-effects-info {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f0f9ff;
+    border-radius: 8px;
+    border: 1px solid #bae6fd;
+}
+
+.effects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.effect-item {
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .staff-grid,
+    .market-staff-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .market-filters {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+}
+
+/* ============================================
+   DODATKOWE STYLE SPECJALNIE DLA WIDOKU STAFF
+   ============================================ */
+
+/* Modal dla rynku transferowego personelu */
 .modal {
     display: none;
     position: fixed;
@@ -844,13 +728,9 @@ header {
     to { transform: translateY(0); opacity: 1; }
 }
 
-.wide-modal {
-    max-width: 1400px;
-}
-
 .modal-header {
     padding: 25px 30px;
-    background: linear-gradient(135deg, var(--nba-blue) 0%, var(--dark-blue) 100%);
+    background: linear-gradient(135deg, var(--nba-blue) 0%, #283593 100%);
     color: white;
     display: flex;
     justify-content: space-between;
@@ -890,34 +770,38 @@ header {
     flex: 1;
 }
 
-/* Filtry rynku */
-.market-filters {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-    padding: 25px;
-    background: #f8fafc;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+/* Poprawki dla przycisków w widoku staff */
+.btn-small {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    border-radius: 6px;
 }
 
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.btn-danger {
+    background: #e74c3c;
+    color: white;
 }
 
-.filter-group label {
-    font-size: 0.85rem;
-    color: var(--nba-blue);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.btn-danger:hover {
+    background: #c53030;
 }
 
+.btn-success {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+.btn-icon {
+    margin-right: 8px;
+}
+
+/* Form controls dla filtrów */
 .form-select, .form-input {
-    padding: 12px 15px;
+    padding: 10px 15px;
     border-radius: 8px;
     border: 1px solid #d1d5db;
     background-color: white;
@@ -933,86 +817,74 @@ header {
     box-shadow: 0 0 0 3px rgba(245, 132, 38, 0.1);
 }
 
-/* Lista personelu na rynku */
-.market-list-header {
+/* Poprawki dla kart staff - lepsze wyświetlanie */
+.staff-card {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-    gap: 15px;
+    flex-direction: column;
+    height: 100%;
 }
 
-.market-list-header h3 {
-    margin: 0;
-    color: var(--nba-blue);
-    font-size: 1.3rem;
+.staff-card-details {
+    flex: 1;
+    margin-bottom: 15px;
 }
 
-.team-finances {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    padding: 12px 20px;
-    border-radius: 10px;
-    border: 1px solid #93c5fd;
+.staff-card-footer {
+    margin-top: auto;
 }
 
-.budget-label {
-    color: var(--dark-blue);
-    font-size: 0.9rem;
-    font-weight: 600;
+/* Poprawki dla statystyk staff */
+.staff-stats .stat-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.budget-value {
-    color: var(--success);
-    font-weight: 700;
-    font-size: 1.2rem;
+.staff-stats .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
 }
 
-.market-staff-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 25px;
-    max-height: 600px;
-    overflow-y: auto;
-    padding: 15px;
+/* Poprawki dla sekcji roli */
+.role-section {
     background: #f8fafc;
     border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
     border: 1px solid #e2e8f0;
 }
 
-/* Efekty personelu */
-.staff-effects-info {
-    margin-top: 40px;
-    padding: 25px;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+.role-title .badge {
+    background: var(--nba-orange);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+/* Poprawki dla market filters */
+.market-filters {
+    background: #f8fafc;
     border-radius: 12px;
-    border: 1px solid #bae6fd;
+    padding: 25px;
+    border: 1px solid #e2e8f0;
 }
 
-.staff-effects-info h4 {
-    margin: 0 0 20px 0;
-    color: var(--dark-blue);
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.filter-group label {
+    color: var(--nba-blue);
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
 }
 
-.effects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+/* Poprawki dla team finances */
+.team-finances {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 1px solid #93c5fd;
 }
 
+/* Poprawki dla effects grid */
 .effect-item {
-    padding: 20px;
-    background: white;
-    border-radius: 10px;
-    font-size: 0.95rem;
-    color: #374151;
     border: 1px solid #e2e8f0;
     transition: transform 0.3s ease;
 }
@@ -1022,80 +894,35 @@ header {
     box-shadow: 0 5px 15px rgba(0,0,0,0.08);
 }
 
-.effect-item strong {
-    color: var(--nba-blue);
-    display: block;
-    margin-bottom: 8px;
-    font-size: 1rem;
-}
-
-/* Stany pustej listy */
+/* Poprawki dla empty state */
 .empty-state {
-    text-align: center;
-    padding: 60px 40px;
-    color: #94a3b8;
-    font-style: italic;
-    background: white;
-    border-radius: 12px;
     border: 2px dashed #e2e8f0;
-    grid-column: 1 / -1;
+    background: white;
 }
 
-.empty-state::before {
-    content: '📋';
-    font-size: 3rem;
-    display: block;
-    margin-bottom: 20px;
-    opacity: 0.5;
+/* Scrollbar dla market-staff-grid */
+.market-staff-grid::-webkit-scrollbar {
+    width: 8px;
 }
 
-/* Responsywność */
-@media (max-width: 1200px) {
-    .market-staff-grid {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    }
+.market-staff-grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
 }
 
+.market-staff-grid::-webkit-scrollbar-thumb {
+    background: var(--nba-orange);
+    border-radius: 4px;
+}
+
+.market-staff-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-orange);
+}
+
+/* Responsywność dla widoku staff */
 @media (max-width: 768px) {
-    .staff-grid,
-    .market-staff-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .market-filters {
-        grid-template-columns: 1fr;
-    }
-    
-    .section-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .section-actions {
-        width: 100%;
-    }
-    
-    .modal-content {
-        width: 95%;
-        margin: 10% auto;
-    }
-    
-    .effects-grid {
-        grid-template-columns: 1fr;
-    }
-    
     .staff-stats {
         grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 480px) {
-    .staff-stats {
-        grid-template-columns: 1fr;
-    }
-    
-    .staff-card {
-        padding: 15px;
     }
     
     .staff-card-footer {
@@ -1107,70 +934,28 @@ header {
     .btn-small {
         width: 100%;
     }
-}
-
-/* Dodatkowe klasy pomocniczne */
-.badge {
-    display: inline-block;
-    padding: 4px 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1;
-    color: white;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: 10px;
-    background-color: var(--nba-orange);
-}
-
-.btn-icon {
-    margin-right: 8px;
-    font-size: 1rem;
-}
-
-/* Form controls dla całej aplikacji */
-.form-control {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-/* Animacje */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
     }
 }
 
-.animate-in {
-    animation: fadeInUp 0.5s ease forwards;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--nba-orange);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-orange);
+@media (max-width: 480px) {
+    .staff-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .market-filters {
+        padding: 15px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .section-actions {
+        width: 100%;
+    }
 }
