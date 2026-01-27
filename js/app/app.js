@@ -12,6 +12,7 @@ import { RosterActions } from './roster_actions.js';
 import { renderMyClubView } from './myclub_view.js';
 import { renderNationalCupView } from './nationalcup_view.js'; // NOWY IMPORT
 import { renderStaffView } from './staff_view.js'; // NOWY IMPORT - DODANE
+import { renderSettingsView } from './settings_view.js'; // NOWY IMPORT - USTAWIENIA
 
 // Rejestracja globalna
 window.RosterActions = RosterActions;
@@ -637,6 +638,7 @@ async function renderAdminView(team, players) {
 
 // Rejestracja globalna dla onclick w HTML
 window.switchTab = switchTab;
+window.renderSettingsView = renderSettingsView; // DODANE - Rejestracja widoku ustawień
 
 // BEZPIECZNY START: Czekamy na załadowanie DOM i modułów
 document.addEventListener('DOMContentLoaded', () => {
