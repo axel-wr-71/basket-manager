@@ -983,6 +983,206 @@
             border-radius: 12px;
             text-align: center;
         }
+        
+        /* DODANE: Settings button hover effect */
+        #btn-settings {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #1a237e;
+            padding: 5px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        #btn-settings:hover {
+            background: #f1f5f9;
+            transform: rotate(30deg);
+        }
+
+        /* DODANE: Settings modal specific styles */
+        .settings-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 32px;
+            background: #f8fafc;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .settings-tab {
+            padding: 16px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .settings-tab:hover {
+            color: #1a237e;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .settings-tab.active {
+            color: #1a237e;
+            border-bottom-color: #1a237e;
+            background: white;
+        }
+
+        .settings-content {
+            padding: 32px;
+        }
+
+        .settings-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .settings-tab-content.active {
+            display: block;
+        }
+
+        .team-info-card {
+            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(26, 35, 126, 0.2);
+        }
+
+        .team-info-card p {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .team-info-card strong {
+            color: #ffab40;
+            min-width: 100px;
+            display: inline-block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-secondary {
+            padding: 12px 24px;
+            background: white;
+            color: #64748b;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #1a237e;
+        }
+        
+        /* DODANE: Additional styles for settings view */
+        .form-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 30px 0;
+        }
+        
+        .sortable-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sortable-list li {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: move;
+            transition: all 0.2s;
+        }
+        
+        .sortable-list li:hover {
+            background: #f8fafc;
+            transform: translateX(2px);
+        }
+        
+        .drag-handle {
+            margin-right: 12px;
+            cursor: move;
+            color: #94a3b8;
+            font-size: 1.2rem;
+        }
+        
+        .module-icon {
+            margin-right: 12px;
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .module-name {
+            flex: 1;
+            font-weight: 500;
+            color: #1a237e;
+        }
+        
+        .module-stats {
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #f1f5f9;
+        }
+        
+        .sortable-chosen {
+            background: #e0f2fe;
+            border-color: #38bdf8;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1190,6 +1390,8 @@
                     <span id="display-league-name" style="color: #e65100; font-weight: 800;">---</span>
                 </div>
             </div>
+            <!-- DODANO: Przycisk ustawień -->
+            <button id="btn-settings" title="Ustawienia">⚙️</button>
             <button id="btn-logout-action" class="btn-logout">LOGOUT</button>
         </div>
     </header>
@@ -1470,6 +1672,7 @@
     import { signIn, signUp, logout } from './js/auth.js';
     import { switchTab, initApp } from './js/app/app.js';
     import { initContentManager } from './js/content-manager.js';
+    import { renderSettingsView } from './js/app/settings_view.js'; // DODANO: Import widoku ustawień
 
     // Inicjalizacja content managera
     let contentManager = null;
@@ -1587,6 +1790,11 @@
         document.getElementById('btn-login-action')?.addEventListener('click', signIn);
         document.getElementById('btn-signup-action')?.addEventListener('click', signUp);
         document.getElementById('btn-logout-action')?.addEventListener('click', logout);
+        
+        // DODANO: Event listener dla przycisku ustawień
+        document.getElementById('btn-settings')?.addEventListener('click', () => {
+            renderSettingsView();
+        });
         
         // Obsługa zamykania FAQ modala
         const faqModal = document.getElementById('faqModal');
